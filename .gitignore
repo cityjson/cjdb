@@ -3,3 +3,4 @@ cj2pgsql/__pycache__
 *launch.json
 *.env
 *.pyc
+mypy.ini
