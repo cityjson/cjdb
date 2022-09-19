@@ -1,3 +1,5 @@
 cj2pgsql/__pycache__
 .vscode
 *launch.json
+*.env
+*.pyc
