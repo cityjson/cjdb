@@ -3,8 +3,9 @@ import argparse
 def Parser():
     parser = argparse.ArgumentParser(description='Import CityJSON to a PostgreSQL database')
 
-    parser.add_argument('filepath', type=str, metavar="file_or_directory",
-                        help='Source CityJSON file or a directory with CityJSON files')
+    parser.add_argument('filepath', nargs='?', default='stdin', 
+                        type=str, metavar="file_or_directory",
+                        help='Source CityJSONL file or a directory with CityJSONL files. STDIN if not specified.')
     parser.add_argument('-H', '--host', type=str, default='localhost',
                         help='PostgreSQL database host', dest="db_host")
     parser.add_argument('-p', '--port', type=int, default=5432,

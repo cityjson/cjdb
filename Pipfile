@@ -4,8 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-psycopg2 = "*"
-cjio = "*"
 
 [dev-packages]
 

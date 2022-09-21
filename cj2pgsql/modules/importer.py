@@ -1,6 +1,7 @@
 from modules.utils import open_connection, execute_sql
 import os
 import json
+import sys
 
 class Importer():
     def __init__(self, args):
@@ -24,6 +25,17 @@ class Importer():
 
     def parse_cityjson(self):
         filepath = self.args.filepath
+        if filepath == "stdin":
+            
+            k = 0
+            try:
+                for line in iter(sys.stdin.readline, b''):
+                    k = k + 1
+                    print(line)
+            except KeyboardInterrupt:
+                sys.stdout.flush()
+                pass
+
         is_file, is_dir = False, False
         if os.path.isfile(filepath):
             is_file = True
@@ -31,11 +43,18 @@ class Importer():
             is_dir = True
 
         if is_file:
-            cityjson = read_file(filepath)
+            process_file(filepath)
+
+            # reading standard cityjson will not be needed. We will probably only need a CityJSONL parser
+            # cityjson = read_file(filepath)
+            # self.metadata = 
             pass
         elif is_dir:
-            # for every cityjson file in directory (read it and append)
+            # for every cityjsonl file in directory (read it and append)
+            # todo
             pass
+        else:
+            raise Exception(f"Path: '{filepath}' not found")
 
     def save_to_db(self):
         pass
@@ -45,3 +64,11 @@ def read_file(filepath):
         json_content = json.load(f)
 
     return json_content
+
+def process_line(line):
+
+
+def process_file(filepath):
+    with open(filepath) as f:
+        for line in f.readlines():
+            process_line(line)
