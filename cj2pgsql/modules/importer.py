@@ -2,6 +2,7 @@ from modules.utils import open_connection, execute_sql
 import os
 import json
 import sys
+import fileinput
 
 class Importer():
     def __init__(self, args):
@@ -24,37 +25,20 @@ class Importer():
         execute_sql(self.connection, cmd)
 
     def parse_cityjson(self):
-        filepath = self.args.filepath
-        if filepath == "stdin":
+        source_path = self.args.filepath
+
+        if source_path == "stdin":
+            for line in sys.stdin:
+                process_line(line.strip())
+
+        elif os.path.isfile(source_path):
+            process_file(source_path)
+
+        elif os.path.isdir(source_path):
+            process_directory(source_path)
             
-            k = 0
-            try:
-                for line in iter(sys.stdin.readline, b''):
-                    k = k + 1
-                    print(line)
-            except KeyboardInterrupt:
-                sys.stdout.flush()
-                pass
-
-        is_file, is_dir = False, False
-        if os.path.isfile(filepath):
-            is_file = True
-        elif os.path.isdir(filepath):
-            is_dir = True
-
-        if is_file:
-            process_file(filepath)
-
-            # reading standard cityjson will not be needed. We will probably only need a CityJSONL parser
-            # cityjson = read_file(filepath)
-            # self.metadata = 
-            pass
-        elif is_dir:
-            # for every cityjsonl file in directory (read it and append)
-            # todo
-            pass
         else:
-            raise Exception(f"Path: '{filepath}' not found")
+            raise Exception(f"Path: '{source_path}' not found")
 
     def save_to_db(self):
         pass
@@ -66,9 +50,21 @@ def read_file(filepath):
     return json_content
 
 def process_line(line):
+    try:
+        line_json = json.loads(line)
+    except:
+        print(len(line))
+        print(line)
+        raise
 
 
 def process_file(filepath):
     with open(filepath) as f:
         for line in f.readlines():
             process_line(line)
+
+def process_directory(dir_path):
+    ext = (".json", ".cityjson")
+    for f in os.scandir(dir_path):
+        if f.path.endswith(ext):
+            process_file(f.path)
