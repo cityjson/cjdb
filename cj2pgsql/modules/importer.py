@@ -21,22 +21,23 @@ class Importer():
         self.save_to_db()
 
     def prepare_database(self):
-        cmd = f"create schema if not exists {self.args.db_schema}"
+        with open("model/model.sql") as f:
+            cmd = f.read().format(schema=self.args.db_schema)
         execute_sql(self.connection, cmd)
 
     def parse_cityjson(self):
         source_path = self.args.filepath
 
-        if source_path == "stdin":
+        if source_path.lower() == "stdin":
             for line in sys.stdin:
-                process_line(line.strip())
+                process_line(line.rstrip("\n"))
 
         elif os.path.isfile(source_path):
             process_file(source_path)
 
         elif os.path.isdir(source_path):
             process_directory(source_path)
-            
+
         else:
             raise Exception(f"Path: '{source_path}' not found")
 
@@ -52,6 +53,9 @@ def read_file(filepath):
 def process_line(line):
     try:
         line_json = json.loads(line)
+        if 'metadata' in line_json:
+            pass
+
     except:
         print(len(line))
         print(line)

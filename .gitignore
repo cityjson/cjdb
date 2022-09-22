@@ -4,3 +4,4 @@ cj2pgsql/__pycache__
 *.env
 *.pyc
 mypy.ini
+todo
