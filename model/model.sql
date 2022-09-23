@@ -9,13 +9,13 @@ create table if not exists {schema}.import_meta
     metadata jsonb,
     started_at timestamptz not null default now(),
     finished_at timestamptz,
-    bbox geometry not null--2d bbox of the entire file
+    bbox geometry--2d bbox of the entire file
 );
 
 create table if not exists {schema}.cj_feature
 (
     id serial primary key,
-    import_meta_id int references {schema}.import_metadata(id),
+    import_meta_id int references {schema}.import_meta(id),
     feature_id text unique not null, --CityJSON object identifier
     -- cityobjects jsonb not null, probably not needed, because there is table cj_object
     vertices jsonb not null,
@@ -28,10 +28,10 @@ create table if not exists {schema}.cj_object
     cj_feature_id int references {schema}.cj_feature(id),
     object_id text unique not null,
     bbox geometry, --2d bbox
-    -- object jsonb not null, -- optionally entire object as json, without the columns below
-    type text not null,
-    attributes jsonb,
-    geometry jsonb
+    object jsonb not null -- optionally entire object as json, without the columns below
+    -- type text not null,
+    -- attributes jsonb,
+    -- geometry jsonb
 );
 
 -- check how to index json attribute, for example to find object by its type

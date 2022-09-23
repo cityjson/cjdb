@@ -1,5 +1,16 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from sqlalchemy import create_engine
+import os
+
+
+def get_db_engine(args):
+    conn_string = f"postgresql://{args.db_user}:{os.getenv('PGPASSWORD')}"\
+        f"@{args.db_host}:{args.db_port}/{args.db_name}"
+
+    engine = create_engine(conn_string)
+
+    return engine
 
 def open_connection(args):
     conn = psycopg2.connect(database=args.db_name,
