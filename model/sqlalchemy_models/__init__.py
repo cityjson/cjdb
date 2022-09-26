@@ -24,24 +24,17 @@ class ImportMetaModel(BaseModel):
     bbox = Column(Geometry('POLYGON'))
 
 
-class CjFeatureModel(BaseModel):
-    __tablename__ = 'cj_feature'
-    __table_args__ = {'schema':'cjdb'}
-    import_meta_id = Column(Integer, ForeignKey(ImportMetaModel.id))
-    feature_id = Column(String, nullable=False, unique=True)
-    vertices = Column(JSONB)
-    bbox = Column(Geometry('POLYGON'))
-
-    import_meta = relationship(ImportMetaModel)
-
-
 class CjObjectModel(BaseModel):
     __tablename__ = 'cj_object'
     __table_args__ = {'schema':'cjdb'}
-    cj_feature_id = Column(Integer, ForeignKey(CjFeatureModel.id))
+    import_meta_id = Column(Integer, ForeignKey(ImportMetaModel.id))
     object_id = Column(String, nullable=False, unique=True)
-    object = Column(JSONB)
+    type = Column(String, nullable=False)
+    attributes = Column(JSONB)
+    geometry = Column(JSONB)
+    parents = Column(JSONB)
+    children = Column(JSONB)
     bbox = Column(Geometry('POLYGON'))
 
-    cj_feature = relationship(CjFeatureModel)
+    import_meta = relationship(ImportMetaModel)
 

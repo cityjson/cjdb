@@ -1,9 +1,10 @@
-from modules.utils import open_connection, execute_sql, get_db_engine
+from modules.geometric import calculate_object_bbox, resolve_geometry_vertices
+from modules.utils import get_db_engine
 import os
 import json
 import sys
 from sqlalchemy.orm import Session
-from model.sqlalchemy_models import ImportMetaModel, CjFeatureModel, CjObjectModel
+from model.sqlalchemy_models import ImportMetaModel, CjObjectModel
 from sqlalchemy import func
 
 class Importer():
@@ -60,25 +61,26 @@ class Importer():
             self.session.add(import_meta)
             self.session.commit()
         else:
-            # create CityJSONFeature
-            cj_feature = CjFeatureModel(
-                feature_id = line_json["id"],
-                vertices = line_json["vertices"]
-            )
-
-            cj_feature.__table__.schema = self.args.db_schema
-            cj_feature.import_meta = self.import_meta
-            self.session.add(cj_feature)
-
             # create CityJSONObjects belonging to the CityJSONFeature
-            for obj_id, cityobject in line_json["CityObjects"].items():
+            for obj_id, cityobj in line_json["CityObjects"].items():
+                geometry = resolve_geometry_vertices(cityobj.get("geometry"), 
+                                                    line_json.get("vertices"),
+                                                    self.import_meta.transform)
+
+                bbox = calculate_object_bbox()
+
                 cj_object = CjObjectModel(
                     object_id=obj_id,
-                    object=cityobject
+                    type=cityobj.get("type"),
+                    attributes=cityobj.get("attributes"),
+                    geometry=geometry,
+                    parents=cityobj.get("parents"),
+                    children=cityobj.get("children"),
+                    bbox=bbox
                 )
 
                 cj_object.__table__.schema = self.args.db_schema
-                cj_object.cj_feature = cj_feature
+                cj_object.import_meta = self.import_meta
                 self.session.add(cj_object)
 
     def process_file(self, filepath):
