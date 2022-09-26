@@ -40,14 +40,11 @@ class Importer():
             self.process_file(source_path)
 
         elif os.path.isdir(source_path):
-            process_directory(source_path)
+            pass
+            # process_directory(source_path)
 
         else:
             raise Exception(f"Path: '{source_path}' not found")
-
-    def save_to_db(self):
-        pass
-
         
     def process_line(self, line):
         line_json = json.loads(line)
@@ -92,15 +89,9 @@ class Importer():
         self.import_meta.finished_at = func.now()
         self.session.commit()
 
-def read_file(filepath):
-    with open(filepath) as f:
-        json_content = json.load(f)
-
-    return json_content
-
-
-def process_directory(dir_path):
-    ext = (".json", ".cityjson")
-    for f in os.scandir(dir_path):
-        if f.path.endswith(ext):
-            process_file(f.path)
+# todo
+# def process_directory(dir_path):
+#     ext = (".json", ".cityjson")
+#     for f in os.scandir(dir_path):
+#         if f.path.endswith(ext):
+#             process_file(f.path)

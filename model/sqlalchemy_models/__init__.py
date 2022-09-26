@@ -9,11 +9,6 @@ Base = declarative_base()
 
 class BaseModel(Base):
     __abstract__ = True
-
-    # @declared_attr
-    # def __table_args__(cls):
-    #     return dict(schema=cls.__name__[5:].upper())
-
     id = Column(Integer, primary_key=True)
 
 
