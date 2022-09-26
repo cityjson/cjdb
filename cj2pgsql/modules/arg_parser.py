@@ -19,6 +19,6 @@ def Parser():
 
     return parser
 
-
+# todo validate args
 def validate_args(args):
     return True, ""
