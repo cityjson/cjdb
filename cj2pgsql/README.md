@@ -12,9 +12,12 @@ pipenv install
 ```
 
 ### Running the importer example:
+The password should be specified in the PGPASSWORD environment variable.
+
 ```
 pipenv run cj2pgsql.py -H localhost -U postgres -d postgres -s cjdb2 -p 5555 ~/Downloads/5870.jsonl
 ```
+
 
 
 
