@@ -22,7 +22,6 @@ class Importer():
     def run_import(self):
         self.prepare_database()
         self.parse_cityjson()
-        self.save_to_db()
 
     def prepare_database(self):
         with open("model/model.sql") as f:
@@ -88,6 +87,7 @@ class Importer():
 
         self.import_meta.finished_at = func.now()
         self.session.commit()
+        print(f"Imported from {self.args.filepath} successfully")
 
 # todo
 # def process_directory(dir_path):
