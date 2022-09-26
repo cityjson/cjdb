@@ -60,6 +60,7 @@ class Importer():
             self.session.add(import_meta)
             self.session.commit()
         else:
+            # create CityJSONFeature
             cj_feature = CjFeatureModel(
                 feature_id = line_json["id"],
                 vertices = line_json["vertices"]
@@ -69,6 +70,7 @@ class Importer():
             cj_feature.import_meta = self.import_meta
             self.session.add(cj_feature)
 
+            # create CityJSONObjects belonging to the CityJSONFeature
             for obj_id, cityobject in line_json["CityObjects"].items():
                 cj_object = CjObjectModel(
                     object_id=obj_id,
@@ -78,7 +80,6 @@ class Importer():
                 cj_object.__table__.schema = self.args.db_schema
                 cj_object.cj_feature = cj_feature
                 self.session.add(cj_object)
-
 
     def process_file(self, filepath):
         with open(filepath) as f:
