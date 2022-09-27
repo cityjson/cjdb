@@ -67,7 +67,7 @@ class Importer():
                                                     line_json.get("vertices"),
                                                     self.import_meta.transform)
 
-                bbox = calculate_object_bbox()
+                bbox = calculate_object_bbox(geometry)
 
                 cj_object = CjObjectModel(
                     object_id=obj_id,
