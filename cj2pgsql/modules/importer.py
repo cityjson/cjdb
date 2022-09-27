@@ -1,5 +1,5 @@
-from modules.geometric import calculate_object_bbox, resolve_geometry_vertices
-from modules.utils import get_db_engine
+from cj2pgsql.modules.geometric import calculate_object_bbox, resolve_geometry_vertices
+from cj2pgsql.modules.utils import get_db_engine
 import os
 import json
 import sys

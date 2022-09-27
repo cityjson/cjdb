@@ -5,3 +5,7 @@ cj2pgsql/__pycache__
 *.pyc
 mypy.ini
 todo
+venv
+*.egg-info
+*.whl
+*.gz

@@ -4,6 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+psycopg2 = "*"
+cjio = "*"
+geoalchemy2 = "*"
+flask = "*"
+python-dotenv = "*"
+flask-sqlalchemy = "*"
+marshmallow = "*"
+flask-marshmallow = "*"
+flask-restful = "*"
+mypy = "*"
 
 [dev-packages]
 

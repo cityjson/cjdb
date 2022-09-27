@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy as BaseSQLAlchemy
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import sessionmaker
-from app.vars import SQLALCHEMY_DATABASE_URI
+from cjdb_api.app.vars import SQLALCHEMY_DATABASE_URI
 
 # naming_convention = {
 #     "ix": "ix_%(column_0_label)s",

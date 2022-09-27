@@ -1,8 +1,9 @@
-from app.vars import DEBUG, SQLALCHEMY_DATABASE_URI
-from app.db import db
-from app.ma import ma
+from cjdb_api.app.vars import DEBUG, SQLALCHEMY_DATABASE_URI
+from cjdb_api.app.db import db
+from cjdb_api.app.ma import ma
+from cjdb_api.app.routes import api_blueprint
 from flask import Flask
-from app.routes import api_blueprint
+
 
 def make_app():
     flask_app = Flask(__name__)

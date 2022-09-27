@@ -1,6 +1,6 @@
-from app.ma import ma
+from cjdb_api.app.ma import ma
 from marshmallow import fields, post_load
-from app.models import CityJsonModel
+from cjdb_api.app.models import CityJsonModel
 
 class CityJsonSchema(ma.Schema):
     # here define fields for serialization

@@ -1,6 +1,6 @@
 from flask_restful import Resource
-from app.models import CityJsonModel
-from app.schemas import CityJsonSchema
+from cjdb_api.app.models import CityJsonModel
+from cjdb_api.app.schemas import CityJsonSchema
 
 cityjson_schema = CityJsonSchema()
 

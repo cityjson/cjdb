@@ -1,6 +1,6 @@
 import os
-from modules.arg_parser import Parser, validate_args
-from modules.importer import Importer
+from cj2pgsql.modules.arg_parser import Parser, validate_args
+from cj2pgsql.modules.importer import Importer
 
 
 def main():

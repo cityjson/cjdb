@@ -1,8 +1,8 @@
 from flask import Blueprint
 from flask_restful import Api
-from app.resources import querying
+from cjdb_api.app.resources import querying
 
-from app.resources.querying import QueryByAttributeResource, QueryByIdResource
+from cjdb_api.app.resources.querying import QueryByAttributeResource, QueryByIdResource
 
 api_blueprint = Blueprint("api", __name__)
 api = Api(api_blueprint)
