@@ -5,7 +5,7 @@ import os
 
 
 def get_db_engine(args):
-    conn_string = f"postgresql://{args.db_user}:{os.getenv('PGPASSWORD')}"\
+    conn_string = f"postgresql://{args.db_user}:{args.db_password}"\
         f"@{args.db_host}:{args.db_port}/{args.db_name}"
 
     engine = create_engine(conn_string)
