@@ -1,10 +1,16 @@
 
+from shapely.geometry import box
+
 def transform_vertex(vertex, transform):
     vertex[0] = (vertex[0] * transform["scale"][0]) + transform["translate"][0]
     vertex[1] = (vertex[1] * transform["scale"][1]) + transform["translate"][1]
     vertex[2] = (vertex[2] * transform["scale"][2]) + transform["translate"][2]
 
     return vertex
+
+def geometry_from_extent(extent):
+    bbox = box(extent[0], extent[1], extent[3], extent[4])
+    return bbox.wkt
 
 def resolve_geometry_vertices(geometry, vertices, transform):
     transformed_vertices = [transform_vertex(v, transform) for v in vertices]

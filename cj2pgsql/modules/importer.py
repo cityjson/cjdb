@@ -1,4 +1,5 @@
-from cj2pgsql.modules.geometric import calculate_object_bbox, resolve_geometry_vertices
+from cj2pgsql.modules.geometric import calculate_object_bbox, \
+    geometry_from_extent, resolve_geometry_vertices
 from cj2pgsql.modules.utils import get_db_engine
 import os
 import json
@@ -49,11 +50,15 @@ class Importer():
     def process_line(self, line):
         line_json = json.loads(line)
         if 'metadata' in line_json:
+
+            bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
+            # to do what with crs? add it to this wkt, to make ewkt
             import_meta = ImportMetaModel(
                 source_file=os.path.basename(self.args.filepath),
                 version=line_json["version"],
                 transform=line_json["transform"],
-                meta=line_json["metadata"]
+                meta=line_json["metadata"],
+                bbox=bbox
             )
 
             import_meta.__table__.schema = self.args.db_schema
