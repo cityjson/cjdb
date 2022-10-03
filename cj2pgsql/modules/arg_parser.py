@@ -22,8 +22,8 @@ def Parser():
                         help='PostgreSQL database name', dest="db_name")
     parser.add_argument('-s', '--schema', type=str, default='public',
                         help='Target database schema', dest="db_schema")
-    parser.add_argument('-c', '--crs-id', type=int, default=None,
-                    help='Target coordinate system', dest="crs_id")
+    parser.add_argument('-I', '--srid', type=int, default=None,
+                    help='Target coordinate system', dest="target_srid")
 
 
     return parser
