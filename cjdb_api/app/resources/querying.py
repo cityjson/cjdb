@@ -1,19 +1,33 @@
 from flask_restful import Resource
-from cjdb_api.app.models import CityJsonModel
+from model.sqlalchemy_models import CjObjectModel
 from cjdb_api.app.schemas import CityJsonSchema
-
+from cjdb_api.app.db import session
 cityjson_schema = CityJsonSchema()
+cityjson_list_schema = CityJsonSchema(many=True)
 
-class QueryByIdResource(Resource):
+class all(Resource):
     @classmethod
-    def get(cls, obj_id: str):
-        cj_object = CityJsonModel.get_by_id(obj_id)
+    def get(cls):
+        # cj_object = CjObjectModel.object_id(obj_id)
+        all = session.query(CjObjectModel).all()
 
-        if not cj_object:
+
+        if not all:
             return {"message": "Object not found"}, 404
 
-        return cityjson_schema.dump(cj_object)
+        return cityjson_list_schema.dump(all)
 
+class QueryById(Resource):
+    @classmethod
+    def get(cls):
+        # cj_object = CjObjectModel.object_id(obj_id)
+        all = session.query(CjObjectModel).all()
+
+
+        if not all:
+            return {"message": "Object not found"}, 404
+
+        return cityjson_list_schema.dump(all)
 
 class QueryByAttributeResource(Resource):
     pass
