@@ -38,11 +38,12 @@ class Importer():
                 self.process_line(line.rstrip("\n"))
 
         elif os.path.isfile(source_path):
+            print("Running import for file: ", source_path)
             self.process_file(source_path)
 
         elif os.path.isdir(source_path):
-            pass
-            # process_directory(source_path)
+            print("Running import for directory: ", source_path)
+            self.process_directory(source_path)
 
         else:
             raise Exception(f"Path: '{source_path}' not found")
@@ -51,7 +52,8 @@ class Importer():
         line_json = json.loads(line)
         if 'metadata' in line_json:
 
-            bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
+            bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"],
+                                        line_json["metadata"].get("referenceSystem", None))
             # to do what with crs? add it to this wkt, to make ewkt
             import_meta = ImportMetaModel(
                 source_file=os.path.basename(self.args.filepath),
@@ -95,11 +97,10 @@ class Importer():
 
         self.import_meta.finished_at = func.now()
         self.session.commit()
-        print(f"Imported from {self.args.filepath} successfully")
+        print(f"Imported from {filepath} successfully")
 
-# todo
-# def process_directory(dir_path):
-#     ext = (".json", ".cityjson")
-#     for f in os.scandir(dir_path):
-#         if f.path.endswith(ext):
-#             process_file(f.path)
+    def process_directory(self, dir_path):
+        ext = (".jsonl")
+        for f in os.scandir(dir_path):
+            if f.path.endswith(ext):
+                self.process_file(f.path)

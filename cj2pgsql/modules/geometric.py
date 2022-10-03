@@ -1,5 +1,6 @@
 
 from shapely.geometry import box
+from pyproj import CRS
 
 def transform_vertex(vertex, transform):
     vertex[0] = (vertex[0] * transform["scale"][0]) + transform["translate"][0]
@@ -8,9 +9,15 @@ def transform_vertex(vertex, transform):
 
     return vertex
 
-def geometry_from_extent(extent):
+def geometry_from_extent(extent, ref_system):
     bbox = box(extent[0], extent[1], extent[3], extent[4])
-    return bbox.wkt
+    proj = CRS.from_string(ref_system)
+    srid = proj.to_epsg()
+
+    geom = bbox.wkt
+    if ref_system:
+        geom = f"SRID={srid};{geom}"
+    return geom
 
 def resolve_geometry_vertices(geometry, vertices, transform):
     transformed_vertices = [transform_vertex(v, transform) for v in vertices]
@@ -41,6 +48,30 @@ def resolve_geometry_vertices(geometry, vertices, transform):
 # todo
 # should return geometry as EWKT format
 def calculate_object_bbox(geometry):
-    ### calculate bbox
-    example = 'SRID=28992;POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'
-    return example
+    return None
+    # min_X, min_Y = 99999999
+    # max_X, max_Y = 0
+
+    # for lod_level in geometry:
+    #     for boundary in lod_level["boundaries"]:
+    #         for i,shell in enumerate(boundary):
+    #             if type(shell[0]) is list:
+    #                     for j, ring in enumerate(shell):
+    #                         for vertex in ring:
+    #                             if min_X > vertex[j][0]: min_X = vertex[j][0]
+    #                             if min_Y > vertex[j][1]: min_Y = vertex[j][1]
+    #                             if max_X < vertex[j][0]: max_X = vertex[j][0]
+    #                             if max_Y < vertex[j][1]: max_Y = vertex[j][1]
+    #                         break
+    #             else:
+    #                     for vertex in shell:
+    #                         if min_X > vertex[0]: min_X = vertex[0]
+    #                         if min_Y > vertex[1]: min_Y = vertex[1]
+    #                         if max_X < vertex[0]: max_X = vertex[0]
+    #                         if max_Y < vertex[1]: max_Y = vertex[1]
+    #                     break
+    #         break
+    #     break
+    
+    # bbox = "SRID=28992;POLYGON(({} {}, {} {}, {} {}, {} {}, {} {}))".format(min_X,min_Y,max_X,min_Y,max_X,max_Y,min_X,max_Y,min_X,min_Y)
+    # return bbox

@@ -14,5 +14,5 @@ def main():
     else:
         raise Exception(validation_msg)
 
-
-main()
+if __name__ == "__main__":
+    main()
