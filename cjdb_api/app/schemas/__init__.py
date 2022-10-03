@@ -1,6 +1,6 @@
 from cjdb_api.app.ma import ma
 from marshmallow import fields, post_load
-from cjdb_api.app.models import CityJsonModel
+from model.sqlalchemy_models import CjObjectModel
 
 class CityJsonSchema(ma.Schema):
     # here define fields for serialization
@@ -8,8 +8,8 @@ class CityJsonSchema(ma.Schema):
 
     @post_load
     def make(self, data, **kwargs):
-        return CityJsonModel(**data)
+        return CjObjectModel(**data)
 
     class Meta:
-        model = CityJsonModel
+        model = CjObjectModel
         load_instance = True
