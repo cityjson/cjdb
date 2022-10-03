@@ -20,12 +20,23 @@ class all(Resource):
 class QueryById(Resource):
     @classmethod
     def get(cls, obj_id: str):
-        cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == obj_id)
+
+        cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == str(obj_id))
 
         if not cj_object:
             return {"message": "Object not found"}, 404
 
-        return cityjson_schema.dump(cj_object)
+        return cityjson_list_schema.dump(cj_object)
+
+class QueryByAnything(Resource):
+    @classmethod
+    def get(cls, attrib: str, value: str):
+        cj_object = session.query(CjObjectModel).filter(getattr(CjObjectModel, attrib) == str(value))
+
+        if not cj_object:
+            return {"message": "Object not found"}, 404
+
+        return cityjson_list_schema.dump(cj_object)
 
 class QueryByAttributeResource(Resource):
     pass
