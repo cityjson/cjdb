@@ -1,5 +1,5 @@
 from cj2pgsql.modules.geometric import calculate_object_bbox, \
-    geometry_from_extent, resolve_geometry_vertices
+    geometry_from_extent, get_srid, reproject, resolve_geometry_vertices, to_ewkt
 from cj2pgsql.modules.utils import get_db_engine
 import os
 import json
@@ -8,10 +8,12 @@ from sqlalchemy.orm import Session
 from model.sqlalchemy_models import ImportMetaModel, CjObjectModel
 from sqlalchemy import func
 
+
 class Importer():
     def __init__(self, args):
         self.args = args
         self.import_meta = None # meta read from the file
+        self.source_srid = None
 
     def __enter__(self):
         self.engine = get_db_engine(self.args)
@@ -24,6 +26,10 @@ class Importer():
     def run_import(self):
         self.prepare_database()
         self.parse_cityjson()
+
+        self.import_meta.finished_at = func.now()
+        self.session.commit()
+        print(f"Imported from {self.args.filepath} successfully")
 
     def prepare_database(self):
         with open("model/model.sql") as f:
@@ -38,11 +44,9 @@ class Importer():
                 self.process_line(line.rstrip("\n"))
 
         elif os.path.isfile(source_path):
-            print("Running import for file: ", source_path)
             self.process_file(source_path)
 
         elif os.path.isdir(source_path):
-            print("Running import for directory: ", source_path)
             self.process_directory(source_path)
 
         else:
@@ -51,18 +55,24 @@ class Importer():
     def process_line(self, line):
         line_json = json.loads(line)
         if 'metadata' in line_json:
+            self.source_srid = get_srid(line_json["metadata"].get("referenceSystem"))
 
-            bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"],
-                                        line_json["metadata"].get("referenceSystem", None))
-            # to do what with crs? add it to this wkt, to make ewkt
+            if not self.args.target_srid:
+                self.args.target_srid = self.source_srid
+
+            bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
+            if self.args.target_srid != self.source_srid:
+                bbox = reproject(bbox, self.source_srid, self.args.target_srid)
+
             import_meta = ImportMetaModel(
                 source_file=os.path.basename(self.args.filepath),
                 version=line_json["version"],
                 transform=line_json["transform"],
                 meta=line_json["metadata"],
-                bbox=bbox
+                bbox=to_ewkt(bbox.wkt, self.args.target_srid)
             )
 
+            self.import_meta = import_meta
             import_meta.__table__.schema = self.args.db_schema
             self.import_meta = import_meta
             self.session.add(import_meta)
@@ -75,6 +85,8 @@ class Importer():
                                                     self.import_meta.transform)
 
                 bbox = calculate_object_bbox(geometry)
+                if self.args.target_srid != self.source_srid:
+                    bbox = reproject(bbox, self.source_srid, self.args.target_srid)
 
                 cj_object = CjObjectModel(
                     object_id=obj_id,
@@ -83,7 +95,7 @@ class Importer():
                     geometry=geometry,
                     parents=cityobj.get("parents"),
                     children=cityobj.get("children"),
-                    bbox=bbox
+                    bbox=to_ewkt(bbox.wkt, self.args.target_srid)
                 )
 
                 cj_object.__table__.schema = self.args.db_schema
@@ -91,15 +103,17 @@ class Importer():
                 self.session.add(cj_object)
 
     def process_file(self, filepath):
+        print("Running import for file: ", filepath)
+
         with open(filepath) as f:
             for line in f.readlines():
                 self.process_line(line)
 
         self.import_meta.finished_at = func.now()
         self.session.commit()
-        print(f"Imported from {filepath} successfully")
 
     def process_directory(self, dir_path):
+        print("Running import for directory: ", dir_path)
         ext = (".jsonl")
         for f in os.scandir(dir_path):
             if f.path.endswith(ext):
