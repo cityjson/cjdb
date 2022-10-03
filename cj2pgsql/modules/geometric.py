@@ -1,5 +1,5 @@
 
-from shapely.geometry import box
+from shapely.geometry import box, MultiPolygon
 from shapely.ops import transform
 from pyproj import CRS, Transformer
 
@@ -91,3 +91,13 @@ def calculate_object_bbox(geometry):
                         if max_Y < y: max_Y = y
          
     return box(min_X, min_Y, max_X, max_Y)
+
+
+# todo by Lan Yan
+def get_ground_geometry(geometry):
+    # returns a shapely multipolygon (see shapely.geometry.MultiPolygon)
+    # the MultiPolygon should be a 2D geometry (Z coordinate is omitted)
+    # this geometry should be obtained by parsing the "geometry" object from cityjson -> the argument of this function
+    # the geometry is a multipolygon of all the ground surfaces in the lowest available LOD
+
+    pass

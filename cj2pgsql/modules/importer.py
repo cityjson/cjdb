@@ -1,5 +1,5 @@
 from cj2pgsql.modules.geometric import calculate_object_bbox, \
-    geometry_from_extent, get_srid, reproject, resolve_geometry_vertices, to_ewkt
+    geometry_from_extent, get_ground_geometry, get_srid, reproject, resolve_geometry_vertices, to_ewkt
 from cj2pgsql.modules.utils import get_db_engine
 import os
 import json
@@ -26,6 +26,7 @@ class Importer():
     def run_import(self):
         self.prepare_database()
         self.parse_cityjson()
+        self.post_import()
 
         self.import_meta.finished_at = func.now()
         self.session.commit()
@@ -51,6 +52,11 @@ class Importer():
 
         else:
             raise Exception(f"Path: '{source_path}' not found")
+
+    def post_import(self):
+        with open("model/post_import.sql") as f:
+            cmd = f.read().format(schema=self.args.db_schema)
+        self.engine.execute(cmd)
         
     def process_line(self, line):
         line_json = json.loads(line)
@@ -88,6 +94,9 @@ class Importer():
                 if self.args.target_srid != self.source_srid:
                     bbox = reproject(bbox, self.source_srid, self.args.target_srid)
 
+                # todo by Lan Yan
+                geom_2d = get_ground_geometry(geometry)
+
                 cj_object = CjObjectModel(
                     object_id=obj_id,
                     type=cityobj.get("type"),
@@ -114,7 +123,12 @@ class Importer():
 
     def process_directory(self, dir_path):
         print("Running import for directory: ", dir_path)
+
+        # todo add warning when files have different SRIDS
+        current_srid = None
         ext = (".jsonl")
         for f in os.scandir(dir_path):
             if f.path.endswith(ext):
                 self.process_file(f.path)
+
+                current_srid = self.source_srid
