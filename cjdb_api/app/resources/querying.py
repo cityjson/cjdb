@@ -17,18 +17,18 @@ class all(Resource):
 
         return cityjson_list_schema.dump(all)
 
-class QueryById(Resource):
-    @classmethod
-    def get(cls, obj_id: str):
+# class QueryById(Resource):
+#     @classmethod
+#     def get(cls, obj_id: str):
+#
+#         cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == str(obj_id))
+#
+#         if not cj_object:
+#             return {"message": "Object not found"}, 404
+#
+#         return cityjson_list_schema.dump(cj_object)
 
-        cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == str(obj_id))
-
-        if not cj_object:
-            return {"message": "Object not found"}, 404
-
-        return cityjson_list_schema.dump(cj_object)
-
-class QueryByAnything(Resource):
+class QueryByAttribute(Resource):
     @classmethod
     def get(cls, attrib: str, value: str):
         cj_object = session.query(CjObjectModel).filter(getattr(CjObjectModel, attrib) == str(value))
@@ -47,3 +47,17 @@ class QueryByAttributeResource(Resource):
 class QueryByGeometry(Resource):
     pass
     # todo: querying by geometry (bbox?)
+
+## For now I would want this function to just calculate the area of a given object
+class CalculateArea (Resource):
+    @classmethod
+    def get(cls, object_id: str):
+        cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+
+        if not cj_object:
+            return {"message": "Object not found"}, 404
+
+        area = session.query(cj_object.bbox.ST_Area())
+        print(area)
+
+        return ("area")

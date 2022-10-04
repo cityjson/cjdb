@@ -4,9 +4,10 @@ from model.sqlalchemy_models import CjObjectModel
 
 class CityJsonSchema(ma.Schema):
     # here define fields for serialization
-    object_id = fields.String()
-    # attributes = fields.Field()
-    type = fields.String()
+    # object_id = fields.String()
+    # # attributes = fields.Field()
+    # type = fields.String()
+    bbox = fields.String()
 
     @post_load
     def make(self, data, **kwargs):
