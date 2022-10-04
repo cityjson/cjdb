@@ -7,7 +7,8 @@ class CityJsonSchema(ma.Schema):
     # object_id = fields.String()
     # # attributes = fields.Field()
     # type = fields.String()
-    bbox = fields.String()
+    # bbox = fields.String()
+    attributes = fields.String()
 
     @post_load
     def make(self, data, **kwargs):
