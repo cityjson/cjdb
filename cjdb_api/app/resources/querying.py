@@ -9,9 +9,7 @@ cityjson_list_schema = CityJsonSchema(many=True)
 class all(Resource):
     @classmethod
     def get(cls):
-        # cj_object = CjObjectModel.object_id(obj_id)
         all = session.query(CjObjectModel).all()
-
 
         if not all:
             return {"message": "Object not found"}, 404
@@ -27,6 +25,17 @@ class QueryByAttribute(Resource):
             return {"message": "Object not found"}, 404
 
         return cityjson_list_schema.dump(cj_object)
+
+class GetInfo(Resource):
+    @classmethod
+    def get(cls, attrib: str, object_id: str):
+        cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+        attribute = getattr(cj_object, attrib)
+
+        if not attribute:
+            return {"message": "Object not found"}, 404
+
+        return attribute
 
 
 ##in progress
@@ -55,17 +64,21 @@ class AddAttribute(Resource):
         for object in objects:
             listObj = object.attributes
             listObj["test_attribute"] = "test_value"
-
-        # session.commit() # This is supposed to save the changes to the DB, but it doesn't
+            object.attributes = listObj
+            session.commit() # This is supposed to save the changes to the DB, but it doesn't
 
         return cityjson_list_schema.dump(objects)
 
 
+#todo
+class FilterAttributes(Resource):
+    pass
 
 class CalculateVolume (Resource):
     pass
 
-
-class QueryByGeometry(Resource):
+class SomethingWithGeometry(Resource):
     pass
-    # todo: querying by geometry (bbox?)
+
+class Sequel(Resource):
+    pass
