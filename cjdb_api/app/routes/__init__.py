@@ -17,5 +17,7 @@ api.add_resource(query.GetInfo, "/info/<string:attrib>/<string:object_id>")
 api.add_resource(query.CalculateFootprint, "/area/<string:object_id>")
 api.add_resource(query.CalculateVolume, "/volume/<string:object_id>")
 api.add_resource(query.AddAttribute, "/update")
+api.add_resource(query.FilterAttributes, "/filter/<string:attrib>/<string:operator>/<string:value>")
+# api.add_resource(query.Sequel, "/sql")
 
 # todo add more resources when they are ready
