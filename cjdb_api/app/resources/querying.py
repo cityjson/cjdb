@@ -47,6 +47,8 @@ class FilterAttributes(Resource):
     def get(cls, attrib: str, operator:str, value: str):
         if operator == "smaller":
             cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] < value).all()
+        if operator == "equals":
+            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] < value).all()
         if operator == "bigger":
             cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] > value).all()
 
@@ -115,25 +117,13 @@ class AddAttribute(Resource):
 class CalculateVolume (Resource):
     pass
 
-class SomethingWithGeometry(Resource):
-    pass
+class Geometry(Resource):
+    @classmethod
+    def get(cls):
+        all = session.query(CjObjectModel).all()
 
-# class Sequel(Resource):
-#     @classmethod
-#     def get(cls):
-#         objects = session.query(CjObjectModel).all()
-#
-#         sql = text(("UPDATE objects SET attributes = jsonb_set(attributes::jsonb, ’{roof_area}’, ’123’)::json WHERE type = ’Building’;"))
-#
-#
-#         for object in objects:
-#             # session.execute(sql, **object)
-#             session.execute(("UPDATE objects SET attributes = jsonb_set(attributes::jsonb, ’{roof_area}’, ’123’)::json WHERE type = ’Building’;"))
-#         # objects.session.exectute("UPDATE objects SET attributes = jsonb_set(attributes::jsonb, ’{roof_area}’, ’123’)::json WHERE type = ’Building’;")
-#         # for object in objects:
-#         #     listObj = object.attributes
-#         #     listObj["test_attribute"] = "test_value"
-#         #     object.attributes = listObj
-#         #     session.commit()  # This is supposed to save the changes to the DB, but it doesn't
-#
-#         return cityjson_list_schema.dump(objects)
+        if not all:
+            return {"message": "Object not found"}, 404
+
+        return cityjson_list_schema.dump(all)
+
