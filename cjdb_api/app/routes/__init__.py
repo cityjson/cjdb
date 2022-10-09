@@ -12,9 +12,11 @@ api = Api(api_blueprint)
 api.add_resource(query.all, "/all")
 api.add_resource(query.QueryByAttribute, "/select/<string:attrib>/<string:value>")
 api.add_resource(query.GetInfo, "/info/<string:attrib>/<string:object_id>")
-
-#inprogress
+api.add_resource(query.QueryByPoint, "/point/<string:coor>")
+api.add_resource(query.QueryByBbox, "/bbox/<string:coor>")
 api.add_resource(query.CalculateFootprint, "/area/<string:object_id>")
+
+#in progress
 api.add_resource(query.CalculateVolume, "/volume/<string:object_id>")
 api.add_resource(query.AddAttribute, "/update")
 api.add_resource(query.FilterAttributes, "/filter/<string:attrib>/<string:operator>/<string:value>")
