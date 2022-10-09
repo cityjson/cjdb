@@ -1,0 +1,32 @@
+Bridge:
+  - BridgePart
+  - BridgeInstallation
+  - BridgeConstructiveElement
+  - BridgeRoom
+  - BridgeFurniture
+Building:
+  - BuildingPart
+  - BuildingInstallation
+  - BuildingConstructiveElement
+  - BuildingFurniture
+  - BuildingStorey
+  - BuildingRoom
+  - BuildingUnit
+CityFurniture:
+CityObjectGroup:
+LandUse:
+OtherConstruction:
+PlantCover:
+SolitaryVegetationObject:
+TINRelief:
+TransportationSquare:
+Railway:
+Road:
+Tunnel:
+  - TunnelPart
+  - TunnelInstallation
+  - TunnelConstructiveElement
+  - TunnelHollowSpace
+  - TunnelFurniture
+WaterBody:
+Waterway:

@@ -2,13 +2,14 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from sqlalchemy import create_engine
 import os
+import yaml
 
 
-def get_db_engine(args):
+def get_db_engine(args, echo=False):
     conn_string = f"postgresql://{args.db_user}:{args.db_password}"\
         f"@{args.db_host}:{args.db_port}/{args.db_name}"
 
-    engine = create_engine(conn_string)
+    engine = create_engine(conn_string, echo=echo)
 
     return engine
 
@@ -38,3 +39,29 @@ def fetch_query(conn, query):
 
     conn.commit()
     return result
+
+def get_cj_object_types():
+    with open("cj2pgsql/resources/object_types.yml", "r") as f:
+        try:
+            types = yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            print(exc)
+            raise
+
+    type_list = []
+    for key, val in types.items():
+        type_list.append(key)
+        if val:
+            for v in val:
+                type_list.append(v)
+
+    return sorted(type_list)
+
+
+def find_extra_properties(json_obj):
+    property_names = []
+    for key in json_obj:
+        if key.startswith("+"):
+            property_names.append(key)
+
+    return property_names

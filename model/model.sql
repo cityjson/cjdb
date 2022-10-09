@@ -1,3 +1,6 @@
+-- deprecated. It is not used anymore
+-- for integrity reasons
+-- the models defined in model/sqlalchemy_models/__init__.py are used to create the tables
 create schema if not exists {schema};
 
 create table if not exists {schema}.import_meta
@@ -24,5 +27,27 @@ create table if not exists {schema}.cj_object
     children jsonb,
     bbox geometry
 );
+
+alter table {schema}.cj_object add constraint type_ck
+check(type in (
+    "Bridge",
+    
+    "Building",
+    "CityFurniture",
+    "CityObjectGroup",
+    "LandUse",
+    "OtherConstruction",
+    "PlantCover",
+    "SolitaryVegetationObject",
+    "TINRelief",
+    "TransportationSquare",
+    "Railway",
+    "Road",
+    "Tunnel",
+    "WaterBody",
+    "Waterway",
+
+
+))
 
 -- check how to index json attribute, for example to find object by its type

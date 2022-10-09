@@ -24,7 +24,11 @@ def Parser():
                         help='Target database schema', dest="db_schema")
     parser.add_argument('-I', '--srid', type=int, default=None,
                     help='Target coordinate system', dest="target_srid")
-
+    parser.add_argument('-A', '--append', default=False,
+                action='store_const', const=True,
+                help='Run in append mode (as opposed to default create mode). \
+                This assumes the database structure exists already and new data is to be appended', 
+                dest="append_mode")
 
     return parser
 

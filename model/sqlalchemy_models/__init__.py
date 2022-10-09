@@ -19,6 +19,8 @@ class ImportMetaModel(BaseModel):
     version = Column(String(10), nullable=False)
     transform = Column(JSONB)
     meta = Column(JSONB, name="metadata")
+    extensions = Column(JSONB)
+    extra_properties = Column(JSONB)
     started_at = Column(TIMESTAMP, default=func.now())
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry('POLYGON'))

@@ -1,12 +1,14 @@
+from cj2pgsql.modules.extensions import ExtensionHandler
 from cj2pgsql.modules.geometric import calculate_object_bbox, \
-    geometry_from_extent, get_ground_geometry, get_srid, reproject, resolve_geometry_vertices, to_ewkt
-from cj2pgsql.modules.utils import get_db_engine
+    geometry_from_extent, get_ground_geometry, get_srid, \
+    reproject, resolve_geometry_vertices, to_ewkt
+from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine
 import os
 import json
 import sys
 from sqlalchemy.orm import Session
-from model.sqlalchemy_models import ImportMetaModel, CjObjectModel
-from sqlalchemy import func
+from model.sqlalchemy_models import BaseModel, ImportMetaModel, CjObjectModel
+from sqlalchemy import func, MetaData, inspect
 
 
 class Importer():
@@ -14,6 +16,8 @@ class Importer():
         self.args = args
         self.import_meta = None # meta read from the file
         self.source_srid = None
+        self.ext_handler = None
+        self.cj_object_types = get_cj_object_types()
 
     def __enter__(self):
         self.engine = get_db_engine(self.args)
@@ -24,18 +28,31 @@ class Importer():
         self.session.close()
 
     def run_import(self):
-        self.prepare_database()
+        if not self.args.append_mode:
+            self.prepare_database()
+
         self.parse_cityjson()
-        self.post_import()
+
+        if not self.args.append_mode:
+            self.post_import()
 
         self.import_meta.finished_at = func.now()
         self.session.commit()
         print(f"Imported from {self.args.filepath} successfully")
 
     def prepare_database(self):
-        with open("model/model.sql") as f:
-            cmd = f.read().format(schema=self.args.db_schema)
-        self.engine.execute(cmd)
+        self.engine.execute(f"create schema if not exists {self.args.db_schema}")
+
+        for table in BaseModel.metadata.tables.values():
+            table.schema = self.args.db_schema
+            table.create(self.engine, checkfirst=True)
+
+        # the type check constraint depends also on the extensions
+        # cj_object_types = get_cj_object_types()
+        # in_condition = ", ".join(["'" + t + "'" for t in cj_object_types])
+        # cmd = f"""alter table {CjObjectModel.__table__.schema}.{CjObjectModel.__table__.name}
+        #             add constraint check_obj_type check("type" in ({in_condition}))"""
+        # self.engine.execute(cmd)
 
     def parse_cityjson(self):
         source_path = self.args.filepath
@@ -60,7 +77,8 @@ class Importer():
         
     def process_line(self, line):
         line_json = json.loads(line)
-        if 'metadata' in line_json:
+        if "metadata" in line_json:
+            extra_root_properties = find_extra_properties(line_json)
             self.source_srid = get_srid(line_json["metadata"].get("referenceSystem"))
 
             if not self.args.target_srid:
@@ -70,11 +88,25 @@ class Importer():
             if self.args.target_srid != self.source_srid:
                 bbox = reproject(bbox, self.source_srid, self.args.target_srid)
 
+            if "extensions" in line_json:
+                self.ext_handler = ExtensionHandler(line_json["extensions"])
+                pass
+                # ext_handler.check_root_properties(extra_root_properties)
+                # check the appearing properties against the extension definition
+                # todo check extra root props, extra attributes and extra objs
+
+            extra_properties_obj = {}
+            for prop_name in extra_root_properties:
+                extra_properties_obj[prop_name] = line_json[prop_name]
+                
+
             import_meta = ImportMetaModel(
                 source_file=os.path.basename(self.args.filepath),
                 version=line_json["version"],
                 transform=line_json["transform"],
                 meta=line_json["metadata"],
+                extensions=line_json.get("extensions", {}),
+                extra_properties=extra_properties_obj,
                 bbox=to_ewkt(bbox.wkt, self.args.target_srid)
             )
 
@@ -96,6 +128,9 @@ class Importer():
 
                 # todo by Lan Yan
                 geom_2d = get_ground_geometry(geometry)
+
+                # todo check if the object type is allowed
+                # self.ext_handler.validate_object_type
 
                 cj_object = CjObjectModel(
                     object_id=obj_id,

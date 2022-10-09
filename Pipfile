@@ -16,6 +16,7 @@ flask-restful = "*"
 mypy = "*"
 shapely = "*"
 pyproj = "*"
+pyyaml = "*"
 
 [dev-packages]
 
