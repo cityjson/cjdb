@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All CityJSON objects</title>
+    <style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #dddddd;
+    }
+    </style>
+</head>
+<body>
+<h2>All CityJSON Objects</h2>
+<table>
+    <tr>{% for header in headings %}
+        <th>{{ header}}</th>
+        {% endfor %}
+    </tr>
+    {% for row in data%}
+    <tr>
+        {% for cell in row %}
+        <td>{{ cell }}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+</body>
+</html>
