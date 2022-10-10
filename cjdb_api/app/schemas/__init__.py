@@ -2,7 +2,7 @@ from cjdb_api.app.ma import ma
 from marshmallow import fields, post_load
 from model.sqlalchemy_models import CjObjectModel
 
-class CityJsonSchema(ma.Schema):
+class CjObjectSchema(ma.Schema):
     # here define fields for serialization
     # object_id = fields.String()
     # # attributes = fields.Field()

@@ -1,10 +1,10 @@
 from flask_restful import Resource
 from model.sqlalchemy_models import CjObjectModel
-from cjdb_api.app.schemas import CityJsonSchema
+from cjdb_api.app.schemas import CjObjectSchema
 from cjdb_api.app.db import session, engine
 from sqlalchemy.sql import text
-cityjson_schema = CityJsonSchema()
-cityjson_list_schema = CityJsonSchema(many=True)
+cityjson_schema = CjObjectSchema()
+cityjson_list_schema = CjObjectSchema(many=True)
 
 ##working
 
