@@ -1,3 +1,4 @@
+from cj2pgsql.modules.checks import check_object_type, check_root_properties
 from cj2pgsql.modules.extensions import ExtensionHandler
 from cj2pgsql.modules.geometric import calculate_object_bbox, \
     geometry_from_extent, get_ground_geometry, get_srid, \
@@ -16,7 +17,7 @@ class Importer():
         self.args = args
         self.import_meta = None # meta read from the file
         self.source_srid = None
-        self.ext_handler = None
+        self.extension_handler = None
         self.cj_object_types = get_cj_object_types()
 
     def __enter__(self):
@@ -88,18 +89,20 @@ class Importer():
             if self.args.target_srid != self.source_srid:
                 bbox = reproject(bbox, self.source_srid, self.args.target_srid)
 
-            if "extensions" in line_json:
-                self.ext_handler = ExtensionHandler(line_json["extensions"])
-                pass
-                # ext_handler.check_root_properties(extra_root_properties)
-                # check the appearing properties against the extension definition
-                # todo check extra root props, extra attributes and extra objs
+            # store extensions data - extra root properties, extra city objects...
+            self.extension_handler = ExtensionHandler(line_json.get("extensions"))
+            # ext_handler.check_root_properties(extra_root_properties)
+            # check the appearing properties against the extension definition
+            # todo check extra root props, extra attributes and extra objs
 
+            # prepare extra properties coming from extensions
             extra_properties_obj = {}
             for prop_name in extra_root_properties:
                 extra_properties_obj[prop_name] = line_json[prop_name]
-                
 
+            check_root_properties(extra_root_properties,
+                                    self.extension_handler.extra_root_properties)
+                
             import_meta = ImportMetaModel(
                 source_file=os.path.basename(self.args.filepath),
                 version=line_json["version"],
@@ -129,8 +132,13 @@ class Importer():
                 # todo by Lan Yan
                 geom_2d = get_ground_geometry(geometry)
 
-                # todo check if the object type is allowed
-                # self.ext_handler.validate_object_type
+                # check if the object type is allowed by the official spec or extension
+                # todo - object types should be fetched from the matching CityJSON version
+                # https://3d.bk.tudelft.nl/schemas/cityjson/
+                check_result, msg = check_object_type(cityobj.get("type"), 
+                                    self.cj_object_types, 
+                                    self.extension_handler.extra_city_objects)
+                assert check_result, msg
 
                 cj_object = CjObjectModel(
                     object_id=obj_id,

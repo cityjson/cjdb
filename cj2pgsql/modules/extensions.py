@@ -8,8 +8,9 @@ class ExtensionHandler:
         self.extra_root_properties = []
         self.extra_attributes = {}
         self.extra_city_objects = []
-
-        self.get_extensions(extensions)
+        
+        if extensions:
+            self.get_extensions(extensions)
 
     def get_extensions(self, extensions):
         for ext_name, content in extensions.items():

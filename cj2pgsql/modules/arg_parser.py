@@ -38,4 +38,5 @@ def Parser():
 def validate_args(args):
     if not args.db_password:
         args.db_password = getpass(prompt=f'Password for user "{args.db_user}": ')
+        
     return True, ""
