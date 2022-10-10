@@ -1,3 +1,4 @@
+from flask import render_template, make_response
 from flask_restful import Resource
 from model.sqlalchemy_models import CjObjectModel
 from cjdb_api.app.schemas import CjObjectSchema
@@ -5,6 +6,15 @@ from cjdb_api.app.db import session, engine
 from sqlalchemy.sql import text
 cityjson_schema = CjObjectSchema()
 cityjson_list_schema = CjObjectSchema(many=True)
+
+def parse_table(parse):
+    # convert cityjson schema to a list of headers and a list of lists of values
+    headings = list(parse[0].keys())
+    data = []
+    for item in parse:
+        data.append(list(item.values()))
+
+    return headings, data
 
 ##working
 
@@ -17,7 +27,9 @@ class all(Resource):
         if not all:
             return {"message": "Object not found"}, 404
 
-        return cityjson_list_schema.dump(all)
+        headings, data = parse_table(cityjson_list_schema.dump(all))
+
+        return make_response(render_template("all.html", headings=headings, data=data))
 
 ##Get all the information of an object, given a certain value: So for instance, select building with object_id NL.IMBAG.Pand.0518100000213709-0, or select building with id 2
 class QueryByAttribute(Resource):
@@ -58,7 +70,36 @@ class FilterAttributes(Resource):
         return cityjson_list_schema.dump(cj_object)
 
 
-##in progress
+# Given point 2D coordinates, like (81402.6705,451405.4224), return the object_id
+class QueryByPoint(Resource):
+    @classmethod
+    def get(cls, coor: str):
+        sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakePoint'+coor)
+        results = engine.execute(sql)
+
+        # View the records
+        for record in results:
+            building = record[2]
+
+        # test URL: http://127.0.0.1:5000/api/point/(81402.6705,451405.4224)
+        return building
+
+# Given 2D bounding box, like (81400, 451400, 81600, 451600), return the table of object_id
+class QueryByBbox(Resource):
+    @classmethod
+    def get(cls, coor: str):
+        sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakeEnvelope'+coor)
+        results = engine.execute(sql)
+
+        # View the records
+        record_list = []
+        for record in results:
+            record_list.append(record[2])
+
+        # test URL: http://127.0.0.1:5000/api/bbox/(81400, 451400, 81600, 451600)
+        return record_list
+
+# Given an object_id, return the value of the footprint area
 class CalculateFootprint(Resource):
     @classmethod
     def get(cls, object_id: str):
@@ -68,15 +109,17 @@ class CalculateFootprint(Resource):
             return {"message": "Object not found"}, 404
 
         with engine.connect() as connection:
-            area = connection.execute(cj_object.bbox.ST_Area())
+            area_pointer = connection.execute(cj_object.bbox.ST_Area())
 
-            if not area:
-                return {"message": "Object not found"}, 404
-            print(area) # outputs: "<sqlalchemy.engine.cursor.LegacyCursorResult object at 0x000002322DFAA2B0>" But want to have the area
+        for row in area_pointer:
+            area = row[0]
 
-        return ("area")
+        if not area:
+            return {"message": "Object not found"}, 404
 
+        return area
 
+## in progress
 class AddAttribute(Resource):
     @classmethod
     def get(cls):
