@@ -13,6 +13,6 @@ def check_object_type(checked_type, allowed_types, extended_types):
     all_types = allowed_types + extended_types
     if checked_type not in all_types:
         check_result = False
-        message = f"CityJSON object type '{checked_type}' not allowed by main schema nor extensions."
+        message = f"Warning: CityJSON object type '{checked_type}' not allowed by main schema nor extensions."
 
     return check_result, message

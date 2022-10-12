@@ -135,10 +135,11 @@ class Importer():
                 # check if the object type is allowed by the official spec or extension
                 # todo - object types should be fetched from the matching CityJSON version
                 # https://3d.bk.tudelft.nl/schemas/cityjson/
-                check_result, msg = check_object_type(cityobj.get("type"), 
+                check_result, message = check_object_type(cityobj.get("type"), 
                                     self.cj_object_types, 
                                     self.extension_handler.extra_city_objects)
-                assert check_result, msg
+                if not check_result:
+                    print(message)
 
                 cj_object = CjObjectModel(
                     object_id=obj_id,
