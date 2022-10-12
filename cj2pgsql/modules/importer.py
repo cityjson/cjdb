@@ -75,6 +75,7 @@ class Importer():
         with open("model/post_import.sql") as f:
             cmd = f.read().format(schema=self.args.db_schema)
         self.engine.execute(cmd)
+        self.index_attributes()
         
     def process_line(self, line):
         line_json = json.loads(line)
@@ -176,3 +177,8 @@ class Importer():
                 self.process_file(f.path)
 
                 current_srid = self.source_srid
+
+    def index_attributes(self):
+        for attr_name in self.args.indexed_attributes:
+            print(f"Indexing CityObject attribute: '{attr_name}'")
+            # todo create index on the json attribute

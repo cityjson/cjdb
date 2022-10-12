@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Welcome to CJDB’s documentation! &#8212; CJDB 1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="welcome-to-cjdb-s-documentation">
+<h1>Welcome to CJDB’s documentation!<a class="headerlink" href="#welcome-to-cjdb-s-documentation" title="Permalink to this heading">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+<section id="cj2pgsql-cli">
+<h1>cj2pgsql CLI<a class="headerlink" href="#cj2pgsql-cli" title="Permalink to this heading">¶</a></h1>
+<p><p>Import CityJSON to a PostgreSQL database</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">cj2pgsql</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">H</span> <span class="n">DB_HOST</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">DB_PORT</span><span class="p">]</span> <span class="o">-</span><span class="n">U</span> <span class="n">DB_USER</span> <span class="p">[</span><span class="o">-</span><span class="n">W</span> <span class="n">DB_PASSWORD</span><span class="p">]</span> <span class="o">-</span><span class="n">d</span> <span class="n">DB_NAME</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">DB_SCHEMA</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">I</span> <span class="n">TARGET_SRID</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="n">INDEXED_ATTRIBUTES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">A</span><span class="p">]</span>
+                <span class="p">[</span><span class="n">file_or_directory</span><span class="p">]</span>
+</pre></div>
+</div>
+<section id="Positional Arguments">
+<h2>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this heading">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>file_or_directory</kbd></dt>
+<dd><p>Source CityJSONL file or a directory with CityJSONL files. STDIN if not specified.</p>
+<p>Default: “stdin”</p>
+</dd>
+</dl>
+</section>
+<section id="Named Arguments">
+<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this heading">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>-H, --host</kbd></dt>
+<dd><p>PostgreSQL database host</p>
+<p>Default: “localhost”</p>
+</dd>
+<dt><kbd>-p, --port</kbd></dt>
+<dd><p>PostgreSQL database port</p>
+<p>Default: 5432</p>
+</dd>
+<dt><kbd>-U, --user</kbd></dt>
+<dd><p>PostgreSQL database user name</p>
+</dd>
+<dt><kbd>-W, --password</kbd></dt>
+<dd><p>Target database schema</p>
+</dd>
+<dt><kbd>-d, --database</kbd></dt>
+<dd><p>PostgreSQL database name</p>
+</dd>
+<dt><kbd>-s, --schema</kbd></dt>
+<dd><p>Target database schema</p>
+<p>Default: “public”</p>
+</dd>
+<dt><kbd>-I, --srid</kbd></dt>
+<dd><p>Target coordinate system</p>
+</dd>
+<dt><kbd>-x, --attr-index</kbd></dt>
+<dd><p>CityObject attribute to be indexed. Can be specified multiple times, for each attribute once</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>-A, --append</kbd></dt>
+<dd><p>Run in append mode (as opposed to default create mode).                 This assumes the database structure exists already and new data is to be appended</p>
+<p>Default: False</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">CJDB</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, TU Delft.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.2.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

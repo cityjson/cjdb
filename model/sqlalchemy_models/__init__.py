@@ -25,6 +25,13 @@ class ImportMetaModel(BaseModel):
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry('POLYGON'))
 
+    def compare_existing(self):
+        pass
+        # todo check existing import meta records
+        # if there is already a file with this name, ask for confirmation
+        # if the CRS doesn't match, tell the user that he has to specify one crs, which will be applied for all
+        
+
 
 class CjObjectModel(BaseModel):
     __tablename__ = 'cj_object'

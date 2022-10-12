@@ -24,6 +24,10 @@ def Parser():
                         help='Target database schema', dest="db_schema")
     parser.add_argument('-I', '--srid', type=int, default=None,
                     help='Target coordinate system', dest="target_srid")
+    parser.add_argument('-x', '--attr-index', type=str,
+                    action='append', default=[],
+                    help='CityObject attribute to be indexed. Can be specified multiple times, for each attribute once', 
+                    dest="indexed_attributes")
     parser.add_argument('-A', '--append', default=False,
                 action='store_const', const=True,
                 help='Run in append mode (as opposed to default create mode). \
