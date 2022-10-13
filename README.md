@@ -8,12 +8,16 @@ See [cj2pgsql/README.md](cj2pgsql/README.md)
 See [cjdb_api/README.md](cjdb_api/README.md)
 
 ### Generating documentation
-Make sure sphinx is installed:
+1. Make sure sphinx is installed:
 ```
 pip3 install python3-sphinx sphinx-argparse
 ```
 
-Generate documentation command:
+2. Generate documentation command, called from repository root:
+```
+make docs
+```
+or:
 ```
 sphinx-build -b html docs/config docs/content 
 ```
