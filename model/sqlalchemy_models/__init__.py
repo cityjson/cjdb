@@ -11,16 +11,18 @@ class BaseModel(Base):
     __abstract__ = True
     id = Column(Integer, primary_key=True)
 
+def NullableJSONB():
+    return JSONB(none_as_null=True)
 
 class ImportMetaModel(BaseModel):
     __tablename__ = 'import_meta'
     __table_args__ = {'schema':'cjdb'}
     source_file = Column(String)
     version = Column(String(10), nullable=False)
-    transform = Column(JSONB)
+    transform = Column(NullableJSONB())
     meta = Column(JSONB, name="metadata")
-    extensions = Column(JSONB)
-    extra_properties = Column(JSONB)
+    extensions = Column(NullableJSONB())
+    extra_properties = Column(NullableJSONB())
     started_at = Column(TIMESTAMP, default=func.now())
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry('POLYGON'))
@@ -39,10 +41,10 @@ class CjObjectModel(BaseModel):
     import_meta_id = Column(Integer, ForeignKey(ImportMetaModel.id))
     object_id = Column(String, nullable=False, unique=True)
     type = Column(String, nullable=False)
-    attributes = Column(JSONB)
-    geometry = Column(JSONB)
-    parents = Column(JSONB)
-    children = Column(JSONB)
+    attributes = Column(NullableJSONB())
+    geometry = Column(NullableJSONB())
+    parents = Column(NullableJSONB())
+    children = Column(NullableJSONB())
     bbox = Column(Geometry('POLYGON'))
 
     import_meta = relationship(ImportMetaModel)

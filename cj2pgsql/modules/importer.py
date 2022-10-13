@@ -104,13 +104,14 @@ class Importer():
             check_root_properties(extra_root_properties,
                                     self.extension_handler.extra_root_properties)
                 
+            # or None is added to change empty json "{}" to database null
             import_meta = ImportMetaModel(
                 source_file=os.path.basename(self.args.filepath),
                 version=line_json["version"],
-                transform=line_json["transform"],
-                meta=line_json["metadata"],
-                extensions=line_json.get("extensions", {}),
-                extra_properties=extra_properties_obj,
+                transform=line_json.get("transform") or None,
+                meta=line_json.get("metadata") or None,
+                extensions=line_json.get("extensions") or None,
+                extra_properties=extra_properties_obj or None,
                 bbox=to_ewkt(bbox.wkt, self.args.target_srid)
             )
 
@@ -142,10 +143,11 @@ class Importer():
                 if not check_result:
                     print(message)
 
+                # or None is added to change empty json "{}" to database null
                 cj_object = CjObjectModel(
                     object_id=obj_id,
                     type=cityobj.get("type"),
-                    attributes=cityobj.get("attributes"),
+                    attributes=cityobj.get("attributes") or None,
                     geometry=geometry,
                     parents=cityobj.get("parents"),
                     children=cityobj.get("children"),
