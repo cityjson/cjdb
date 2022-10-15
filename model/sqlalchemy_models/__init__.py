@@ -21,18 +21,38 @@ class ImportMetaModel(BaseModel):
     version = Column(String(10), nullable=False)
     transform = Column(NullableJSONB())
     meta = Column(JSONB, name="metadata")
+    srid = Column(Integer)
     extensions = Column(NullableJSONB())
     extra_properties = Column(NullableJSONB())
     started_at = Column(TIMESTAMP, default=func.now())
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry('POLYGON'))
 
-    def compare_existing(self):
+    def compare_existing(self, session, ignore_repeated_file):
+        result_ok = True
+
+        # check if the file was already imported
+        if self.source_file.lower() != 'stdin' and not ignore_repeated_file:
+            same_source_import = session.query(ImportMetaModel)\
+                .filter_by(source_file=self.source_file)\
+                .filter(ImportMetaModel.finished_at.isnot(None))\
+                .order_by(ImportMetaModel.finished_at.desc())\
+                .first()
+            if same_source_import:
+                print(f"\nFile '{self.source_file}' was previously imported at {same_source_import.finished_at}.\n" \
+                        "Use the -g flag to suppress this warning")
+                user_answer = input("Should the import continue?\n [y / n]\n")
+                if user_answer.lower() != "y":
+                    print("Cancelling import")
+                    return False
+    
+        # check if the CRS is consistent with other imports
+        this_crs = self.meta["referenceSystem"]
+        different_crs = session.query(ImportMetaModel)\
+                            .filter(ImportMetaModel.meta["referenceSystem"].astext != this_crs).first()
         pass
-        # todo check existing import meta records
-        # if there is already a file with this name, ask for confirmation
         # if the CRS doesn't match, tell the user that he has to specify one crs, which will be applied for all
-        
+        return result_ok
 
 
 class CjObjectModel(BaseModel):

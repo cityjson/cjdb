@@ -17,6 +17,8 @@ mypy = "*"
 shapely = "*"
 pyproj = "*"
 pyyaml = "*"
+pygeofilter = {extras = ["backend-sqalchemy"], version = "*"}
+pygeoif = "==0.7"
 
 [dev-packages]
 

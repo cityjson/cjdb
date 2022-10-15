@@ -1,9 +1,13 @@
-from flask import render_template, make_response
+from flask import render_template, make_response, request
 from flask_restful import Resource
 from model.sqlalchemy_models import CjObjectModel
 from cjdb_api.app.schemas import CjObjectSchema
 from cjdb_api.app.db import session, engine
 from sqlalchemy.sql import text
+from pygeofilter.parsers.cql_json import parse as parse_json
+from pygeofilter.parsers.ecql import parse as parse_ecql
+from pygeofilter.backends.sqlalchemy import to_filter
+
 cityjson_schema = CjObjectSchema()
 cityjson_list_schema = CjObjectSchema(many=True)
 
@@ -170,3 +174,30 @@ class Geometry(Resource):
 
         return cityjson_list_schema.dump(all)
 
+class CQL_query(Resource):
+    @classmethod
+    def get(cls):
+        cql_filter = request.args.get("cql_filter") or request.args.get("CQL_FILTER")
+        filters = parse_ecql(cql_filter)
+        
+
+        FIELD_MAPPING = {
+            "object_id": CjObjectModel.object_id,
+            "type": CjObjectModel.type,
+            "bbox": CjObjectModel.bbox,
+
+            ## jsonb attributes:
+            # this needs to be dynamically filled based on the available attributes
+            # for now, this is an example for testing
+            # also to do: what happens if the user queries by attribute that does not exist?
+            "data_area": CjObjectModel.attributes["data_area"].as_float()
+        }
+        
+        # the external library converts the CQL_filter to an sqlalchemy_filter
+        sqlalchemy_filters = to_filter(filters, FIELD_MAPPING)
+        
+        # apply the filter here:
+        query = session.query(CjObjectModel).filter(sqlalchemy_filters)
+        cj_objects = query.all()
+
+        return cityjson_list_schema.dump(cj_objects)
