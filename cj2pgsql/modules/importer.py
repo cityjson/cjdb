@@ -11,14 +11,22 @@ from sqlalchemy.orm import Session
 from model.sqlalchemy_models import BaseModel, ImportMetaModel, CjObjectModel
 from sqlalchemy import func, MetaData, inspect
 
-
-class Importer():
-    def __init__(self, args):
-        self.args = args
+# class to store variables per file import - for clarity
+class SingleFileImport:
+    def __init__(self, file="stdin"):
+        self.file = file
+        self.target_srid = None
         self.import_meta = None # meta read from the file
         self.source_srid = None
         self.extension_handler = None
+
+
+class Importer:
+    def __init__(self, args):
+        self.args = args
         self.cj_object_types = get_cj_object_types()
+        self.current = SingleFileImport()
+
 
     def __enter__(self):
         self.engine = get_db_engine(self.args)
@@ -33,11 +41,13 @@ class Importer():
             self.prepare_database()
 
         self.parse_cityjson()
+        self.session.commit()
 
+        # post import operations like clustering, indexing...
         if not self.args.append_mode:
             self.post_import()
 
-        self.import_meta.finished_at = func.now()
+        self.current.import_meta.finished_at = func.now()
         self.session.commit()
         print(f"Imported from {self.args.filepath} successfully")
 
@@ -81,43 +91,53 @@ class Importer():
         line_json = json.loads(line)
         if "metadata" in line_json:
             extra_root_properties = find_extra_properties(line_json)
-            self.source_srid = get_srid(line_json["metadata"].get("referenceSystem"))
+            self.current.source_srid = get_srid(line_json["metadata"].get("referenceSystem"))
 
-            if not self.args.target_srid:
-                self.args.target_srid = self.source_srid
+            if self.args.target_srid:
+                self.current.target_srid = self.args.target_srid
+            else:
+                self.current.target_srid = self.current.source_srid
 
             bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
-            if self.args.target_srid != self.source_srid:
-                bbox = reproject(bbox, self.source_srid, self.args.target_srid)
+            bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
+            if self.current.target_srid != self.current.source_srid:
+                # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
+                bbox = func.st_transform(bbox, self.current.target_srid)
+
 
             # store extensions data - extra root properties, extra city objects...
-            self.extension_handler = ExtensionHandler(line_json.get("extensions"))
-            # ext_handler.check_root_properties(extra_root_properties)
-            # check the appearing properties against the extension definition
-            # todo check extra root props, extra attributes and extra objs
+            self.current.extension_handler = ExtensionHandler(line_json.get("extensions"))
 
             # prepare extra properties coming from extensions
             extra_properties_obj = {}
             for prop_name in extra_root_properties:
                 extra_properties_obj[prop_name] = line_json[prop_name]
 
+            # check the ocurring properties against the extension definition
             check_root_properties(extra_root_properties,
-                                    self.extension_handler.extra_root_properties)
+                                    self.current.extension_handler.extra_root_properties)
                 
-            # or None is added to change empty json "{}" to database null
+            # "or None" is added to change empty json "{}" to database null
             import_meta = ImportMetaModel(
-                source_file=os.path.basename(self.args.filepath),
+                source_file=os.path.basename(self.current.file),
                 version=line_json["version"],
                 transform=line_json.get("transform") or None,
                 meta=line_json.get("metadata") or None,
+                srid=self.current.target_srid,
                 extensions=line_json.get("extensions") or None,
                 extra_properties=extra_properties_obj or None,
-                bbox=to_ewkt(bbox.wkt, self.args.target_srid)
+                # bbox=to_ewkt(bbox.wkt, self.current.target_srid)
+                bbox=bbox
             )
 
-            self.import_meta = import_meta
+            result_ok = import_meta.compare_existing(self.session, 
+                                                    self.args.ignore_repeated_file)
+            if not result_ok:
+                print("Cancelling import")
+                sys.exit()
+
             import_meta.__table__.schema = self.args.db_schema
-            self.import_meta = import_meta
+            self.current.import_meta = import_meta
             self.session.add(import_meta)
             self.session.commit()
         else:
@@ -125,11 +145,15 @@ class Importer():
             for obj_id, cityobj in line_json["CityObjects"].items():
                 geometry = resolve_geometry_vertices(cityobj.get("geometry"), 
                                                     line_json.get("vertices"),
-                                                    self.import_meta.transform)
+                                                    self.current.import_meta.transform)
 
                 bbox = calculate_object_bbox(geometry)
-                if self.args.target_srid != self.source_srid:
-                    bbox = reproject(bbox, self.source_srid, self.args.target_srid)
+                bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
+                # todo - reprojection of the 3D geometry
+                # todo - reprojection of the 2d ground geometry
+                if self.current.target_srid != self.current.source_srid:
+                    # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
+                    bbox = func.st_transform(bbox, self.current.target_srid)
 
                 # todo by Lan Yan
                 geom_2d = get_ground_geometry(geometry)
@@ -139,7 +163,7 @@ class Importer():
                 # https://3d.bk.tudelft.nl/schemas/cityjson/
                 check_result, message = check_object_type(cityobj.get("type"), 
                                     self.cj_object_types, 
-                                    self.extension_handler.extra_city_objects)
+                                    self.current.extension_handler.extra_city_objects)
                 if not check_result:
                     print(message)
 
@@ -151,34 +175,31 @@ class Importer():
                     geometry=geometry,
                     parents=cityobj.get("parents"),
                     children=cityobj.get("children"),
-                    bbox=to_ewkt(bbox.wkt, self.args.target_srid)
+                    # bbox=to_ewkt(bbox.wkt, self.current.target_srid)
+                    bbox=bbox
                 )
 
                 cj_object.__table__.schema = self.args.db_schema
-                cj_object.import_meta = self.import_meta
+                cj_object.import_meta = self.current.import_meta
                 self.session.add(cj_object)
 
     def process_file(self, filepath):
+        self.current = SingleFileImport(filepath)
         print("Running import for file: ", filepath)
 
         with open(filepath) as f:
             for line in f.readlines():
                 self.process_line(line)
 
-        self.import_meta.finished_at = func.now()
+        self.current.import_meta.finished_at = func.now()
         self.session.commit()
 
     def process_directory(self, dir_path):
         print("Running import for directory: ", dir_path)
-
-        # todo add warning when files have different SRIDS
-        current_srid = None
         ext = (".jsonl")
         for f in os.scandir(dir_path):
             if f.path.endswith(ext):
                 self.process_file(f.path)
-
-                current_srid = self.source_srid
 
     def index_attributes(self):
         for attr_name in self.args.indexed_attributes:

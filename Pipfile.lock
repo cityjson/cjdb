@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c5f04ada2f6189f6aa9dfbe9ba84bf772cc1bb2227fb267fd6dd2d03e6d77256"
+            "sha256": "c6ce3e242bfd7988c333ef089c7184d40dd059306bba46de86a0ef0e4e79713c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -372,7 +372,7 @@
         },
         "pygeofilter": {
             "extras": [
-                "backend-sqalchemy"
+                "backend-sqlalchemy"
             ],
             "hashes": [
                 "sha256:52b3da451ecd31ea2d30cc526d4a8cd227e84e1883cd7f43439b345f4ea47a2c",

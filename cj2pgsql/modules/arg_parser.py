@@ -23,16 +23,20 @@ def Parser():
     parser.add_argument('-s', '--schema', type=str, default='public',
                         help='Target database schema', dest="db_schema")
     parser.add_argument('-I', '--srid', type=int, default=None,
-                    help='Target coordinate system', dest="target_srid")
+                    help='Target coordinate system SRID', dest="target_srid")
     parser.add_argument('-x', '--attr-index', type=str,
                     action='append', default=[],
                     help='CityObject attribute to be indexed. Can be specified multiple times, for each attribute once', 
                     dest="indexed_attributes")
-    parser.add_argument('-A', '--append', default=False,
+    parser.add_argument('-a', '--append', default=False,
                 action='store_const', const=True,
                 help='Run in append mode (as opposed to default create mode). \
                 This assumes the database structure exists already and new data is to be appended', 
                 dest="append_mode")
+    parser.add_argument('-g', '--ignore-repeated-file', default=False,
+                action='store_const', const=True,
+                help='Ignore repeated file names warning when importing.',
+                dest="ignore_repeated_file")
 
     return parser
 

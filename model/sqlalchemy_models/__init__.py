@@ -43,15 +43,22 @@ class ImportMetaModel(BaseModel):
                         "Use the -g flag to suppress this warning")
                 user_answer = input("Should the import continue?\n [y / n]\n")
                 if user_answer.lower() != "y":
-                    print("Cancelling import")
                     return False
     
         # check if the CRS is consistent with other imports
-        this_crs = self.meta["referenceSystem"]
-        different_crs = session.query(ImportMetaModel)\
-                            .filter(ImportMetaModel.meta["referenceSystem"].astext != this_crs).first()
-        pass
-        # if the CRS doesn't match, tell the user that he has to specify one crs, which will be applied for all
+        different_srid_meta = session.query(ImportMetaModel)\
+                            .filter(ImportMetaModel.srid != self.srid)\
+                            .filter(ImportMetaModel.finished_at.isnot(None))\
+                            .order_by(ImportMetaModel.finished_at.desc())\
+                            .first()
+
+        if different_srid_meta:
+            print("Inconsistent Coordinate Reference Systems detected")
+            print(f"Currently imported SRID: {self.srid}")
+            print(f"Recently imported SRID: {different_srid_meta.srid}")
+            print("Use the '-I/--srid' flag to reproject everything to a single specified CRS.")
+            return False
+
         return result_ok
 
 

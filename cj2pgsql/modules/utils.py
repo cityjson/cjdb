@@ -40,6 +40,7 @@ def fetch_query(conn, query):
     conn.commit()
     return result
 
+# todo - this should take available object types from the official spec
 def get_cj_object_types():
     with open("cj2pgsql/resources/object_types.yml", "r") as f:
         try:
