@@ -60,20 +60,17 @@ def resolve(lod_level, vertices):
                     for vertex_id in ring:
                         xyz = vertices[vertex_id]
                         new_ring.append(xyz)
-                        if type(xyz) != list:
-                            pass
                     shell[j] = new_ring
             else:
                 new_shell = []
                 for vertex_id in shell:
                     xyz = vertices[vertex_id]
                     new_shell.append(xyz)
-                    if type(xyz) != list:
-                            pass
                 boundary[i] = new_shell
 
 
 def resolve_template(lod_level, transformed_vertices, geometry_templates):
+    # get anchor point
     vertex_id = lod_level["boundaries"][0]
     anchor = transformed_vertices[vertex_id]
 
@@ -83,11 +80,12 @@ def resolve_template(lod_level, transformed_vertices, geometry_templates):
 
     # add anchor point to the vertices
     template_vertices = [list(np.array(v) + anchor) for v in template_vertices]
+
+    # dereference template vertices
     template_id = lod_level["template"]
     template = geometry_templates["templates"][template_id]
-
-    # dereference vertex indexes
     resolve(template, template_vertices)
+
     return template
 
 
@@ -107,10 +105,10 @@ def resolve_geometry_vertices(geometry, vertices, transform, geometry_templates)
         else:
             # resolve without geometry template
             resolve(lod_level, transformed_vertices)
+
     return geometry
 
-# todo
-# should return geometry as EWKT format
+
 def calculate_object_bbox(geometry):
     min_X, min_Y = float('inf'), float('inf')
     max_X, max_Y = -float('inf'), -float('inf')
