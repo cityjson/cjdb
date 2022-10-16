@@ -2,12 +2,15 @@
 from shapely.geometry import box, MultiPolygon
 from shapely.ops import transform
 from pyproj import CRS, Transformer
+import numpy as np
+
 
 def get_srid(crs):
-    proj = CRS.from_string(crs)
-    srid = proj.to_epsg()
+    if crs:
+        proj = CRS.from_string(crs)
+        srid = proj.to_epsg()
 
-    return srid
+        return srid
 
 
 def to_ewkt(wkt, srid):
@@ -34,37 +37,76 @@ def transform_vertex(vertex, transform):
 
     return vertex
 
+
+def transform_with_rotation(vertex, transform):
+    homo_vertex = np.array([vertex + [1]]).T
+    t_matrix = np.reshape(transform, (4, 4))
+
+    transformed_vertex = np.dot(t_matrix, homo_vertex)
+    return list(transformed_vertex.T[0])[:-1]
+
+
 def geometry_from_extent(extent):
     bbox = box(extent[0], extent[1], extent[3], extent[4])
     return bbox
 
-def resolve_geometry_vertices(geometry, vertices, transform):
+
+def resolve(lod_level, vertices):
+    for boundary in lod_level['boundaries']:
+        for i, shell in enumerate(boundary):
+            if type(shell[0]) is list:
+                for j, ring in enumerate(shell):
+                    new_ring = []
+                    for vertex_id in ring:
+                        xyz = vertices[vertex_id]
+                        new_ring.append(xyz)
+                        if type(xyz) != list:
+                            pass
+                    shell[j] = new_ring
+            else:
+                new_shell = []
+                for vertex_id in shell:
+                    xyz = vertices[vertex_id]
+                    new_shell.append(xyz)
+                    if type(xyz) != list:
+                            pass
+                boundary[i] = new_shell
+
+
+def resolve_template(lod_level, transformed_vertices, geometry_templates):
+    vertex_id = lod_level["boundaries"][0]
+    anchor = transformed_vertices[vertex_id]
+
+    # apply transformation matrix to the template vertices
+    template_vertices = [transform_with_rotation(v, lod_level["transformationMatrix"]) 
+            for v in geometry_templates["vertices-templates"]]
+
+    # add anchor point to the vertices
+    template_vertices = [list(np.array(v) + anchor) for v in template_vertices]
+    template_id = lod_level["template"]
+    template = geometry_templates["templates"][template_id]
+
+    # dereference vertex indexes
+    resolve(template, template_vertices)
+    return template
+
+
+def resolve_geometry_vertices(geometry, vertices, transform, geometry_templates):
     transformed_vertices = [transform_vertex(v, transform) for v in vertices]
+        
     # todo
     # reprojecting to a different crs could be done here
     # think however, what would happen to the Z coordinate? Do we only reproject X and Y?
 
-    for lod_level in geometry:
-        for boundary in lod_level['boundaries']:
-            for i, shell in enumerate(boundary):
-                if type(shell[0]) is list:
-                    for j, ring in enumerate(shell):
-                        new_ring = []
-                        for vertex_id in ring:
-                            xyz = transformed_vertices[vertex_id]
-                            new_ring.append(xyz)
-                            if type(xyz) != list:
-                                pass
-                        shell[j] = new_ring
-                else:
-                    new_shell = []
-                    for vertex_id in shell:
-                        xyz = vertices[vertex_id]
-                        xyz = transformed_vertices[vertex_id]
-                        new_shell.append(xyz)
-                        if type(xyz) != list:
-                                pass
-                    boundary[i] = new_shell
+    for i, lod_level in enumerate(geometry):
+        if lod_level["type"] == "GeometryInstance":
+            resolved_template = resolve_template(lod_level, 
+                                                transformed_vertices, 
+                                                geometry_templates)
+            geometry[i] = resolved_template
+        else:
+            # resolve without geometry template
+            resolve(lod_level, transformed_vertices)
     return geometry
 
 # todo
