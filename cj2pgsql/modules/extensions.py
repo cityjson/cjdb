@@ -16,15 +16,20 @@ class ExtensionHandler:
         for ext_name, content in extensions.items():
             url = content.get("url")
             if url:
-                resp = requests.get(url)
+                try:
+                    resp = requests.get(url)
+                except Exception as e:
+                    resp = None
 
-                if resp.status_code == 200:
+                if resp and resp.status_code == 200:
                     try:
                         ext_definition = json.loads(resp.text)
                         self.full_definitions[ext_name] = ext_definition
                     except ValueError as e:
                         print(f"Extension url: {url} did not provide a correct json schema")
-                        raise
+                        # raise
+                        # throw this exception or ignore it?
+                        return
 
                     for prop_name in ext_definition["extraRootProperties"]:
                         self.extra_root_properties.append(prop_name)
@@ -38,7 +43,9 @@ class ExtensionHandler:
                     for obj_type in ext_definition["extraCityObjects"]:
                         self.extra_city_objects.append(obj_type)
                 else:
-                    raise Exception(f"Extension url: {url} did not return a correct response")
+                    msg = f"Extension url: {url} did not return a correct response"
+                    # raise Exception(msg)
+                    return
 
     
 

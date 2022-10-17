@@ -79,3 +79,31 @@ class CjObjectModel(BaseModel):
 
     import_meta = relationship(ImportMetaModel)
 
+    # todo get attributes and types
+    # this should be used in the api to enable querying by attribute values
+    # this should also be used when creating attribute indexes
+    @classmethod
+    def get_attributes_and_types(cls, session):
+        # sample attributes for each object type
+        # this is needed to create proper indexes and also to use those indexes when querying
+        sampled_objects = session.query(cls)\
+            .distinct(cls.type)\
+            .filter(cls.attributes.isnot(None))\
+            .order_by(cls.type, cls.id.desc())\
+            .all()
+
+        # create type mapping for each attribute appearing across all object types
+        # this considers that different object types have different attributes
+        # if same object types have different attributes, then this will not work correctly
+        type_mapping = {}
+        if sampled_objects:
+            for cj_obj in sampled_objects:
+                # type_mapping[cj_obj.type] = {}
+                # for attr_name, value in cj_obj.attributes.items():
+                #     type_mapping[cj_obj.type][attr_name] = type(value)
+
+                for attr_name, value in cj_obj.attributes.items():
+                    type_mapping[attr_name] = type(value)
+
+        return type_mapping
+

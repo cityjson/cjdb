@@ -193,9 +193,39 @@ class Importer:
                 self.process_file(f.path)
 
     def index_attributes(self):
+        # postgres types to be used in type casted index
+        postgres_type_mapping = {
+            float: "float",
+            str: "text",
+            int: "int",
+            bool: "boolean"
+        }
+
+        # python type mapping for the attributes based on sampled values
+        type_mapping = CjObjectModel.get_attributes_and_types(self.session)
+
+        # sql index command
+        cmd_base = "create index {table}_{attr_name}_idx " + \
+                "on {schema}.{table} using btree(((attributes->'{attr_name}')::{attr_type}))"
+
+        # for each attribute to be indexed
         for attr_name in self.args.indexed_attributes:
             print(f"Indexing CityObject attribute: '{attr_name}'")
-            # todo create index on the json attribute
+
+            # get proper postgres type
+            postgres_type = postgres_type_mapping[type_mapping[attr_name]]
+
+            # prepare and run sql command
+            cmd = cmd_base.format(
+                table=CjObjectModel.__table__.name,
+                schema=CjObjectModel.__table__.schema,
+                attr_name=attr_name,
+                attr_type=postgres_type
+            )
+            self.engine.execute(cmd)
+
+            # todo
+            # handle case when attribute doesn't exist
 
     def get_geometries(self, cityobj, line_json):
         if "geometry" not in cityobj:
