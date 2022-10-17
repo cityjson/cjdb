@@ -98,10 +98,6 @@ class CjObjectModel(BaseModel):
         type_mapping = {}
         if sampled_objects:
             for cj_obj in sampled_objects:
-                # type_mapping[cj_obj.type] = {}
-                # for attr_name, value in cj_obj.attributes.items():
-                #     type_mapping[cj_obj.type][attr_name] = type(value)
-
                 for attr_name, value in cj_obj.attributes.items():
                     type_mapping[attr_name] = type(value)
 
