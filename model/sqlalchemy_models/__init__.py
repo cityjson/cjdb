@@ -73,8 +73,6 @@ class CjObjectModel(BaseModel):
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
-    parents = Column(NullableJSONB())
-    children = Column(NullableJSONB())
     bbox = Column(Geometry('POLYGON'))
 
     import_meta = relationship(ImportMetaModel)
@@ -103,3 +101,12 @@ class CjObjectModel(BaseModel):
 
         return type_mapping
 
+
+class FamilyModel(BaseModel):
+    __tablename__ = 'family'
+    __table_args__ = {'schema':'cjdb'}
+    parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
+    child_id = Column(String, ForeignKey(CjObjectModel.object_id))
+
+    parent = relationship(CjObjectModel, foreign_keys=[parent_id])
+    child = relationship(CjObjectModel, foreign_keys=[child_id])

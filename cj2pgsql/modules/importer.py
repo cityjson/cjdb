@@ -8,7 +8,7 @@ import os
 import json
 import sys
 from sqlalchemy.orm import Session
-from model.sqlalchemy_models import BaseModel, ImportMetaModel, CjObjectModel
+from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 from sqlalchemy import func, MetaData, inspect
 
 # class to store variables per file import - for clarity
@@ -163,11 +163,14 @@ class Importer:
                     type=cityobj.get("type"),
                     attributes=cityobj.get("attributes") or None,
                     geometry=geometry,
-                    parents=cityobj.get("parents"),
-                    children=cityobj.get("children"),
                     # bbox=to_ewkt(bbox.wkt, self.current.target_srid)
                     bbox=bbox
                 )
+
+                # create children-parent links
+                for child_id in cityobj.get("children", []):
+                    family = FamilyModel(parent_id=obj_id, child_id=child_id)
+                    self.session.add(family)
 
                 # add CityJson object to the database
                 cj_object.__table__.schema = self.args.db_schema
