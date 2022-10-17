@@ -58,13 +58,6 @@ class Importer:
             table.schema = self.args.db_schema
             table.create(self.engine, checkfirst=True)
 
-        # the type check constraint depends also on the extensions
-        # cj_object_types = get_cj_object_types()
-        # in_condition = ", ".join(["'" + t + "'" for t in cj_object_types])
-        # cmd = f"""alter table {CjObjectModel.__table__.schema}.{CjObjectModel.__table__.name}
-        #             add constraint check_obj_type check("type" in ({in_condition}))"""
-        # self.engine.execute(cmd)
-
     def parse_cityjson(self):
         source_path = self.args.filepath
 
@@ -92,28 +85,35 @@ class Importer:
         if "metadata" in line_json:
             extra_root_properties = find_extra_properties(line_json)
             self.current.source_srid = get_srid(line_json["metadata"].get("referenceSystem"))
+            if not self.current.source_srid:
+                print("Warning: No Coordinate Reference System specified for the dataset.")
 
+            # use specified target SRID for all the geometries
+            # If not specified use same as source.
             if self.args.target_srid:
                 self.current.target_srid = self.args.target_srid
             else:
                 self.current.target_srid = self.current.source_srid
 
-            bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
-            bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
-            if self.current.target_srid != self.current.source_srid:
-                # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
-                bbox = func.st_transform(bbox, self.current.target_srid)
-
+            # calculate dataset bbox based on geographicalExtent
+            bbox = None
+            if "geographicalExtent" in line_json["metadata"]:
+                bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
+                bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
+                if self.current.target_srid != self.current.source_srid:
+                    # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
+                    bbox = func.st_transform(bbox, self.current.target_srid)
 
             # store extensions data - extra root properties, extra city objects...
             self.current.extension_handler = ExtensionHandler(line_json.get("extensions"))
 
             # prepare extra properties coming from extensions
+            # they will be placed in the extra_properties jsonb column
             extra_properties_obj = {}
             for prop_name in extra_root_properties:
                 extra_properties_obj[prop_name] = line_json[prop_name]
 
-            # check the ocurring properties against the extension definition
+            # check the occurring properties against the extension defined extra properties
             check_root_properties(extra_root_properties,
                                     self.current.extension_handler.extra_root_properties)
                 
@@ -121,8 +121,9 @@ class Importer:
             import_meta = ImportMetaModel(
                 source_file=os.path.basename(self.current.file),
                 version=line_json["version"],
-                transform=line_json.get("transform") or None,
                 meta=line_json.get("metadata") or None,
+                transform=line_json.get("transform") or None,
+                geometry_templates=line_json.get("geometry-templates") or None,
                 srid=self.current.target_srid,
                 extensions=line_json.get("extensions") or None,
                 extra_properties=extra_properties_obj or None,
@@ -130,12 +131,15 @@ class Importer:
                 bbox=bbox
             )
 
+            # compare to existing import metas
+            # for example to detect inconsistent CRS from different files
             result_ok = import_meta.compare_existing(self.session, 
                                                     self.args.ignore_repeated_file)
             if not result_ok:
                 print("Cancelling import")
                 sys.exit()
 
+            # add metadata to the database
             import_meta.__table__.schema = self.args.db_schema
             self.current.import_meta = import_meta
             self.session.add(import_meta)
@@ -143,31 +147,17 @@ class Importer:
         else:
             # create CityJSONObjects
             for obj_id, cityobj in line_json["CityObjects"].items():
-                geometry = resolve_geometry_vertices(cityobj.get("geometry"), 
-                                                    line_json.get("vertices"),
-                                                    self.current.import_meta.transform)
-
-                bbox = calculate_object_bbox(geometry)
-                bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
-                # todo - reprojection of the 3D geometry
-                # todo - reprojection of the 2d ground geometry
-                if self.current.target_srid != self.current.source_srid:
-                    # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
-                    bbox = func.st_transform(bbox, self.current.target_srid)
-
-                # todo by Lan Yan
-                geom_2d = get_ground_geometry(geometry)
-
+                # get 3D geom, ground geom and bbox
+                geometry, ground_geometry, bbox = self.get_geometries(cityobj, line_json)
+                    
                 # check if the object type is allowed by the official spec or extension
-                # todo - object types should be fetched from the matching CityJSON version
-                # https://3d.bk.tudelft.nl/schemas/cityjson/
                 check_result, message = check_object_type(cityobj.get("type"), 
                                     self.cj_object_types, 
                                     self.current.extension_handler.extra_city_objects)
                 if not check_result:
                     print(message)
 
-                # or None is added to change empty json "{}" to database null
+                # 'or None' is added to change empty json "{}" to database null
                 cj_object = CjObjectModel(
                     object_id=obj_id,
                     type=cityobj.get("type"),
@@ -179,6 +169,7 @@ class Importer:
                     bbox=bbox
                 )
 
+                # add CityJson object to the database
                 cj_object.__table__.schema = self.args.db_schema
                 cj_object.import_meta = self.current.import_meta
                 self.session.add(cj_object)
@@ -205,3 +196,25 @@ class Importer:
         for attr_name in self.args.indexed_attributes:
             print(f"Indexing CityObject attribute: '{attr_name}'")
             # todo create index on the json attribute
+
+    def get_geometries(self, cityobj, line_json):
+        if "geometry" not in cityobj:
+            return None, None, None
+
+        geometry = resolve_geometry_vertices(cityobj["geometry"], 
+                                            line_json["vertices"],
+                                            self.current.import_meta.transform,
+                                            self.current.import_meta.geometry_templates)
+
+        bbox = calculate_object_bbox(geometry)
+        bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
+        # todo - reprojection of the 3D geometry
+        # todo - reprojection of the 2d ground geometry
+        if self.current.target_srid != self.current.source_srid:
+            # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
+            bbox = func.st_transform(bbox, self.current.target_srid)
+
+        # todo by Lan Yan
+        ground_geometry = get_ground_geometry(geometry)
+
+        return geometry, ground_geometry, bbox

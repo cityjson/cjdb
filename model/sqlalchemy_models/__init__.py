@@ -11,16 +11,19 @@ class BaseModel(Base):
     __abstract__ = True
     id = Column(Integer, primary_key=True)
 
+
 def NullableJSONB():
     return JSONB(none_as_null=True)
+
 
 class ImportMetaModel(BaseModel):
     __tablename__ = 'import_meta'
     __table_args__ = {'schema':'cjdb'}
     source_file = Column(String)
     version = Column(String(10), nullable=False)
-    transform = Column(NullableJSONB())
     meta = Column(JSONB, name="metadata")
+    transform = Column(NullableJSONB())
+    geometry_templates = Column(NullableJSONB())
     srid = Column(Integer)
     extensions = Column(NullableJSONB())
     extra_properties = Column(NullableJSONB())
