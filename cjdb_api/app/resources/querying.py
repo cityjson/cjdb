@@ -20,6 +20,13 @@ def parse_table(parse):
 
     return headings, data
 
+def get_attributes():
+    cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes.isnot(None)).first()
+    attribs = cj_object.attributes
+    for attrib in attribs:
+        print(attrib)
+
+
 ##working
 
 #Select all objects in the database
@@ -136,31 +143,6 @@ class AddAttribute(Resource):
 
         return cityjson_list_schema.dump(objects)
 
-#attempt to use raw sequel
-# class Sequel(Resource):
-#     @classmethod
-#     def get(cls):
-#         objects = session.query(CjObjectModel).all()
-#
-#         sql = text(("UPDATE objects SET attributes = jsonb_set(attributes::jsonb, ’{roof_area}’, ’123’)::json WHERE type = ’Building’;"))
-#
-#
-#         for object in objects:
-#             # session.execute(sql, **object)
-#             session.execute(("UPDATE objects SET attributes = jsonb_set(attributes::jsonb, ’{roof_area}’, ’123’)::json WHERE type = ’Building’;"))
-#         # objects.session.exectute("UPDATE objects SET attributes = jsonb_set(attributes::jsonb, ’{roof_area}’, ’123’)::json WHERE type = ’Building’;")
-#         # for object in objects:
-#         #     listObj = object.attributes
-#         #     listObj["test_attribute"] = "test_value"
-#         #     object.attributes = listObj
-#         #     session.commit()  # This is supposed to save the changes to the DB, but it doesn't
-#
-#         return cityjson_list_schema.dump(objects)
-
-
-#todo
-
-
 class CalculateVolume (Resource):
     pass
 
@@ -178,24 +160,31 @@ class CQL_query(Resource):
     @classmethod
     def get(cls):
         cql_filter = request.args.get("cql_filter") or request.args.get("CQL_FILTER")
+
         filters = parse_ecql(cql_filter)
-        
 
         FIELD_MAPPING = {
             "object_id": CjObjectModel.object_id,
             "type": CjObjectModel.type,
             "bbox": CjObjectModel.bbox,
 
-            ## jsonb attributes:
-            # this needs to be dynamically filled based on the available attributes
-            # for now, this is an example for testing
             # also to do: what happens if the user queries by attribute that does not exist?
-            "data_area": CjObjectModel.attributes["data_area"].as_float()
+
         }
-        
+
+        cj = session.query(CjObjectModel).filter(CjObjectModel.attributes.isnot(None)).first()
+        attribs = cj.attributes
+        for attrib in attribs:
+            attrib_str = str(attrib)
+
+            if isinstance(attribs[attrib], (float)) == True:
+                FIELD_MAPPING[attrib_str] = CjObjectModel.attributes[attrib_str].as_float()
+            elif isinstance(attribs[attrib], (str, bool, int)) == True:
+                FIELD_MAPPING[attrib_str] = CjObjectModel.attributes[attrib_str]
+
         # the external library converts the CQL_filter to an sqlalchemy_filter
         sqlalchemy_filters = to_filter(filters, FIELD_MAPPING)
-        
+
         # apply the filter here:
         query = session.query(CjObjectModel).filter(sqlalchemy_filters)
         cj_objects = query.all()
