@@ -8,7 +8,7 @@ create index if not exists cj_object_gix on {schema}.cj_object using gist(bbox);
 
 -- family indexes
 create index if not exists family_parent_idx on {schema}.family using btree(parent_id);
-create index if not exists family_child_idx on {schema}.family using gist(child_id);
+create index if not exists family_child_idx on {schema}.family using btree(child_id);
 
 -- clustering
 cluster {schema}.import_meta using import_meta_gix;
