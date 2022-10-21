@@ -1,5 +1,6 @@
-from shapely.geometry import box, MultiPolygon,Point
-from shapely.ops import transform
+from shapely.geometry import box, MultiPolygon, Point, Polygon
+from shapely.ops import transform, unary_union
+from shapely.validation import make_valid,explain_validity
 from pyproj import CRS, Transformer
 import numpy as np
 

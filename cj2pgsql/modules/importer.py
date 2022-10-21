@@ -164,7 +164,8 @@ class Importer:
                     attributes=cityobj.get("attributes") or None,
                     geometry=geometry,
                     # bbox=to_ewkt(bbox.wkt, self.current.target_srid)
-                    bbox=bbox
+                    bbox=bbox,
+                    ground_geometry=ground_geometry
                 )
 
                 # create children-parent links
@@ -249,5 +250,11 @@ class Importer:
 
         # todo by Lan Yan
         ground_geometry = get_ground_geometry(geometry)
+        ground_geometry= func.st_geomfromtext(ground_geometry.wkt, self.current.source_srid)
+        # todo - reprojection of the 3D geometry
+        # todo - reprojection of the 2d ground geometry
+        if self.current.target_srid != self.current.source_srid:
+            # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
+            ground_geometry= func.st_transform(ground_geometry, self.current.target_srid)
 
         return geometry, ground_geometry, bbox
