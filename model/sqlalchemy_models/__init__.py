@@ -1,9 +1,8 @@
-from sqlalchemy.ext.declarative import declared_attr, declarative_base
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, \
     String, func, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
-from cj2pgsql.modules.geometric import get_ground_geometry
 from geoalchemy2 import Geometry
 
 Base = declarative_base()

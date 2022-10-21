@@ -51,6 +51,20 @@ def geometry_from_extent(extent):
     return bbox
 
 
+def reproject_vertex_list(vertices, srid_from, srid_to):
+    source_proj = CRS.from_epsg(srid_from)
+    target_proj = CRS.from_epsg(srid_to)
+
+    # prepare transformer from crs to crs
+    transformer = Transformer.from_crs(source_proj, target_proj, always_xy=True)
+
+    # transform all the coordinates
+    reprojected_xyz = transformer.transform(*zip(*vertices))
+    vertices = [list(i) for i in zip(*reprojected_xyz)]
+
+    return vertices
+
+
 def resolve(lod_level, vertices):
     for boundary in lod_level['boundaries']:
         for i, shell in enumerate(boundary):
@@ -69,7 +83,7 @@ def resolve(lod_level, vertices):
                 boundary[i] = new_shell
 
 
-def resolve_template(lod_level, transformed_vertices, geometry_templates):
+def resolve_template(lod_level, transformed_vertices, geometry_templates, source_target_srid):
     # get anchor point
     vertex_id = lod_level["boundaries"][0]
     anchor = transformed_vertices[vertex_id]
@@ -81,6 +95,10 @@ def resolve_template(lod_level, transformed_vertices, geometry_templates):
     # add anchor point to the vertices
     template_vertices = [list(np.array(v) + anchor) for v in template_vertices]
 
+    # reproject vertices if needed
+    if source_target_srid:
+        template_vertices = reproject_vertex_list(template_vertices, *source_target_srid)
+
     # dereference template vertices
     template_id = lod_level["template"]
     template = geometry_templates["templates"][template_id]
@@ -89,13 +107,17 @@ def resolve_template(lod_level, transformed_vertices, geometry_templates):
     return template
 
 
-def resolve_geometry_vertices(geometry, vertices, transform, geometry_templates):
+def resolve_geometry_vertices(geometry, vertices, transform, 
+                                geometry_templates, source_target_srid):
+
+    # unpack values based on the CityJSON transform
     transformed_vertices = [transform_vertex(v, transform) for v in vertices]
         
-    # todo
-    # reprojecting to a different crs could be done here
-    # think however, what would happen to the Z coordinate? Do we only reproject X and Y?
+    # reproject vertices if needed
+    if source_target_srid:
+        transformed_vertices = reproject_vertex_list(transformed_vertices, *source_target_srid)
 
+    # use ready vertices to resolve coordinate values for the geometry (or geometry template)
     for i, lod_level in enumerate(geometry):
         if lod_level["type"] == "GeometryInstance":
             resolved_template = resolve_template(lod_level, 

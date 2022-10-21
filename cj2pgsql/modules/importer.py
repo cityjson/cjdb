@@ -101,7 +101,6 @@ class Importer:
                 bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
                 bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
                 if self.current.target_srid != self.current.source_srid:
-                    # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
                     bbox = func.st_transform(bbox, self.current.target_srid)
 
             # store extensions data - extra root properties, extra city objects...
@@ -127,7 +126,6 @@ class Importer:
                 srid=self.current.target_srid,
                 extensions=line_json.get("extensions") or None,
                 extra_properties=extra_properties_obj or None,
-                # bbox=to_ewkt(bbox.wkt, self.current.target_srid)
                 bbox=bbox
             )
 
@@ -163,7 +161,6 @@ class Importer:
                     type=cityobj.get("type"),
                     attributes=cityobj.get("attributes") or None,
                     geometry=geometry,
-                    # bbox=to_ewkt(bbox.wkt, self.current.target_srid)
                     bbox=bbox,
                     ground_geometry=ground_geometry
                 )
@@ -230,31 +227,28 @@ class Importer:
 
             # todo
             # handle case when attribute doesn't exist
+            # maybe create partial index?
 
     def get_geometries(self, cityobj, line_json):
         if "geometry" not in cityobj:
             return None, None, None
 
+        # check if reprojection needed
+        source_target_srid = None
+        if self.current.target_srid != self.current.source_srid:
+            source_target_srid = (self.current.source_srid, self.current.target_srid)
+
+        # returned geometry is already in the required projection
         geometry = resolve_geometry_vertices(cityobj["geometry"], 
                                             line_json["vertices"],
                                             self.current.import_meta.transform,
-                                            self.current.import_meta.geometry_templates)
+                                            self.current.import_meta.geometry_templates,
+                                            source_target_srid)
 
         bbox = calculate_object_bbox(geometry)
         bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
-        # todo - reprojection of the 3D geometry
-        # todo - reprojection of the 2d ground geometry
-        if self.current.target_srid != self.current.source_srid:
-            # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
-            bbox = func.st_transform(bbox, self.current.target_srid)
 
-        # todo by Lan Yan
         ground_geometry = get_ground_geometry(geometry)
-        ground_geometry= func.st_geomfromtext(ground_geometry.wkt, self.current.source_srid)
-        # todo - reprojection of the 3D geometry
-        # todo - reprojection of the 2d ground geometry
-        if self.current.target_srid != self.current.source_srid:
-            # bbox = reproject(bbox, self.current.source_srid, self.current.target_srid)
-            ground_geometry= func.st_transform(ground_geometry, self.current.target_srid)
+        ground_geometry = func.st_geomfromtext(ground_geometry.wkt, self.current.source_srid)
 
         return geometry, ground_geometry, bbox
