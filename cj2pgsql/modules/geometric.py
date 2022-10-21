@@ -1,4 +1,4 @@
-from shapely.geometry import box, MultiPolygon
+from shapely.geometry import box, MultiPolygon,Point
 from shapely.ops import transform
 from pyproj import CRS, Transformer
 import numpy as np
@@ -139,4 +139,58 @@ def get_ground_geometry(geometry):
     # this geometry should be obtained by parsing the "geometry" object from cityjson -> the argument of this function
     # the geometry is a multipolygon of all the ground surfaces in the lowest available LOD
 
-    pass
+    polygons=[]
+    planes=dict()
+    z_min=0
+    for boundary in geometry[0]["boundaries"]:
+        for i, shell in enumerate(boundary):
+            if type(shell[0]) is list:
+                if type(shell[0][0]) is list:
+                    for ring in shell:
+                        Point_list=[]
+                        z_tot=0
+                        z_count=0
+                        for x, y,z in ring:
+                            z_tot=z+z_tot
+                            z_count=z_count+1
+                            p=Point(x,y,z)
+                            Point_list.append(p)
+                        z_avg=round(z_tot/z_count,4)
+                        z_min=z_avg
+                        planes[str(z_avg)]=Point_list                
+                else:
+                    Point_list=[]                   
+                    z_tot=0
+                    z_count=0
+                    for x,y,z in shell:
+                        z_tot=z+z_tot
+                        z_count=z_count+1
+                        p=Point(x,y,z)
+                        Point_list.append(p)
+                    z_avg=round(z_tot/z_count,4)
+                    planes[str(z_avg)]=Point_list
+    
+    
+    for key in planes:
+        z_num=float(key)
+        if(z_num<z_min):
+            z_min=z_num
+
+    ground_points=[]
+
+    for key in planes:
+        if(abs(float(key)-z_min)<0.3):
+            poly = Polygon([[p.x, p.y] for p in planes[key]])
+            for p in planes[key]:
+                ground_points.append(p)
+                
+    ground_polygon=Polygon([[p.x, p.y] for p in ground_points])
+    if(ground_polygon.is_valid==False):
+        ground_polygon=ground_polygon.buffer(0)
+        if(ground_polygon.is_valid==False):
+            print(explain_validity(ground_polygon))
+
+    if (type(ground_polygon) is Polygon):
+        ground_polygon=MultiPolygon([ground_polygon])
+    
+    return ground_polygon
