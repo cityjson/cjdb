@@ -3,6 +3,7 @@ from sqlalchemy import Column, ForeignKey, \
     String, func, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
+from cj2pgsql.modules.geometric import get_ground_geometry
 from geoalchemy2 import Geometry
 
 Base = declarative_base()
@@ -74,6 +75,7 @@ class CjObjectModel(BaseModel):
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
     bbox = Column(Geometry('POLYGON'))
+    ground_geometry=Column(Geometry('MultiPolygon'))
 
     import_meta = relationship(ImportMetaModel)
 
