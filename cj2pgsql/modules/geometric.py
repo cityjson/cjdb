@@ -122,7 +122,8 @@ def resolve_geometry_vertices(geometry, vertices, transform,
         if lod_level["type"] == "GeometryInstance":
             resolved_template = resolve_template(lod_level, 
                                                 transformed_vertices, 
-                                                geometry_templates)
+                                                geometry_templates,
+                                                source_target_srid)
             geometry[i] = resolved_template
         else:
             # resolve without geometry template
