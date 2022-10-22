@@ -52,6 +52,8 @@ class Importer:
         print(f"Imported from {self.args.filepath} successfully")
 
     def prepare_database(self):
+        if self.args.overwrite:
+            self.engine.execute(f"drop schema if exists {self.args.db_schema} cascade")
         self.engine.execute(f"create schema if not exists {self.args.db_schema}")
 
         for table in BaseModel.metadata.tables.values():
@@ -100,7 +102,9 @@ class Importer:
             if "geographicalExtent" in line_json["metadata"]:
                 bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
                 bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
-                if self.current.target_srid != self.current.source_srid:
+                if self.current.source_srid \
+                    and self.current.target_srid != self.current.source_srid:
+
                     bbox = func.st_transform(bbox, self.current.target_srid)
 
             # store extensions data - extra root properties, extra city objects...
@@ -214,19 +218,20 @@ class Importer:
             print(f"Indexing CityObject attribute: '{attr_name}'")
 
             # get proper postgres type
-            postgres_type = postgres_type_mapping[type_mapping[attr_name]]
+            if attr_name in type_mapping:
+                postgres_type = postgres_type_mapping[type_mapping[attr_name]]
 
-            # prepare and run sql command
-            cmd = cmd_base.format(
-                table=CjObjectModel.__table__.name,
-                schema=CjObjectModel.__table__.schema,
-                attr_name=attr_name,
-                attr_type=postgres_type
-            )
-            self.engine.execute(cmd)
+                # prepare and run sql command
+                cmd = cmd_base.format(
+                    table=CjObjectModel.__table__.name,
+                    schema=CjObjectModel.__table__.schema,
+                    attr_name=attr_name,
+                    attr_type=postgres_type
+                )
+                self.engine.execute(cmd)
 
-            # todo
-            # handle case when attribute doesn't exist
+            else:
+                print(f"Specified attribute to be indexed: '{attr_name}' does not exist")
             # maybe create partial index?
 
     def get_geometries(self, cityobj, line_json):
@@ -234,8 +239,11 @@ class Importer:
             return None, None, None
 
         # check if reprojection needed
+        # TODO HANDLE CASE WHEN referenceSystem is not specified!
         source_target_srid = None
-        if self.current.target_srid != self.current.source_srid:
+        if self.current.source_srid \
+            and self.current.target_srid != self.current.source_srid:
+
             source_target_srid = (self.current.source_srid, self.current.target_srid)
 
         # returned geometry is already in the required projection

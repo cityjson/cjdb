@@ -33,10 +33,16 @@ def Parser():
                 help='Run in append mode (as opposed to default create mode). \
                 This assumes the database structure exists already and new data is to be appended', 
                 dest="append_mode")
+    parser.add_argument('-o', '--overwrite', default=False,
+                action='store_const', const=True,
+                help='Overwrite the data that is currently in the schema. \
+                    Warning: this causes the loss of what was imported before to the database schema.', 
+                dest="overwrite")
     parser.add_argument('-g', '--ignore-repeated-file', default=False,
                 action='store_const', const=True,
                 help='Ignore repeated file names warning when importing.',
                 dest="ignore_repeated_file")
+
 
     return parser
 
@@ -44,7 +50,13 @@ def Parser():
 # todo validate args
 # perform some other checks for validity
 def validate_args(args):
+    result = True
+    msg = ""
     if not args.db_password:
         args.db_password = getpass(prompt=f'Password for user "{args.db_user}": ')
+
+    if args.overwrite and args.append_mode:
+        result = False
+        msg += "Cannot use --overwrite/-o and --append/-a flags simultaneously.\n"
         
-    return True, ""
+    return result, msg
