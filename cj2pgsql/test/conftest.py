@@ -21,7 +21,7 @@ def pytest_generate_tests(metafunc):
         with open(test_arguments_file) as f:
             for i, line in enumerate(f.readlines(), start=1):
                 stripped = line.rstrip("\n")
-                if stripped:
+                if stripped and stripped[0] != '#':
                     arglist = stripped.split(" ")
 
                     for f in files:
