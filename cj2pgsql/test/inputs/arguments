@@ -1,0 +1,1 @@
+-H localhost -U postgres -d postgres -s cjdb2 -p 5555 -W postgres -x documentnummer -x reconstruction_skipped -x oorspronkelijkbouwjaar -o

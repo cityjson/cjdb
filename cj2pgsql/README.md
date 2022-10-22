@@ -18,6 +18,22 @@ The password should be specified in the PGPASSWORD environment variable.
 PYTHONPATH="$PWD" pipenv run python cj2pgsql/main.py -H localhost -U postgres -d postgres -s cjdb2 -p 5555 ~/Downloads/5870.jsonl
 ```
 
+### Running tests
+Install pytest first.
+```
+pip3 install pytest
+```
+
+Then, in repository root:
+```
+pytest cj2pgsql -v
+```
+
+or, to see the importer output:
+```
+pytest cj2pgsql -s
+```
+
 
 ### Local development of the CLI
 To build the CLI app (so that it can be called as a command line tool from anywhere):
@@ -45,5 +61,5 @@ python setup.py develop
 
 4. The cj2pgsql and cjdb_api should now work as commands:
 ```
-cj2pgsql
+cj2pgsql --help
 ```

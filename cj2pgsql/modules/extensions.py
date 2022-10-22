@@ -17,7 +17,7 @@ class ExtensionHandler:
             url = content.get("url")
             if url:
                 try:
-                    resp = requests.get(url)
+                    resp = requests.get(url, timeout=10)
                 except Exception as e:
                     resp = None
 

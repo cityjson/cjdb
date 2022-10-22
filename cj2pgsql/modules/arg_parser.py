@@ -4,7 +4,7 @@ from getpass import getpass
 
 
 def Parser():
-    parser = argparse.ArgumentParser(description='Import CityJSON to a PostgreSQL database')
+    parser = argparse.ArgumentParser(description='Import CityJSONL to a PostgreSQL database')
 
     parser.add_argument('filepath', nargs='?', default='stdin', 
                         type=str, metavar="file_or_directory",
