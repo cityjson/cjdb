@@ -4,7 +4,7 @@ from model.sqlalchemy_models import CjObjectModel
 
 class CjObjectSchema(ma.Schema):
     # here define fields for serialization
-    # object_id = fields.String()
+    object_id = fields.String()
     # # attributes = fields.Field()
     # type = fields.String()
     # bbox = fields.String()
