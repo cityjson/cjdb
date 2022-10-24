@@ -1,6 +1,9 @@
 # cjdb
 CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database
 
+## Docs
+https://leoleonsio.github.io/cjdb/
+
 
 ## cj2pgsql
 See [cj2pgsql/README.md](cj2pgsql/README.md)
