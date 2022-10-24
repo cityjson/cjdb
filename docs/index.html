@@ -48,10 +48,10 @@
 </section>
 <section id="cj2pgsql-cli">
 <h1>cj2pgsql CLI<a class="headerlink" href="#cj2pgsql-cli" title="Permalink to this heading">¶</a></h1>
-<p><p>Import CityJSON to a PostgreSQL database</p>
+<p><p>Import CityJSONL to a PostgreSQL database</p>
 </p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">cj2pgsql</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">H</span> <span class="n">DB_HOST</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">DB_PORT</span><span class="p">]</span> <span class="o">-</span><span class="n">U</span> <span class="n">DB_USER</span> <span class="p">[</span><span class="o">-</span><span class="n">W</span> <span class="n">DB_PASSWORD</span><span class="p">]</span> <span class="o">-</span><span class="n">d</span> <span class="n">DB_NAME</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">DB_SCHEMA</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">I</span> <span class="n">TARGET_SRID</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="n">INDEXED_ATTRIBUTES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">A</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="n">INDEXED_ATTRIBUTES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span><span class="p">]</span>
                 <span class="p">[</span><span class="n">file_or_directory</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -89,14 +89,22 @@
 <p>Default: “public”</p>
 </dd>
 <dt><kbd>-I, --srid</kbd></dt>
-<dd><p>Target coordinate system</p>
+<dd><p>Target coordinate system SRID</p>
 </dd>
 <dt><kbd>-x, --attr-index</kbd></dt>
 <dd><p>CityObject attribute to be indexed. Can be specified multiple times, for each attribute once</p>
 <p>Default: []</p>
 </dd>
-<dt><kbd>-A, --append</kbd></dt>
+<dt><kbd>-a, --append</kbd></dt>
 <dd><p>Run in append mode (as opposed to default create mode).                 This assumes the database structure exists already and new data is to be appended</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-o, --overwrite</kbd></dt>
+<dd><p>Overwrite the data that is currently in the schema.                     Warning: this causes the loss of what was imported before to the database schema.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-g, --ignore-repeated-file</kbd></dt>
+<dd><p>Ignore repeated file names warning when importing.</p>
 <p>Default: False</p>
 </dd>
 </dl>
