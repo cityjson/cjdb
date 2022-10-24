@@ -4,8 +4,6 @@ from model.sqlalchemy_models import CjObjectModel
 from cjdb_api.app.schemas import CjObjectSchema
 from cjdb_api.app.db import session, engine
 from sqlalchemy.sql import text
-from type_mapping import type_mapping
-from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter.parsers.ecql import parse as parse_ecql
 from pygeofilter.backends.sqlalchemy import to_filter
 from sqlalchemy import update
@@ -13,16 +11,32 @@ from sqlalchemy import update
 cityjson_schema = CjObjectSchema()
 cityjson_list_schema = CjObjectSchema(many=True)
 
+# global tm
 global FIELD_MAPPING
 FIELD_MAPPING = {
-            "object_id": CjObjectModel.object_id,
-            "type": CjObjectModel.type,
-            "bbox": CjObjectModel.bbox,
-            "geometry": CjObjectModel.geometry,
-            "ground_geometry": CjObjectModel.ground_geometry,
-        }
+    "object_id": CjObjectModel.object_id,
+    "type": CjObjectModel.type,
+    "bbox": CjObjectModel.bbox,
+    "geometry": CjObjectModel.geometry,
+    "ground_geometry": CjObjectModel.ground_geometry,
+}
 
-def what_type(attrib, new_value, tm):
+def type_mapping():
+    global tm
+    tm = CjObjectModel.get_attributes_and_types(session)
+    for attr_name in tm:
+        if tm[attr_name] == str:
+            FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_string()
+        if tm[attr_name] == bool:
+            FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_boolean()
+        if tm[attr_name] == int:
+            FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_integer()
+        if tm[attr_name] == float:
+            FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_float()
+    return tm
+
+
+def what_type(attrib, new_value):
     if attrib in tm:
         if tm[attrib] == str:
             return new_value
@@ -33,19 +47,18 @@ def what_type(attrib, new_value, tm):
         if tm[attrib] == float:
            return float(new_value)
 
-    if attrib not in tm:
-        print('else')
+    else:
         if isinstance(new_value, bool):
-            print("bool")
+            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_boolean()
             return bool(new_value)
         if isinstance(new_value, float):
-            print("float")
+            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_float()
             return float(new_value)
         if isinstance(new_value, int):
-            print("int")
+            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_integer()
             return int(new_value)
         else:
-            print('hmmm')
+            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_string()
             return new_value
 
 def parse_table(parse):
@@ -98,15 +111,20 @@ class GetInfo(Resource):
 class FilterAttributes(Resource):
     @classmethod
     def get(cls, attrib: str, operator:str, value: str):
+
+        val = what_type(attrib, value)
         if operator == "smaller":
-            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] < value).limit(50)
+            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] < val).limit(50)
         if operator == "equals":
-            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] == value).limit(50)
+            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] == val).limit(50)
         if operator == "bigger":
-            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] > value).limit(50)
+            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] > val).limit(50)
 
         if not cj_object:
             return {"message": "Object not found"}, 404
+
+        for object in cj_object:
+            print(object.id)
 
         return cityjson_list_schema.dump(cj_object)
 
@@ -163,15 +181,16 @@ class CalculateFootprint(Resource):
 ## in progress
 class AddAttribute(Resource):
     @classmethod
-    def get(cls, object_id:str, attrib:str, new_value:str):
-        tm = type_mapping()
+    def get(cls, object_id: str, attrib: str, new_value: str):
 
         if object_id == "all":
-            obs = session.query(CjObjectModel).limit(10)
+            obs = session.query(CjObjectModel)
+
         else:
             obs = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id)
 
         for object in obs:
+            print("I am going through it")
             if isinstance(object.attributes, dict):
                 listObj = object.attributes
                 if attrib == "bbox":
@@ -181,11 +200,11 @@ class AddAttribute(Resource):
                     for row in area_pointer:
                         value = row[0]
                 else:
-                    value = what_type(attrib, new_value, tm)
+                    value = what_type(attrib, new_value)
                 listObj[attrib] = value
                 u = update(CjObjectModel)
                 u = u.values({"attributes": listObj})
-                u.where(CjObjectModel.id == object.id)
+                u = u.where(CjObjectModel.object_id == object.object_id)
                 engine.execute(u)
 
         if object_id == "all":
@@ -207,9 +226,9 @@ class DelAttrib(Resource):
             if isinstance(object.attributes, dict):
                 listObj = object.attributes
                 del listObj[attrib]
-                u = update(CjObjectModel)
+                u = update(object)
                 u = u.values({"attributes": listObj})
-                u.where(CjObjectModel.id == object.id)
+                u = u.where(CjObjectModel.object_id == object.object_id)
                 engine.execute(u)
 
         if object_id == "all":
@@ -221,8 +240,7 @@ class DelAttrib(Resource):
 class UpdateAttrib(Resource):
     @classmethod
     def get(cls, object_id:str, attrib:str, new_value:str):
-        tm = type_mapping()
-        value = what_type(attrib, new_value, tm)
+        value = what_type(attrib, new_value)
 
         if object_id == "all":
             obs = session.query(CjObjectModel).all()
@@ -235,7 +253,7 @@ class UpdateAttrib(Resource):
                 listObj[attrib] = value
                 u = update(CjObjectModel)
                 u = u.values({"attributes": listObj})
-                u.where(CjObjectModel.id == object.id)
+                u = u.where(CjObjectModel.object_id == object.object_id)
                 engine.execute(u)
 
         if object_id == "all":
@@ -243,8 +261,6 @@ class UpdateAttrib(Resource):
             return cityjson_list_schema.dump(show)
         else:
             return cityjson_list_schema.dump(obs)
-
-
 
 
 class CalculateVolume (Resource):
@@ -264,27 +280,14 @@ class CQL_query(Resource):
     @classmethod
     def get(cls):
         cql_filter = request.args.get("cql_filter") or request.args.get("CQL_FILTER")
-
         filters = parse_ecql(cql_filter)
-
-        tm = type_mapping()
-
-        for attr_name in tm:
-            if tm[attr_name] == str:
-                FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_string()
-            if tm[attr_name] == bool:
-                FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_boolean()
-            if tm[attr_name] == int:
-                FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_integer()
-            if tm[attr_name] == float:
-                FIELD_MAPPING[attr_name] = CjObjectModel.attributes[attr_name].as_float()
-
 
         # the external library converts the CQL_filter to an sqlalchemy_filter
         sqlalchemy_filters = to_filter(filters, FIELD_MAPPING)
 
         # apply the filter here:
         query = session.query(CjObjectModel).filter(sqlalchemy_filters)
-        cj_objects = query.all()
+        # lim = query.limit(50)
 
-        return cityjson_list_schema.dump(cj_objects)
+        # return cityjson_list_schema.dump(cj_objects)
+        return cityjson_list_schema.dump(query)
