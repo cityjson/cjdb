@@ -10,14 +10,14 @@ Welcome to CJDB's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. include:: ../../README.md
-   :parser: myst_parser.sphinx_
+.. .. include:: ../../README.md
+..    :parser: myst_parser.sphinx_
 
 
-.. include:: ../../cj2pgsql/README.md
-   :parser: myst_parser.sphinx_
+.. .. include:: ../../cj2pgsql/README.md
+..    :parser: myst_parser.sphinx_
 
-cj2pgsql CLI quickstart
+cj2pgsql CLI usage
 =================
 .. argparse::
    :module: cj2pgsql.modules.arg_parser
