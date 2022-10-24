@@ -37,17 +37,120 @@
 <h1>Welcome to CJDB’s documentation!<a class="headerlink" href="#welcome-to-cjdb-s-documentation" title="Permalink to this heading">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
+<section id="cjdb">
+<h2>cjdb<a class="headerlink" href="#cjdb" title="Permalink to this heading">¶</a></h2>
+<p>CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database</p>
+<section id="docs">
+<h3>Docs<a class="headerlink" href="#docs" title="Permalink to this heading">¶</a></h3>
+<p>https://leoleonsio.github.io/cjdb/</p>
 </section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
+<section id="cj2pgsql">
+<h3>cj2pgsql<a class="headerlink" href="#cj2pgsql" title="Permalink to this heading">¶</a></h3>
+<p>See <span class="xref myst">cj2pgsql/README.md</span></p>
 </section>
-<section id="cj2pgsql-cli">
-<h1>cj2pgsql CLI<a class="headerlink" href="#cj2pgsql-cli" title="Permalink to this heading">¶</a></h1>
+<section id="id1">
+<h3>cjdb<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>See <span class="xref myst">cjdb_api/README.md</span></p>
+<section id="generating-documentation">
+<h4>Generating documentation<a class="headerlink" href="#generating-documentation" title="Permalink to this heading">¶</a></h4>
+<ol class="arabic simple">
+<li><p>Make sure sphinx is installed:</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip3</span> <span class="n">install</span> <span class="n">python3</span><span class="o">-</span><span class="n">sphinx</span> <span class="n">sphinx</span><span class="o">-</span><span class="n">argparse</span> <span class="n">myst</span><span class="o">-</span><span class="n">parser</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Generate documentation command, called from repository root:</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">docs</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphinx</span><span class="o">-</span><span class="n">build</span> <span class="o">-</span><span class="n">b</span> <span class="n">html</span> <span class="n">docs</span><span class="o">/</span><span class="n">config</span> <span class="n">docs</span><span class="o">/</span><span class="n">content</span>
+</pre></div>
+</div>
+<p>As a result, he documentation is generated in the docs/content folder.</p>
+<p>Open <code class="docutils literal notranslate"><span class="pre">index.html</span></code> file to see the main page.</p>
+</section>
+</section>
+</section>
+<section id="cj2pgsql">
+<h2>cj2pgsql<a class="headerlink" href="#cj2pgsql" title="Permalink to this heading">¶</a></h2>
+<p>cj2pgsql is a python based importer of CityJSONL files to a PostgreSQL database.</p>
+<section id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>todo - describe parameters
+</pre></div>
+</div>
+</section>
+<section id="local-development">
+<h3>Local development<a class="headerlink" href="#local-development" title="Permalink to this heading">¶</a></h3>
+<section id="initializing-the-virtual-environment">
+<h4>Initializing the virtual environment<a class="headerlink" href="#initializing-the-virtual-environment" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">cj2pgsql</span>
+<span class="n">pipenv</span> <span class="n">install</span>
+</pre></div>
+</div>
+</section>
+<section id="running-the-importer-example">
+<h4>Running the importer example:<a class="headerlink" href="#running-the-importer-example" title="Permalink to this heading">¶</a></h4>
+<p>The password should be specified in the PGPASSWORD environment variable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PYTHONPATH</span><span class="o">=</span><span class="s2">&quot;$PWD&quot;</span> <span class="n">pipenv</span> <span class="n">run</span> <span class="n">python</span> <span class="n">cj2pgsql</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">H</span> <span class="n">localhost</span> <span class="o">-</span><span class="n">U</span> <span class="n">postgres</span> <span class="o">-</span><span class="n">d</span> <span class="n">postgres</span> <span class="o">-</span><span class="n">s</span> <span class="n">cjdb2</span> <span class="o">-</span><span class="n">p</span> <span class="mi">5555</span> <span class="o">~/</span><span class="n">Downloads</span><span class="o">/</span><span class="mf">5870.</span><span class="n">jsonl</span>
+</pre></div>
+</div>
+</section>
+<section id="running-tests">
+<h4>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this heading">¶</a></h4>
+<p>Install pytest first.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip3</span> <span class="n">install</span> <span class="n">pytest</span>
+</pre></div>
+</div>
+<p>Then, in repository root:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="n">cj2pgsql</span> <span class="o">-</span><span class="n">v</span>
+</pre></div>
+</div>
+<p>or, to see the importer output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="n">cj2pgsql</span> <span class="o">-</span><span class="n">s</span>
+</pre></div>
+</div>
+</section>
+<section id="local-development-of-the-cli">
+<h4>Local development of the CLI<a class="headerlink" href="#local-development-of-the-cli" title="Permalink to this heading">¶</a></h4>
+<p>To build the CLI app (so that it can be called as a command line tool from anywhere):</p>
+<ol class="arabic simple">
+<li><p>Sync the pipenv requirements with the setup.py file:</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">run</span> <span class="n">pipenv</span><span class="o">-</span><span class="n">setup</span> <span class="n">sync</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Create a venv just for testing the CLI build.</p></li>
+</ol>
+<p><strong>Note</strong>: This is not the pipenv/development environment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">virtualenv</span> <span class="n">venv</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Activate environment (note: this is not the pipenv environment. This is a separate environment just to test the CLI build)</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">.</span> <span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Build the CLI:
+python setup.py develop</p></li>
+<li><p>The cj2pgsql and cjdb_api should now work as commands:</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cj2pgsql</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+<section id="cj2pgsql-cli-quickstart">
+<h1>cj2pgsql CLI quickstart<a class="headerlink" href="#cj2pgsql-cli-quickstart" title="Permalink to this heading">¶</a></h1>
 <p><p>Import CityJSONL to a PostgreSQL database</p>
 </p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">cj2pgsql</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">H</span> <span class="n">DB_HOST</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">DB_PORT</span><span class="p">]</span> <span class="o">-</span><span class="n">U</span> <span class="n">DB_USER</span> <span class="p">[</span><span class="o">-</span><span class="n">W</span> <span class="n">DB_PASSWORD</span><span class="p">]</span> <span class="o">-</span><span class="n">d</span> <span class="n">DB_NAME</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">DB_SCHEMA</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">I</span> <span class="n">TARGET_SRID</span><span class="p">]</span>

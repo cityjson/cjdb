@@ -13,7 +13,7 @@ See [cjdb_api/README.md](cjdb_api/README.md)
 ### Generating documentation
 1. Make sure sphinx is installed:
 ```
-pip3 install python3-sphinx sphinx-argparse
+pip3 install python3-sphinx sphinx-argparse myst-parser
 ```
 
 2. Generate documentation command, called from repository root:

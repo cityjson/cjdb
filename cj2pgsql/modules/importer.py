@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 from sqlalchemy import func, MetaData, inspect
 from pathlib import Path
+from pyproj import CRS
 
 # class to store variables per file import - for clarity
 class SingleFileImport:
@@ -98,6 +99,10 @@ class Importer:
             # If not specified use same as source.
             if self.args.target_srid:
                 self.current.target_srid = self.args.target_srid
+                target_crs = CRS.from_epsg(self.args.target_srid)
+                if not target_crs.is_vertical:
+                    print(f"Warning: The specified target SRID({self.args.target_srid}) " + \
+                         "represents a non-vertical CRS. The Z vertex values will remain unchanged.")
             else:
                 self.current.target_srid = self.current.source_srid
 
@@ -244,7 +249,6 @@ class Importer:
             return None, None, None
 
         # check if reprojection needed
-        # TODO HANDLE CASE WHEN referenceSystem is not specified!
         source_target_srid = None
         if self.current.source_srid \
             and self.current.target_srid != self.current.source_srid:
