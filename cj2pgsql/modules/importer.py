@@ -215,7 +215,8 @@ class Importer:
 
         # sql index command
         cmd_base = "create index {table}_{attr_name}_idx " + \
-                "on {schema}.{table} using btree(((attributes->>'{attr_name}')::{attr_type}))"
+                "on {schema}.{table} using btree(((attributes->>'{attr_name}')::{attr_type}))" + \
+                " WHERE attributes->>'{attr_name}' IS NOT NULL;"
 
         # for each attribute to be indexed
         for attr_name in self.args.indexed_attributes:
