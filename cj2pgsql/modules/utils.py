@@ -44,7 +44,6 @@ def fetch_query(conn, query):
 # todo - this should take available object types from the official spec
 def get_cj_object_types():
     cur_path = Path(__file__).parent
-    print(cur_path.parent)
     obj_type_path = os.path.join(cur_path.parent, "resources/object_types.yml")
 
     with open(obj_type_path, "r") as f:

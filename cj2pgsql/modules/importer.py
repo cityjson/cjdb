@@ -10,6 +10,7 @@ import sys
 from sqlalchemy.orm import Session
 from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 from sqlalchemy import func, MetaData, inspect
+from pathlib import Path
 
 # class to store variables per file import - for clarity
 class SingleFileImport:
@@ -77,7 +78,10 @@ class Importer:
             raise Exception(f"Path: '{source_path}' not found")
 
     def post_import(self):
-        with open("model/post_import.sql") as f:
+        cur_path = Path(__file__).parent
+        sql_path = os.path.join(cur_path.parent, "resources/post_import.sql")
+
+        with open(sql_path) as f:
             cmd = f.read().format(schema=self.args.db_schema)
         self.engine.execute(cmd)
         self.index_attributes()
