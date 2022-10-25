@@ -8,7 +8,7 @@ from cjdb_api.app.db import session, engine
 from sqlalchemy.sql import text
 from pygeofilter.parsers.ecql import parse as parse_ecql
 from pygeofilter.backends.sqlalchemy import to_filter
-from sqlalchemy import update, func
+from sqlalchemy import update, delete
 import ast
 from geoalchemy2 import Geometry
 # from shapely.geometry import Point
@@ -81,6 +81,35 @@ class show(Resource):
 
         return make_response(render_template("all.html", headings=headings, data=data))
 
+
+class DelObject(Resource):
+    @classmethod
+    def get(cls, object_id: str):
+
+        has_children = session.query(FamilyModel).join(CjObjectModel, CjObjectModel.object_id == FamilyModel.parent_id).filter(FamilyModel.parent_id == object_id).all()
+        if has_children:
+            for child in has_children:
+                u = delete(FamilyModel)
+                u = u.where(FamilyModel.parent_id == child.parent_id)
+                c = delete(CjObjectModel)
+                c = c.where(CjObjectModel.object_id == child.child_id)
+                engine.execute(u)
+                engine.execute(c)
+
+        is_child = session.query(FamilyModel).join(CjObjectModel, CjObjectModel.object_id == FamilyModel.child_id).filter(FamilyModel.child_id == object_id).all()
+        if is_child:
+            for child in is_child:
+                u = delete(FamilyModel)
+                u = u.where(FamilyModel.child_id == child.child_id)
+                engine.execute(u)
+
+        u = delete(CjObjectModel)
+        u = u.where(CjObjectModel.object_id == object_id)
+        engine.execute(u)
+
+        return ("Object " + object_id + "is deleted")
+
+
 ##Get all the information of an object, given a certain value: So for instance, select building with object_id NL.IMBAG.Pand.0518100000213709-0, or select building with id 2
 class QueryByAttribute(Resource):
     @classmethod
@@ -151,27 +180,19 @@ class FilterAttributes(Resource):
 class QueryByPoint(Resource):
     @classmethod
     def get(cls, coor: str):
-        # sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakePoint'+coor)
-        # p =
-        # print(p)
-        # cj_object = session.query(CjObjectModel).first()
-        # polygon = to_shape(cj_object.bbox)
-        # p = Geometry('POINT')
-        query = session.query(CjObjectModel).filter((CjObjectModel.bbox.ST_Contains("POINT(84498.772 445820.167")))
-        # 'POINT(-0.666085 51.42553)'
-        # query = polygon.ST_Contains(polygon, 'POINT(84498.772 445820.167)')
-        for object in query:
-            print(object.object_id)
-        # print(polygon)
-        # results = engine.execute(sql)
+        sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakePoint' + coor)
+        # query = session.query(CjObjectModel).filter((CjObjectModel.bbox.ST_Contains("POINT(84498.772 445820.167")))
+
+        results = engine.execute(sql)
+
+        # View the records
+        for record in results:
+            building = record[2]
+
+        # test URL: http://127.0.0.1:5000/api/point/(81402.6705,451405.4224)
+        return building
 
 
-        # # View the records
-        # for record in results:
-        #     building = record[2]
-        #
-        # # test URL: http://127.0.0.1:5000/api/point/(81402.6705,451405.4224)
-        # return building
 
 # Given 2D bounding box, like (81400, 451400, 81600, 451600), return the table of object_id
 class QueryByBbox(Resource):
