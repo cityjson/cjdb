@@ -3,6 +3,7 @@ from psycopg2.extras import RealDictCursor
 from sqlalchemy import create_engine
 import os
 import yaml
+from pathlib import Path
 
 
 def get_db_engine(args, echo=False):
@@ -42,7 +43,10 @@ def fetch_query(conn, query):
 
 # todo - this should take available object types from the official spec
 def get_cj_object_types():
-    with open("cj2pgsql/resources/object_types.yml", "r") as f:
+    cur_path = Path(__file__).parent
+    obj_type_path = os.path.join(cur_path.parent, "resources/object_types.yml")
+
+    with open(obj_type_path, "r") as f:
         try:
             types = yaml.safe_load(f)
         except yaml.YAMLError as exc:

@@ -19,6 +19,7 @@ pyproj = "*"
 pyyaml = "*"
 pygeoif = "==0.7"
 pygeofilter = {extras = ["backend-sqlalchemy"], version = "*"}
+requests = "*"
 
 [dev-packages]
 

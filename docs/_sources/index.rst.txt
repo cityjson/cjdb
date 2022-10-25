@@ -10,19 +10,17 @@ Welcome to CJDB's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. .. include:: ../../README.md
+..    :parser: myst_parser.sphinx_
 
 
-Indices and tables
-==================
+.. .. include:: ../../cj2pgsql/README.md
+..    :parser: myst_parser.sphinx_
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
-cj2pgsql CLI
-==================
+cj2pgsql CLI usage
+=================
 .. argparse::
    :module: cj2pgsql.modules.arg_parser
    :func: Parser
    :prog: cj2pgsql
+

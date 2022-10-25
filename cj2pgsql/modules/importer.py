@@ -10,6 +10,8 @@ import sys
 from sqlalchemy.orm import Session
 from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 from sqlalchemy import func, MetaData, inspect
+from pathlib import Path
+from pyproj import CRS
 
 # class to store variables per file import - for clarity
 class SingleFileImport:
@@ -77,7 +79,10 @@ class Importer:
             raise Exception(f"Path: '{source_path}' not found")
 
     def post_import(self):
-        with open("model/post_import.sql") as f:
+        cur_path = Path(__file__).parent
+        sql_path = os.path.join(cur_path.parent, "resources/post_import.sql")
+
+        with open(sql_path) as f:
             cmd = f.read().format(schema=self.args.db_schema)
         self.engine.execute(cmd)
         self.index_attributes()
@@ -94,6 +99,10 @@ class Importer:
             # If not specified use same as source.
             if self.args.target_srid:
                 self.current.target_srid = self.args.target_srid
+                target_crs = CRS.from_epsg(self.args.target_srid)
+                if not target_crs.is_vertical:
+                    print(f"Warning: The specified target SRID({self.args.target_srid}) " + \
+                         "represents a non-vertical CRS. The Z vertex values will remain unchanged.")
             else:
                 self.current.target_srid = self.current.source_srid
 
@@ -211,7 +220,8 @@ class Importer:
 
         # sql index command
         cmd_base = "create index {table}_{attr_name}_idx " + \
-                "on {schema}.{table} using btree(((attributes->>'{attr_name}')::{attr_type}))"
+                "on {schema}.{table} using btree(((attributes->>'{attr_name}')::{attr_type}))" + \
+                " WHERE attributes->>'{attr_name}' IS NOT NULL;"
 
         # for each attribute to be indexed
         for attr_name in self.args.indexed_attributes:
@@ -239,7 +249,6 @@ class Importer:
             return None, None, None
 
         # check if reprojection needed
-        # TODO HANDLE CASE WHEN referenceSystem is not specified!
         source_target_srid = None
         if self.current.source_srid \
             and self.current.target_srid != self.current.source_srid:

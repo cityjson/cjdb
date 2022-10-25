@@ -1,15 +1,8 @@
 # cj2pgsql
 cj2pgsql is a python based importer of CityJSONL files to a PostgreSQL database.
 
-## Usage
-    todo - describe parameters
-
-## Local development
-### Initializing the virtual environment
-```
-cd cj2pgsql
-pipenv install
-```
+### CLI usage instructions
+https://leoleonsio.github.io/cjdb/#cj2pgsql-cli-usage
 
 ### Running the importer example:
 The password should be specified in the PGPASSWORD environment variable.
@@ -59,7 +52,7 @@ virtualenv venv
 3. Build the CLI:
 python setup.py develop
 
-4. The cj2pgsql and cjdb_api should now work as commands:
+4. The cj2pgsql should now work as a command:
 ```
 cj2pgsql --help
 ```
