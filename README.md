@@ -1,7 +1,12 @@
 # cjdb
+![MIT badge](https://img.shields.io/pypi/l/cjdb)
+
 CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database.
 
-There are 2 software components available:
+### Data model
+For the underlying data model see [model/README.md](model/README.md)
+
+Based on this model, there are 2 software components available:
 
 ### cj2pgsql
 See [cj2pgsql/README.md](cj2pgsql/README.md)
