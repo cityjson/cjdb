@@ -1,12 +1,17 @@
 from flask import render_template, make_response, request
 from flask_restful import Resource
-from model.sqlalchemy_models import CjObjectModel, FamilyModel
+from geoalchemy2.shape import to_shape
+
+from model.sqlalchemy_models import CjObjectModel, FamilyModel, ImportMetaModel
 from cjdb_api.app.schemas import CjObjectSchema
 from cjdb_api.app.db import session, engine
 from sqlalchemy.sql import text
 from pygeofilter.parsers.ecql import parse as parse_ecql
 from pygeofilter.backends.sqlalchemy import to_filter
-from sqlalchemy import update
+from sqlalchemy import update, func
+import ast
+from geoalchemy2 import Geometry
+# from shapely.geometry import Point
 
 cityjson_schema = CjObjectSchema()
 cityjson_list_schema = CjObjectSchema(many=True)
@@ -48,18 +53,10 @@ def what_type(attrib, new_value):
            return float(new_value)
 
     else:
-        if isinstance(new_value, bool):
-            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_boolean()
-            return bool(new_value)
-        if isinstance(new_value, float):
-            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_float()
-            return float(new_value)
-        if isinstance(new_value, int):
-            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_integer()
-            return int(new_value)
-        else:
-            FIELD_MAPPING[attrib] = CjObjectModel.attributes[attrib].as_string()
-            return new_value
+        tp = ast.literal_eval(new_value)
+        FIELD_MAPPING[attrib] = type(tp)
+        return tp
+
 
 def parse_table(parse):
     # convert cityjson schema to a list of headers and a list of lists of values
@@ -70,7 +67,6 @@ def parse_table(parse):
 
     return headings, data
 
-##working
 
 #Select all objects in the database
 class show(Resource):
@@ -89,10 +85,15 @@ class show(Resource):
 class QueryByAttribute(Resource):
     @classmethod
     def get(cls, attrib: str, value: str):
-        cj_object = session.query(CjObjectModel).filter(getattr(CjObjectModel, attrib) == str(value)).limit(50)
+        att = attrib.split('.')
+        val = what_type(attrib, value)
+        if len(att) > 1:
+            cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[attrib] == val).limit(50)
+        else:
+            cj_object = session.query(CjObjectModel).filter(getattr(CjObjectModel, attrib) == val).limit(50)
 
         if not cj_object:
-            return {"message": "Object not found"}, 404
+            return {"message": "This object does not have " + attrib}, 404
 
         return cityjson_list_schema.dump(cj_object)
 
@@ -105,13 +106,11 @@ class GetInfo(Resource):
         cj_object = session.query(model).filter(model.object_id == object_id).first()
 
         if attrib == "parent_id" or "child_id":
-            # model = FamilyModel
             if attrib == "child_id":
                 cj_object = session.query(CjObjectModel).join(FamilyModel, FamilyModel.child_id == CjObjectModel.object_id).filter(FamilyModel.parent_id == object_id).all()
             if attrib == "parent_id":
                 cj_object = session.query(CjObjectModel).join(FamilyModel, FamilyModel.parent_id == CjObjectModel.object_id).filter(FamilyModel.child_id == object_id).all()
-                #
-                # cj_object = session.query(CjObjectModel).join(FamilyModel).filter(FamilyModel.child_id == object_id).all()
+
 
             if not cj_object:
                 return {"message": "This object does not have " + attrib}, 404
@@ -152,15 +151,27 @@ class FilterAttributes(Resource):
 class QueryByPoint(Resource):
     @classmethod
     def get(cls, coor: str):
-        sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakePoint'+coor)
-        results = engine.execute(sql)
+        # sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakePoint'+coor)
+        # p =
+        # print(p)
+        # cj_object = session.query(CjObjectModel).first()
+        # polygon = to_shape(cj_object.bbox)
+        # p = Geometry('POINT')
+        query = session.query(CjObjectModel).filter((CjObjectModel.bbox.ST_Contains("POINT(84498.772 445820.167")))
+        # 'POINT(-0.666085 51.42553)'
+        # query = polygon.ST_Contains(polygon, 'POINT(84498.772 445820.167)')
+        for object in query:
+            print(object.object_id)
+        # print(polygon)
+        # results = engine.execute(sql)
 
-        # View the records
-        for record in results:
-            building = record[2]
 
-        # test URL: http://127.0.0.1:5000/api/point/(81402.6705,451405.4224)
-        return building
+        # # View the records
+        # for record in results:
+        #     building = record[2]
+        #
+        # # test URL: http://127.0.0.1:5000/api/point/(81402.6705,451405.4224)
+        # return building
 
 # Given 2D bounding box, like (81400, 451400, 81600, 451600), return the table of object_id
 class QueryByBbox(Resource):
@@ -201,33 +212,37 @@ class CalculateFootprint(Resource):
 class AddAttribute(Resource):
     @classmethod
     def get(cls, object_id: str, attrib: str, new_value: str):
+        if attrib in FIELD_MAPPING:
+            return {"message": "This object already has " + attrib + " If you want to Update the attribute, use /update instead"}, 404
 
         if object_id == "all":
             obs = session.query(CjObjectModel)
-
+            show = session.query(CjObjectModel).limit(50)
         else:
             obs = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id)
 
         for object in obs:
-            print("I am going through it")
             if isinstance(object.attributes, dict):
                 listObj = object.attributes
-                if attrib == "bbox":
-                    with engine.connect() as connection:
-                        area_pointer = connection.execute(object.bbox.ST_Area())
+            else:
+                listObj = {}
+            if attrib == "FootPrintArea":
+                with engine.connect() as connection:
+                    area_pointer = connection.execute(object.bbox.ST_Area())
 
-                    for row in area_pointer:
-                        value = row[0]
-                else:
-                    value = what_type(attrib, new_value)
-                listObj[attrib] = value
-                u = update(CjObjectModel)
-                u = u.values({"attributes": listObj})
-                u = u.where(CjObjectModel.object_id == object.object_id)
-                engine.execute(u)
+                for row in area_pointer:
+                    value = row[0]
+            else:
+                value = what_type(attrib, new_value)
+                print(type(value))
+
+            listObj[attrib] = value
+            u = update(CjObjectModel)
+            u = u.values({"attributes": listObj})
+            u = u.where(CjObjectModel.object_id == object.object_id)
+            engine.execute(u)
 
         if object_id == "all":
-            show = session.query(CjObjectModel).limit(50)
             return cityjson_list_schema.dump(show)
         else:
             return cityjson_list_schema.dump(obs)
@@ -261,6 +276,7 @@ class UpdateAttrib(Resource):
     def get(cls, object_id:str, attrib:str, new_value:str):
         value = what_type(attrib, new_value)
 
+
         if object_id == "all":
             obs = session.query(CjObjectModel).all()
         else:
@@ -282,19 +298,6 @@ class UpdateAttrib(Resource):
             return cityjson_list_schema.dump(obs)
 
 
-class CalculateVolume (Resource):
-    pass
-
-class Geometry(Resource):
-    @classmethod
-    def get(cls):
-        all = session.query(CjObjectModel).all()
-
-        if not all:
-            return {"message": "Object not found"}, 404
-
-        return cityjson_list_schema.dump(all)
-
 class CQL_query(Resource):
     @classmethod
     def get(cls):
@@ -306,7 +309,7 @@ class CQL_query(Resource):
 
         # apply the filter here:
         query = session.query(CjObjectModel).filter(sqlalchemy_filters)
-        # lim = query.limit(50)
+        lim = query.limit(50)
 
         # return cityjson_list_schema.dump(cj_objects)
-        return cityjson_list_schema.dump(query)
+        return cityjson_list_schema.dump(lim)
