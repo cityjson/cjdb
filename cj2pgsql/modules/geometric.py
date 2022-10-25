@@ -1,3 +1,4 @@
+import copy
 from shapely.geometry import box, MultiPolygon, Point, Polygon
 from shapely.ops import transform, unary_union
 from shapely.validation import make_valid,explain_validity
@@ -31,14 +32,16 @@ def reproject(geom, source_srid, target_srid):
 
 
 def transform_vertex(vertex, transform):
-    vertex[0] = (vertex[0] * transform["scale"][0]) + transform["translate"][0]
-    vertex[1] = (vertex[1] * transform["scale"][1]) + transform["translate"][1]
-    vertex[2] = (vertex[2] * transform["scale"][2]) + transform["translate"][2]
+    new_v = vertex.copy()
+    new_v[0] = (new_v[0] * transform["scale"][0]) + transform["translate"][0]
+    new_v[1] = (new_v[1] * transform["scale"][1]) + transform["translate"][1]
+    new_v[2] = (new_v[2] * transform["scale"][2]) + transform["translate"][2]
 
-    return vertex
+    return new_v
 
 
 def transform_with_rotation(vertex, transform):
+    # matrix multiplication as in https://www.cityjson.org/dev/geom-templates/
     homo_vertex = np.array([vertex + [1]]).T
     t_matrix = np.reshape(transform, (4, 4))
 
@@ -60,13 +63,18 @@ def reproject_vertex_list(vertices, srid_from, srid_to):
 
     # transform all the coordinates
     reprojected_xyz = transformer.transform(*zip(*vertices))
-    vertices = [list(i) for i in zip(*reprojected_xyz)]
+    reprojected_xyz = [list(i) for i in zip(*reprojected_xyz)]
 
-    return vertices
+    return reprojected_xyz
 
 
-def resolve(lod_level, vertices):
-    for boundary in lod_level['boundaries']:
+def resolve(lod_level, vertices, inplace=True):
+    if inplace:
+        resolvable = lod_level
+    else:
+        resolvable = copy.deepcopy(lod_level)
+
+    for boundary in resolvable['boundaries']:
         for i, shell in enumerate(boundary):
             if type(shell[0]) is list:
                 for j, ring in enumerate(shell):
@@ -82,11 +90,12 @@ def resolve(lod_level, vertices):
                     new_shell.append(xyz)
                 boundary[i] = new_shell
 
+    return resolvable
 
-def resolve_template(lod_level, transformed_vertices, geometry_templates, source_target_srid):
+def resolve_template(lod_level, vertices, geometry_templates, source_target_srid):
     # get anchor point
     vertex_id = lod_level["boundaries"][0]
-    anchor = transformed_vertices[vertex_id]
+    anchor = vertices[vertex_id]
 
     # apply transformation matrix to the template vertices
     template_vertices = [transform_with_rotation(v, lod_level["transformationMatrix"]) 
@@ -102,32 +111,26 @@ def resolve_template(lod_level, transformed_vertices, geometry_templates, source
     # dereference template vertices
     template_id = lod_level["template"]
     template = geometry_templates["templates"][template_id]
-    resolve(template, template_vertices)
+    
+    # inplace=False, because the template can be resolved differently for some other cityobject
+    resolved_template = resolve(template, template_vertices, inplace=False)
+    return resolved_template
 
-    return template
 
-
-def resolve_geometry_vertices(geometry, vertices, transform, 
+def resolve_geometry_vertices(geometry, vertices, 
                                 geometry_templates, source_target_srid):
-
-    # unpack values based on the CityJSON transform
-    transformed_vertices = [transform_vertex(v, transform) for v in vertices]
-        
-    # reproject vertices if needed
-    if source_target_srid:
-        transformed_vertices = reproject_vertex_list(transformed_vertices, *source_target_srid)
 
     # use ready vertices to resolve coordinate values for the geometry (or geometry template)
     for i, lod_level in enumerate(geometry):
         if lod_level["type"] == "GeometryInstance":
             resolved_template = resolve_template(lod_level, 
-                                                transformed_vertices, 
+                                                vertices,
                                                 geometry_templates,
                                                 source_target_srid)
             geometry[i] = resolved_template
         else:
             # resolve without geometry template
-            resolve(lod_level, transformed_vertices)
+            resolve(lod_level, vertices)
 
     return geometry
 

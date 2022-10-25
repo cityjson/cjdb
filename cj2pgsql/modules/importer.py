@@ -2,14 +2,14 @@ from cj2pgsql.modules.checks import check_object_type, check_root_properties
 from cj2pgsql.modules.extensions import ExtensionHandler
 from cj2pgsql.modules.geometric import calculate_object_bbox, \
     geometry_from_extent, get_ground_geometry, get_srid, \
-    reproject, resolve_geometry_vertices, to_ewkt
+    reproject_vertex_list, resolve_geometry_vertices, transform_vertex
 from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine
 import os
 import json
 import sys
 from sqlalchemy.orm import Session
 from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
-from sqlalchemy import func, MetaData, inspect
+from sqlalchemy import func
 from pathlib import Path
 from pyproj import CRS
 
@@ -97,7 +97,7 @@ class Importer:
 
             # use specified target SRID for all the geometries
             # If not specified use same as source.
-            if self.args.target_srid:
+            if self.args.target_srid and self.current.source_srid:
                 self.current.target_srid = self.args.target_srid
                 target_crs = CRS.from_epsg(self.args.target_srid)
                 if not target_crs.is_vertical:
@@ -156,10 +156,22 @@ class Importer:
             self.session.add(import_meta)
             self.session.commit()
         else:
+            # unpack vertices for the cityobjects based on the CityJSON transform
+            # this is done once for the CityJSONFeature
+            vertices = [transform_vertex(v, self.current.import_meta.transform) 
+                                        for v in line_json["vertices"]]
+
+            # reproject if needed
+            source_target_srid = None
+            if self.current.source_srid and self.current.target_srid != self.current.source_srid:
+                source_target_srid = (self.current.source_srid, self.current.target_srid)
+                vertices = reproject_vertex_list(vertices, *source_target_srid)
+
             # create CityJSONObjects
             for obj_id, cityobj in line_json["CityObjects"].items():
                 # get 3D geom, ground geom and bbox
-                geometry, ground_geometry, bbox = self.get_geometries(cityobj, line_json)
+                geometry, ground_geometry, bbox = self.get_geometries(cityobj, vertices,
+                                                                        source_target_srid)
                     
                 # check if the object type is allowed by the official spec or extension
                 check_result, message = check_object_type(cityobj.get("type"), 
@@ -244,28 +256,20 @@ class Importer:
                 print(f"Specified attribute to be indexed: '{attr_name}' does not exist")
             # maybe create partial index?
 
-    def get_geometries(self, cityobj, line_json):
+    def get_geometries(self, cityobj, vertices, source_target_srid):
         if "geometry" not in cityobj:
             return None, None, None
-
-        # check if reprojection needed
-        source_target_srid = None
-        if self.current.source_srid \
-            and self.current.target_srid != self.current.source_srid:
-
-            source_target_srid = (self.current.source_srid, self.current.target_srid)
-
+        
         # returned geometry is already in the required projection
         geometry = resolve_geometry_vertices(cityobj["geometry"], 
-                                            line_json["vertices"],
-                                            self.current.import_meta.transform,
+                                            vertices,
                                             self.current.import_meta.geometry_templates,
                                             source_target_srid)
 
         bbox = calculate_object_bbox(geometry)
-        bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
+        bbox = func.st_geomfromtext(bbox.wkt, self.current.target_srid)
 
         ground_geometry = get_ground_geometry(geometry)
-        ground_geometry = func.st_geomfromtext(ground_geometry.wkt, self.current.source_srid)
+        ground_geometry = func.st_geomfromtext(ground_geometry.wkt, self.current.target_srid)
 
         return geometry, ground_geometry, bbox
