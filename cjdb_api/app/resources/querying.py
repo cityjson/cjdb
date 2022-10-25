@@ -1,6 +1,6 @@
 from flask import render_template, make_response, request
 from flask_restful import Resource
-from model.sqlalchemy_models import CjObjectModel
+from model.sqlalchemy_models import CjObjectModel, FamilyModel
 from cjdb_api.app.schemas import CjObjectSchema
 from cjdb_api.app.db import session, engine
 from sqlalchemy.sql import text
@@ -100,11 +100,30 @@ class QueryByAttribute(Resource):
 class GetInfo(Resource):
     @classmethod
     def get(cls, attrib: str, object_id: str):
-        cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
-        attribute = getattr(cj_object, attrib)
+        model = CjObjectModel
+        att = attrib.split('.')
+        cj_object = session.query(model).filter(model.object_id == object_id).first()
+
+        if attrib == "parent_id" or "child_id":
+            # model = FamilyModel
+            if attrib == "child_id":
+                cj_object = session.query(CjObjectModel).join(FamilyModel, FamilyModel.child_id == CjObjectModel.object_id).filter(FamilyModel.parent_id == object_id).all()
+            if attrib == "parent_id":
+                cj_object = session.query(CjObjectModel).join(FamilyModel, FamilyModel.parent_id == CjObjectModel.object_id).filter(FamilyModel.child_id == object_id).all()
+                #
+                # cj_object = session.query(CjObjectModel).join(FamilyModel).filter(FamilyModel.child_id == object_id).all()
+
+            if not cj_object:
+                return {"message": "This object does not have " + attrib}, 404
+            return cityjson_list_schema.dump(cj_object)
+
+        if len(att) > 1:
+            attribute = cj_object[0].attributes[att[1]]
+        else:
+            attribute = getattr(cj_object, attrib)
 
         if not attribute:
-            return {"message": "Object not found"}, 404
+            return {"message": "This object does not have " + attrib}, 404
 
         return attribute
 
@@ -226,7 +245,7 @@ class DelAttrib(Resource):
             if isinstance(object.attributes, dict):
                 listObj = object.attributes
                 del listObj[attrib]
-                u = update(object)
+                u = update(CjObjectModel)
                 u = u.values({"attributes": listObj})
                 u = u.where(CjObjectModel.object_id == object.object_id)
                 engine.execute(u)
