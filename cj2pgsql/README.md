@@ -1,10 +1,10 @@
 # cj2pgsql
-cj2pgsql is a Python based importer of CityJSONL files to a PostgreSQL database.
+`cj2pgsql` is a Python based importer of CityJSONL files to a PostgreSQL database.
 
 ## Table of Contents  
 - [Basic CLI Usage](#usage)
 
-- [CLI tutorial](#tutorial)
+- [cj2pgsql explanations](#explanation)
 
 - [Local development of the CLI](#localdev)
 
@@ -14,24 +14,57 @@ cj2pgsql is a Python based importer of CityJSONL files to a PostgreSQL database.
 ---
 https://leoleonsio.github.io/cjdb/#cj2pgsql-cli-usage
 
-#### Quickstart command
-This command assumes the pipenv environment already exists in the repository root.
+#### Quickstart example
+Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/nl/download?tid=901).
 
-The password should be specified in the PGPASSWORD environment variable.
+Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cj2pgsql is needed to import it to a specified schema in a database.
+
+1. Convert CityJSON to CityJSONL
 
 ```
-PGPASSWORD=your_pass PYTHONPATH="$PWD" pipenv run python cj2pgsql/main.py -H localhost -U postgres -d postgres -s cjdb -p 5432 file.jsonl
+cjio --suppress_msg tile_901.json export jsonl stdout > tile_901.jsonl 
 ```
 
-### cj2pgsql CLI tutorial <a name="tutorial"></a>
+2. Import CityJSONL to the database
+```
+PGPASSWORD=postgres cj2pgsql -H localhost -U postgres -d postgres -s cjdb -o tile_901.jsonl   
+```
+
+**Alternatively steps 1 and 2 in a single command:**
+
+```
+cjio --suppress_msg tile_901.json export jsonl stdout | cj2pgsql -H localhost -U postgres -d postgres -s cjdb -o
+```
+
+The metadata and the objects can then be found in the tables in the specified schema (`cjdb` in this example).
+
+
+Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
+
+
+ 
+
+### cj2pgsql explanations <a name="explanation"></a>
 ---
+#### Model assumptions
+The `cj2pgsql` importer loads the data in accordance with a specific data model, which is also shared with the [`cjdb_api`](../cjdb_api/README.md).
+
+Model documentation:
+ [model/README](../model/README.md)
+
+
+#### What is a City Model? How to organize CityJSON data from various sources?
+
+The definition and scope of the City Model are for the user to decide. It is recommended to group together semantically coherent objects, by importing them to the same database schema.
+
+While the static table structure (columns don't change) does support loading any type of CityJSON objects together, the data becomes harder to manage for the user. Example of this would be having different attributes for the same CityObject type (which should be consistent for data coming from the same source).
 
 #### Source data
 The importer works only on *CityJSONL* files.
 Instructions on how to obtain such a file from a *CityJSON* file: https://cjio.readthedocs.io/en/latest/includeme.html#stdin-and-stdout
 
 
-The importer has 3 possible sources of imports:
+The importer supports 3 kinds of input:
 - a single CityJSONL file
 - a directory of CityJSONL files (all files with *jsonl* extensions are located and imported)
 - STDIN using the pipe operator:
@@ -39,8 +72,13 @@ The importer has 3 possible sources of imports:
 cat file.jsonl | cj2pgsql ...
 ```
 
-#### Model assumptions
-The
+#### Coordinate Reference Systems
+The `cj2pgsql` importer does not allow inconsistent reference systems within the same database schema. For storing data in separate CRS using multiple schemas is required.
+
+The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
+
+Source data with missing `referenceSystem` cannot be reprojected due to unknown source reference system.
+
 
 ### Local development of the CLI <a name="localdev"></a>
 ---
