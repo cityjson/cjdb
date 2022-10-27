@@ -3,15 +3,15 @@ The implemented data model includes three sub-data models: import_meta model for
 import_meta
 The import_meta model stores information from imported files. Its attributes are described below.
 
-id: id in the database
-source_file: name of the source file
-version: cityJSON version
-metadata: cityJSON version
-transform: the transformation method from geometry's integer coordinates to real-world coordinates
-geometry_templates: geometry_templates file for urban objects' geometry definition
-srid: CRS of the source file
-extensions: cityJSON extensions
-extra_properties: added new properties at the root of the imported document
+id: id in the database<br/>
+source_file: name of the source file<br/>
+version: cityJSON version<br/>
+metadata: cityJSON version<br/>
+transform: the transformation method from geometry's integer coordinates to real-world coordinates<br/>
+geometry_templates: geometry_templates file for urban objects' geometry definition<br/>
+srid: CRS of the source file<br/>
+extensions: cityJSON extensions<br/>
+extra_properties: added new properties at the root of the imported document<br/>
 started_at: importing start time
 finished_at: importing finish time
 Bounding box: bounding box of the input file's geographic extent is calculated and stored as one additional attribute.
