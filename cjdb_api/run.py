@@ -1,6 +1,4 @@
 from cjdb_api.app import make_app
-# from model.sqlalchemy_models import CjObjectModel
-# from cjdb_api.app.db import session
 from cjdb_api.app.resources.querying import type_mapping
 
 def main():
