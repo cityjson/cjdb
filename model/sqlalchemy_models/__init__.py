@@ -105,5 +105,5 @@ class FamilyModel(BaseModel):
     parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
     child_id = Column(String, ForeignKey(CjObjectModel.object_id))
 
-    parent = relationship(CjObjectModel, foreign_keys=[parent_id])
-    child = relationship(CjObjectModel, foreign_keys=[child_id])
+    parent = relationship(CjObjectModel, foreign_keys=[parent_id], post_update=True)
+    child = relationship(CjObjectModel, foreign_keys=[child_id], post_update=True)

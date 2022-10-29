@@ -22,7 +22,6 @@ class SingleFileImport:
         self.source_srid = None
         self.extension_handler = None # data about extensions - extra properties, root attributes...
 
-
 # importer class called once per whole import
 class Importer:
     def __init__(self, args):
@@ -30,6 +29,9 @@ class Importer:
         # get allowed types for validation
         self.cj_object_types = get_cj_object_types()
         self.current = SingleFileImport()
+
+        for table in BaseModel.metadata.tables.values():
+            table.schema = self.args.db_schema
 
 
     def __enter__(self):
@@ -63,7 +65,6 @@ class Importer:
 
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
-            table.schema = self.args.db_schema
             table.create(self.engine, checkfirst=True)
 
     def parse_cityjson(self):
@@ -177,6 +178,11 @@ class Importer:
                 source_target_srid = (self.current.source_srid, self.current.target_srid)
                 vertices = reproject_vertex_list(vertices, *source_target_srid)
 
+            # list of relationships for the CityJSONFeature
+            family_ties = []
+            # objects for the CityJSONFeature
+            cj_feature_objects = {}
+
             # create CityJSONObjects
             for obj_id, cityobj in line_json["CityObjects"].items():
                 # get 3D geom, ground geom and bbox
@@ -200,15 +206,23 @@ class Importer:
                     ground_geometry=ground_geometry
                 )
 
-                # create children-parent links
-                for child_id in cityobj.get("children", []):
-                    family = FamilyModel(parent_id=obj_id, child_id=child_id)
-                    self.session.add(family)
-
                 # add CityJson object to the database
                 cj_object.__table__.schema = self.args.db_schema
                 cj_object.import_meta = self.current.import_meta
                 self.session.add(cj_object)
+                cj_feature_objects[obj_id] = cj_object
+
+                # save children-parent links
+                for child_id in cityobj.get("children", []):
+                    family_ties.append((obj_id, child_id))
+
+            # create children-parent links after all objects from the CityJSONFeature already exist
+            for parent_id, child_id in family_ties:
+                parent = cj_feature_objects[parent_id]
+                child = cj_feature_objects[child_id]
+                family = FamilyModel(parent=parent, child=child)
+                self.session.add(family)
+
 
     def process_file(self, filepath):
         self.current = SingleFileImport(filepath)
