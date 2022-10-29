@@ -52,7 +52,7 @@ The metadata and the objects can then be found in the tables in the specified sc
 Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
 
 
-## cj2pgsql explanations <a name="explanation"></a>
+## 2. cj2pgsql explanations <a name="explanation"></a>
 ---
 ### Model assumptions <a name="model"></a>
 The `cj2pgsql` importer loads the data in accordance with a specific data model, which is also shared with the [`cjdb_api`](../cjdb_api/README.md).
@@ -125,7 +125,7 @@ The importer does not validate the structure of the file. It sends out warnings 
 - the source dataset does not have a CRS defined at all
 
 
-## Local development of the CLI <a name="localdev"></a>
+## 3. Local development of the CLI <a name="localdev"></a>
 ---
 To build the CLI app (so that it can be called as a command line tool from anywhere):
 
@@ -156,7 +156,7 @@ cj2pgsql --help
 ```
 
 
-## Running tests <a name="tests"></a>
+## 4. Running tests <a name="tests"></a>
 ---
 Test cases for Pytest are generated based on the CityJSONL files in:
 - cj2pgsql/test/files
