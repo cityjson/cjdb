@@ -112,7 +112,7 @@ No action is taken. These attributes end up in the `attributes` JSONB column. Qu
 
 2. Additional root properties
 
-Additional root properties are placed in the `extra properties` column in the `import_meta` table.
+Additional root properties are placed in the `extra properties` JSONB column in the `import_meta` table.
 
 3. Additional CityObject type
 
@@ -120,7 +120,7 @@ Additional CityObject types are appended to the list of allowed CityJSON objects
 
 ### Data validation <a name="validation"></a>
 The importer does not validate the structure of the file. It sends out warnings when:
-- there appear CityObject types defined neither in the main CityJSON specification nor a supplied extension. 
+- there appear CityObject types defined neither in the main CityJSON specification nor any of the supplied extensions. 
 - the specified target CRS does not have the Z-axis defined
 - the source dataset does not have a CRS defined at all
 
