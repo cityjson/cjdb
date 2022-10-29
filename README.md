@@ -28,9 +28,22 @@ The package is available in PyPI:
 ```
 pip install cjdb
 ```
-It is recommended to install it in an isolated environment, because of fragile external library dependencies for CQL filter parsing. 
+It is recommended to install it in an isolated environment, because of fragile external library dependencies for CQL filter parsing.
+
+Another option is to clone the repository and build the CLI from the code.
+From repository root, run:
+```
+python3 -m build
+```
+
+Install the .whl file with pip:
+```
+pip3 install dist/*.whl
+```
+
 
 For instructions on running the software check specific READMEs.
+
 
 ## 3. Local development <a name="local"></a>
 Make sure pipenv is installed:
@@ -42,7 +55,7 @@ Create the environment:
 pipenv install
 ```
 
-## 4. Local development of the CLI <a name="cli"></a>
+## 4. Local CLI development <a name="cli"></a>
 ---
 To build the CLI app (so that it can be called as a command line tool from anywhere):
 
@@ -65,7 +78,9 @@ virtualenv venv
 ```
 
 4. Build the CLI:
+```
 python setup.py develop
+```
 
 5. The cj2pgsql importer should now work as a command inside this environment:
 ```
