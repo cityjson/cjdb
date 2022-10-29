@@ -18,7 +18,8 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 ## [Unreleased]
-- 
+`Changed`
+- detect when pyproj 3D transformation would be incomplete and attempt to download missing transformation grids
 
 ## [0.0.7a] - 2022-10-25
 `Fixed`
