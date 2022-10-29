@@ -4,33 +4,6 @@ from shapely.validation import explain_validity
 from pyproj import CRS, Transformer
 from pyproj.transformer import TransformerGroup
 import numpy as np
-from pyproj import datadir
-
-# check if reprojection possible
-# prints warnings, but doesn't stop the import
-def check_reprojection(source_srid, target_srid):
-    source_proj = CRS.from_epsg(source_srid)
-    target_proj = CRS.from_epsg(target_srid)
-
-    if len(target_proj.axis_info) < 3:
-        print(f"Warning: The specified target SRID({target_srid}) " + \
-                "lacks information about the Z-axis. The Z vertex values will remain unchanged.")
-
-    group = TransformerGroup(source_proj, target_proj)
-    # this prints a warning if there are some grids missing for the reprojection
-    # more about this https://pyproj4.github.io/pyproj/stable/transformation_grids.html
-
-    # attempt to download missing grids
-    if not group.best_available:
-        print("Attempting to download additional grids required for CRS transformation.")
-        print(f"This can also be done manually, and the grid should be put in this folder:\n\t{datadir.get_data_dir()}")
-        
-        try:
-            group.download_grids(datadir.get_data_dir())
-        except:
-            print("Failed to download the missing grids.")
-        else:
-            print("Download successful.")
 
 
 # get srid from a CRS string definition

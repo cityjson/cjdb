@@ -14,32 +14,16 @@ def get_db_engine(args, echo=False):
 
     return engine
 
+
 def open_connection(args):
     conn = psycopg2.connect(database=args.db_name,
                             host=args.db_host,
                             user=args.db_user,
                             port=args.db_port,
-                            cursor_factory=RealDictCursor
-                            )
+                            cursor_factory=RealDictCursor)
     
     return conn
 
-
-def execute_sql(conn, sql):
-    with conn.cursor() as cur:
-        cur.execute(sql)
-
-    conn.commit()
-
-def fetch_query(conn, query):
-    result = None
-    with conn.cursor() as cur:
-        cur.execute(query)
-        if cur.rowcount > 0:
-            result = cur.fetchall()
-
-    conn.commit()
-    return result
 
 # todo - this should take available object types from the official spec
 def get_cj_object_types():
@@ -63,6 +47,7 @@ def get_cj_object_types():
     return sorted(type_list)
 
 
+# find extended properties
 def find_extra_properties(json_obj):
     property_names = []
     for key in json_obj:

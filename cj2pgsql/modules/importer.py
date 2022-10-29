@@ -1,6 +1,6 @@
-from cj2pgsql.modules.checks import check_object_type, check_root_properties
+from cj2pgsql.modules.checks import check_object_type, check_root_properties, check_reprojection
 from cj2pgsql.modules.extensions import ExtensionHandler
-from cj2pgsql.modules.geometric import calculate_object_bbox, check_reprojection, \
+from cj2pgsql.modules.geometric import calculate_object_bbox, \
     get_ground_geometry, get_srid, \
     reproject_vertex_list, resolve_geometry_vertices, transform_vertex
 from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine

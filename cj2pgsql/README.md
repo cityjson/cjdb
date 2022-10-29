@@ -14,8 +14,7 @@
  - [CityJSON Extensions](#extensions)
  - [Data validation](#validation)
 
-
-### [3. Local development of the CLI](#localdev)
+### [3. Running with local code](#local)
 
 ### [4. Running tests](#tests)
 ---------------------------------
@@ -124,35 +123,15 @@ The importer does not validate the structure of the file. It sends out warnings 
 - the specified target CRS does not have the Z-axis defined
 - the source dataset does not have a CRS defined at all
 
-
-## 3. Local development of the CLI <a name="localdev"></a>
----
-To build the CLI app (so that it can be called as a command line tool from anywhere):
-
-
-1. Sync the pipenv requirements with the setup.py file:
+## 3. Running with local code <a name="local"></a>
+Create `pipenv` environment in repository root:
 ```
-pipenv run pipenv-setup sync
+pipenv install
 ```
 
-2. Create a venv just for testing the CLI build.
-
-**Note**: This is not the pipenv/development environment.
+Run the importer:
 ```
-virtualenv venv
-```
-2. Activate environment (note: this is not the pipenv environment. This is a separate environment just to test the CLI build)
-```
-. venv/bin/activate
-
-```
-
-3. Build the CLI:
-python setup.py develop
-
-4. The cj2pgsql should now work as a command inside this environment:
-```
-cj2pgsql --help
+PYTHONPATH=$PWD pipenv run python cj2pgsql/main.py --help
 ```
 
 
