@@ -20,11 +20,11 @@
 ### [4. Running tests](#tests)
 ---------------------------------
 
-### 1. Basic CLI usage <a name="usage"></a>
+## 1. Basic CLI usage <a name="usage"></a>
 ---
 https://leoleonsio.github.io/cjdb/#cj2pgsql-cli-usage
 
-#### Quickstart example <a name="quickstart"></a>
+### Quickstart example <a name="quickstart"></a>
 Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/nl/download?tid=901).
 
 Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cj2pgsql is needed to import it to a specified schema in a database.
@@ -52,22 +52,22 @@ The metadata and the objects can then be found in the tables in the specified sc
 Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
 
 
-### cj2pgsql explanations <a name="explanation"></a>
+## cj2pgsql explanations <a name="explanation"></a>
 ---
-#### Model assumptions <a name="model"></a>
+### Model assumptions <a name="model"></a>
 The `cj2pgsql` importer loads the data in accordance with a specific data model, which is also shared with the [`cjdb_api`](../cjdb_api/README.md).
 
 Model documentation:
  [model/README](../model/README.md)
 
 
-#### What is a City Model? How to organize CityJSON data from various sources? <a name="citymodel"></a>
+### What is a City Model? How to organize CityJSON data from various sources? <a name="citymodel"></a>
 
 The definition and scope of the City Model are for the user to decide. It is recommended to group together semantically coherent objects, by importing them to the same database schema.
 
 While the static table structure (columns don't change) does support loading any type of CityJSON objects together, the data becomes harder to manage for the user. Example of this would be having different attributes for the same CityObject type (which should be consistent for data coming from the same source).
 
-#### Types of input <a name="input"></a>
+### Types of input <a name="input"></a>
 The importer works only on *CityJSONL* files.
 Instructions on how to obtain such a file from a *CityJSON* file: https://cjio.readthedocs.io/en/latest/includeme.html#stdin-and-stdout
 
@@ -80,7 +80,7 @@ The importer supports 3 kinds of input:
 cat file.jsonl | cj2pgsql ...
 ```
 
-#### Coordinate Reference Systems <a name="crs"></a>
+### Coordinate Reference Systems <a name="crs"></a>
 The `cj2pgsql` importer does not allow inconsistent reference systems within the same database schema. For storing data in separate CRS using multiple schemas is required.
 
 The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
@@ -89,7 +89,7 @@ The data needs to be either harmonized beforehand, or the `-I/--srid` flag can b
 
 Source data with missing `referenceSystem` cannot be reprojected due to unknown source reference system.
 
-#### 3D reprojections <a name="3d"></a>
+### 3D reprojections <a name="3d"></a>
 `Pyproj` is used for coordinate reprojections. It supports 3D CRS transformations between different systems. However, sometimes downloading additional [grids](https://pyproj4.github.io/pyproj/stable/transformation_grids.html) is required. The importer will attempt to download the grids needed for the reprojection, with the following message:
 ```
 Attempting to download additional grids required for CRS transformation.
@@ -100,7 +100,7 @@ This can also be done manually, and the files should be put in this folder:
 If that fails, the user will have to download the required grids and put them in the printed `{pyproj_directory}` themselves. 
 
 
-#### CityJSON Extensions <a name="extensions"></a>
+### CityJSON Extensions <a name="extensions"></a>
 The extensions which were present in the imported file can be found listed in the `extensions` column in the `import_meta` table.
 
 [CityJSON docs](https://www.cityjson.org/specs/1.1.2/#extensions) mentions 3 different extendable features.
@@ -118,14 +118,14 @@ Additional root properties are placed in the `extra properties` column in the `i
 
 Additional CityObject types are appended to the list of allowed CityJSON objects.
 
-#### Data validation <a name="validation"></a>
+### Data validation <a name="validation"></a>
 The importer does not validate the structure of the file. It sends out warnings when:
 - there appear CityObject types defined neither in the main CityJSON specification nor a supplied extension. 
 - the specified target CRS does not have the Z-axis defined
 - the source dataset does not have a CRS defined at all
 
 
-### Local development of the CLI <a name="localdev"></a>
+## Local development of the CLI <a name="localdev"></a>
 ---
 To build the CLI app (so that it can be called as a command line tool from anywhere):
 
@@ -156,7 +156,7 @@ cj2pgsql --help
 ```
 
 
-### Running tests <a name="tests"></a>
+## Running tests <a name="tests"></a>
 ---
 Test cases for Pytest are generated based on the CityJSONL files in:
 - cj2pgsql/test/files
