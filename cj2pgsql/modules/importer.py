@@ -1,14 +1,14 @@
 from cj2pgsql.modules.checks import check_object_type, check_root_properties
 from cj2pgsql.modules.extensions import ExtensionHandler
-from cj2pgsql.modules.geometric import calculate_object_bbox, \
-    geometry_from_extent, get_ground_geometry, get_srid, \
+from cj2pgsql.modules.geometric import calculate_object_bbox, check_reprojection, \
+    get_ground_geometry, get_srid, \
     reproject_vertex_list, resolve_geometry_vertices, transform_vertex
 from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine
+from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 import os
 import json
 import sys
 from sqlalchemy.orm import Session
-from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 from sqlalchemy import func
 from pathlib import Path
 from pyproj import CRS
@@ -20,12 +20,14 @@ class SingleFileImport:
         self.target_srid = None
         self.import_meta = None # meta read from the file
         self.source_srid = None
-        self.extension_handler = None
+        self.extension_handler = None # data about extensions - extra properties, root attributes...
 
 
+# importer class called once per whole import
 class Importer:
     def __init__(self, args):
         self.args = args
+        # get allowed types for validation
         self.cj_object_types = get_cj_object_types()
         self.current = SingleFileImport()
 
@@ -39,6 +41,7 @@ class Importer:
         self.session.close()
 
     def run_import(self):
+        # create model if in create mode, else append data
         if not self.args.append_mode:
             self.prepare_database()
 
@@ -58,6 +61,7 @@ class Importer:
             self.engine.execute(f"drop schema if exists {self.args.db_schema} cascade")
         self.engine.execute(f"create schema if not exists {self.args.db_schema}")
 
+        # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
             table.schema = self.args.db_schema
             table.create(self.engine, checkfirst=True)
@@ -79,6 +83,8 @@ class Importer:
             raise Exception(f"Path: '{source_path}' not found")
 
     def post_import(self):
+        # post import operations like clustering, indexing...
+
         cur_path = Path(__file__).parent
         sql_path = os.path.join(cur_path.parent, "resources/post_import.sql")
 
@@ -98,23 +104,27 @@ class Importer:
             # use specified target SRID for all the geometries
             # If not specified use same as source.
             if self.args.target_srid and self.current.source_srid:
-                self.current.target_srid = self.args.target_srid
-                target_crs = CRS.from_epsg(self.args.target_srid)
-                if not target_crs.is_vertical:
-                    print(f"Warning: The specified target SRID({self.args.target_srid}) " + \
-                         "represents a non-vertical CRS. The Z vertex values will remain unchanged.")
+                self.current.target_srid = self.args.target_srid                
+                check_reprojection(self.current.source_srid, self.current.target_srid)
             else:
                 self.current.target_srid = self.current.source_srid
 
             # calculate dataset bbox based on geographicalExtent
             bbox = None
             if "geographicalExtent" in line_json["metadata"]:
-                bbox = geometry_from_extent(line_json["metadata"]["geographicalExtent"])
-                bbox = func.st_geomfromtext(bbox.wkt, self.current.source_srid)
+                bbox_coords = line_json["metadata"]["geographicalExtent"]
+                bbox_vertices = [bbox_coords[:3], bbox_coords[3:]]
+    
                 if self.current.source_srid \
                     and self.current.target_srid != self.current.source_srid:
 
-                    bbox = func.st_transform(bbox, self.current.target_srid)
+                    bbox_vertices = reproject_vertex_list(bbox_vertices,
+                                                        self.current.source_srid,
+                                                        self.current.target_srid)
+            
+                bbox = func.st_makeenvelope(bbox_vertices[0][0], bbox_vertices[0][1],
+                                            bbox_vertices[1][0], bbox_vertices[1][1],
+                                            self.current.target_srid)
 
             # store extensions data - extra root properties, extra city objects...
             self.current.extension_handler = ExtensionHandler(line_json.get("extensions"))
@@ -266,6 +276,7 @@ class Importer:
                                             self.current.import_meta.geometry_templates,
                                             source_target_srid)
 
+        # todo - keep either bbox or ground_geometry. both are not needed
         bbox = calculate_object_bbox(geometry)
         bbox = func.st_geomfromtext(bbox.wkt, self.current.target_srid)
 

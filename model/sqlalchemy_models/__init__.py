@@ -69,7 +69,7 @@ class CjObjectModel(BaseModel):
     __tablename__ = 'cj_object'
     __table_args__ = {'schema':'cjdb'}
     import_meta_id = Column(Integer, ForeignKey(ImportMetaModel.id))
-    object_id = Column(String, nullable=False, unique=True, primary_key=True)
+    object_id = Column(String, nullable=False, unique=True)
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())

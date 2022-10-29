@@ -1,34 +1,45 @@
 import copy
 from shapely.geometry import box, MultiPolygon, Point, Polygon
-from shapely.ops import transform, unary_union
-from shapely.validation import make_valid,explain_validity
+from shapely.validation import explain_validity
 from pyproj import CRS, Transformer
+from pyproj.transformer import TransformerGroup
 import numpy as np
+from pyproj import datadir
+
+# check if reprojection possible
+# prints warnings, but doesn't stop the import
+def check_reprojection(source_srid, target_srid):
+    source_proj = CRS.from_epsg(source_srid)
+    target_proj = CRS.from_epsg(target_srid)
+
+    if len(target_proj.axis_info) < 3:
+        print(f"Warning: The specified target SRID({target_srid}) " + \
+                "lacks information about the Z-axis. The Z vertex values will remain unchanged.")
+
+    group = TransformerGroup(source_proj, target_proj)
+    # this prints a warning if there are some grids missing for the reprojection
+    # more about this https://pyproj4.github.io/pyproj/stable/transformation_grids.html
+
+    # attempt to download missing grids
+    if not group.best_available:
+        print("Attempting to download additional grids required for CRS transformation.")
+        print(f"This can also be done manually, and the grid should be put in this folder:\n\t{datadir.get_data_dir()}")
+        
+        try:
+            group.download_grids(datadir.get_data_dir())
+        except:
+            print("Failed to download the missing grids.")
+        else:
+            print("Download successful.")
 
 
+# get srid from a CRS string definition
 def get_srid(crs):
     if crs:
         proj = CRS.from_string(crs)
         srid = proj.to_epsg()
 
         return srid
-
-
-def to_ewkt(wkt, srid):
-    if srid:
-        wkt = f"SRID={srid};{wkt}"
-
-    return wkt
-
-
-def reproject(geom, source_srid, target_srid):
-    source_proj = CRS.from_epsg(source_srid)
-    target_proj = CRS.from_epsg(target_srid)
-
-    projection = Transformer.from_crs(source_proj, target_proj, always_xy=True).transform
-    reprojected_geom = transform(projection, geom)
-
-    return reprojected_geom
 
 
 def transform_vertex(vertex, transform):
@@ -47,11 +58,6 @@ def transform_with_rotation(vertex, transform):
 
     transformed_vertex = np.dot(t_matrix, homo_vertex)
     return list(transformed_vertex.T[0])[:-1]
-
-
-def geometry_from_extent(extent):
-    bbox = box(extent[0], extent[1], extent[3], extent[4])
-    return bbox
 
 
 def reproject_vertex_list(vertices, srid_from, srid_to):

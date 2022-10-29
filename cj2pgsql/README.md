@@ -77,7 +77,44 @@ The `cj2pgsql` importer does not allow inconsistent reference systems within the
 
 The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
 
+**Note:** reprojections slow down the import significantly.
+
 Source data with missing `referenceSystem` cannot be reprojected due to unknown source reference system.
+
+#### 3D reprojections
+`Pyproj` is used for coordinate reprojections. It supports 3D CRS transformations between different systems. However, sometimes downloading additional [grids](https://pyproj4.github.io/pyproj/stable/transformation_grids.html) is required. The importer will attempt to download the grids needed for the reprojection, with the following message:
+```
+Attempting to download additional grids required for CRS transformation.
+This can also be done manually, and the files should be put in this folder:
+        {pyproj_directory}
+```
+
+If that fails, the user will have to download the required grids and put them in the printed `{pyproj_directory}` themselves. 
+
+
+#### CityJSON Extensions
+The extensions which were present in the imported file can be found listed in the `extensions` column in the `import_meta` table.
+
+[CityJSON docs](https://www.cityjson.org/specs/1.1.2/#extensions) mentions 3 different extendable features.
+
+The `cj2pgsql` importer deals with them followingly:
+1. Complex attributes
+
+No action is taken. These attributes end up in the `attributes` JSONB column. Querying by complex attributes values is not supported in the `cjdb_api` as of v0.0.7a.
+
+2. Additional root properties
+
+Additional root properties are placed in the `extra properties` column in the `import_meta` table.
+
+3. Additional CityObject type
+
+Additional CityObject types are appended to the list of allowed CityJSON objects.
+
+#### Data validations
+The importer does not validate the structure of the file. It sends out warnings when:
+- there appear CityObject types defined neither in the main CityJSON specification nor a supplied extension. 
+- the specified target CRS does not have the Z-axis defined
+- the dataset does not have a CRS defined at all
 
 
 ### Local development of the CLI <a name="localdev"></a>

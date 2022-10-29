@@ -10,3 +10,4 @@ venv
 *.whl
 *.gz
 done
+cj2pgsql/modules/projtest.py
