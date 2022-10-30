@@ -5,10 +5,10 @@ from model.sqlalchemy_models import CjObjectModel
 class CjObjectSchema(ma.Schema):
     # here define fields for serialization
     object_id = fields.String()
-    # # attributes = fields.Field()
-    # type = fields.String()
+    type = fields.String()
+    attributes = fields.Field()
+    geometry = fields.Field() 
     # bbox = fields.String()
-    attributes = fields.String()
 
     @post_load
     def make(self, data, **kwargs):
