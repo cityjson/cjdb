@@ -1,4 +1,4 @@
-from flask import render_template, make_response, request
+from flask import render_template, make_response, request, jsonify
 from flask_restful import Resource
 from model.sqlalchemy_models import CjObjectModel, FamilyModel, ImportMetaModel
 from cjdb_api.app.schemas import CjObjectSchema
@@ -8,7 +8,12 @@ from pygeofilter.parsers.ecql import parse as parse_ecql
 from pygeofilter.backends.sqlalchemy import to_filter
 from sqlalchemy import update, delete
 import ast
+import json
 
+# time stamp
+import calendar
+import time
+from datetime import datetime
 
 cityjson_schema = CjObjectSchema()
 cityjson_list_schema = CjObjectSchema(many=True)
@@ -71,7 +76,31 @@ def in_database(object_id):
     if not in_db:
         return {"message": "This object is not in the database " + object_id}, 404
 
-def parse_table(parse):
+def time_stamp():
+    current_GMT = time.gmtime()
+    timestamp = calendar.timegm(current_GMT)
+    date_time = datetime.fromtimestamp(timestamp)
+    str_date_time = date_time.strftime("%d-%m-%Y, %H:%M:%S")
+
+    return str_date_time
+
+def parse_json(data, datatype='multiple'):
+    # to be added: children, parents
+    if datatype == 'single':
+        type_name = 'Feature'
+    elif datatype == 'multiple':
+        type_name = 'Feature collection'
+
+    dict = {
+        'type': type_name,
+        'links': [],
+        'numberReturned': len(data),
+        'timeStamp': time_stamp(),
+        'feature': data,
+    }
+    return dict
+
+def parse_html(parse):
     # convert cityjson schema to a list of headers and a list of lists of values
     headings = list(parse[0].keys())
     data = []
@@ -90,11 +119,9 @@ class show(Resource):
         if not all:
             return {"message": "Object not found"}, 404
 
-        headings, data = parse_table(cityjson_list_schema.dump(all))
+        headings, data = parse_html(cityjson_list_schema.dump(all))
 
         return make_response(render_template("all.html", headings=headings, data=data))
-
-
 
 
 class DelObject(Resource):
@@ -132,8 +159,10 @@ class QueryByAttribute(Resource):
 
         if not cj_object:
             return {"message": "This object does not have " + attrib}, 404
+        
+        output = parse_json(cityjson_list_schema.dump(cj_object))
 
-        return cityjson_list_schema.dump(cj_object)
+        return jsonify(output)
 
 ## Get the attribute info of an object, given the object_id, so for instance, get the geometry, id, or attributes of NL.IMBAG.Pand.0518100000213709-0
 class GetInfo(Resource):
@@ -161,8 +190,11 @@ class GetChildren(Resource):
         cj_object = session.query(CjObjectModel).join(FamilyModel, FamilyModel.child_id == CjObjectModel.object_id).filter(FamilyModel.parent_id == object_id).all()
         if not cj_object:
             return {"message": "This object does not have children"}, 404
+        
+        output = parse_json(cityjson_list_schema.dump(cj_object))
 
-        return cityjson_list_schema.dump(cj_object)
+        return jsonify(output)
+    
 
 class GetParent(Resource):
     @classmethod
@@ -173,7 +205,9 @@ class GetParent(Resource):
         if not cj_object:
             return {"message": "This object does not have children"}, 404
 
-        return cityjson_list_schema.dump(cj_object)
+        output = parse_json(cityjson_list_schema.dump(cj_object))
+
+        return jsonify(output)
 
 class FilterAttributes(Resource):
     @classmethod
@@ -187,8 +221,10 @@ class FilterAttributes(Resource):
 
         if not cj_object:
             return {"message": "Object not found"}, 404
+        
+        output = parse_json(cityjson_list_schema.dump(cj_object))
 
-        return cityjson_list_schema.dump(cj_object)
+        return jsonify(output)
 
 
 # Given point 2D coordinates, like (81402.6705,451405.4224), return the object_id
@@ -208,7 +244,6 @@ class QueryByPoint(Resource):
         return building
 
 
-
 # Given 2D bounding box, like (81400, 451400, 81600, 451600), return the table of object_id
 class QueryByBbox(Resource):
     @classmethod
@@ -224,6 +259,7 @@ class QueryByBbox(Resource):
         # test URL: http://127.0.0.1:5000/api/bbox/(81400, 451400, 81600, 451600)
         return record_list
 
+    
 # Given an object_id, return the value of the footprint area
 class CalculateFootprint(Resource):
     @classmethod
@@ -353,8 +389,6 @@ class UpdateAttrib(Resource):
             return cityjson_list_schema.dump(show)
         else:
             return cityjson_list_schema.dump(obs)
-
-
 
 
 class CQL_query(Resource):
