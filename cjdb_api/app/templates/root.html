@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-exp.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-icons.min.css">
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="section bg-primary">
+      <h1>CJDB API Demo</h1>
+    </div>
+
+<div class="section bg-gray">
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('root') }}">/ home</a>
+    </li>
+  </ul>
+</div>
+
+
+<h2>Collections</h2>
+<p><a href="{{ url_for('items') }}">View the available collections</a></p>
+
+
+<h2>API Definition</h2>
+<p>Documentation:</p>
+<p><a href="{{ url_for('docs') }}">Swagger UI</a></p>
+<p><a href="{{ url_for('docs') }}">OpenAPI Document</a></p>
+
+<div class="divider"></div>
+<div class="footer">
+    <a href="https://github.com/leoleonsio/cjdb">Code in GitHub</a>
+</div>
+  </div>
+
+</body>
+</html>
