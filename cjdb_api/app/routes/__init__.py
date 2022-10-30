@@ -22,3 +22,5 @@ api.add_resource(query.GetParent, "/parent/<string:object_id>")
 api.add_resource(query.QueryByAttribute, "/select/<string:attrib>/<string:value>")
 api.add_resource(query.GetInfo, "/info/<string:attrib>/<string:object_id>")
 
+#route that can load query parameters
+api.add_resource(query.Item,"/items")
