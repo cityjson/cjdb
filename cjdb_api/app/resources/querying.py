@@ -123,7 +123,66 @@ class show(Resource):
 
         return make_response(render_template("all.html", headings=headings, data=data))
 
+# Item load query parameters, not path parameters    
+class Item(Resource):
+    @classmethod
+    def get(cls):
+        args = request.args.to_dict()
+        # step 1: extract format
+        if 'f' in args:
+            format = args['f']
+            args.pop('f')
 
+        print(args)
+
+        if len(args) == 0:
+            cj_object = session.query(CjObjectModel).limit(50).all()
+        elif len(args) > 1:
+            print("The query parameters are wrong.")
+            # return {"message": "The query parameters are wrong."}
+
+        # step 2: which attribute to query
+        # column: id, object_id
+        # column: import_meta_id, type
+        # attributes: attributes.xxx
+        # family: parent, child
+        # geometries: point, bbox
+
+        key_list = list(args.keys())
+        if key_list == {}:
+            cj_object = session.query(CjObjectModel).limit(50).all()
+
+        else:
+            attrib = str(key_list[0])
+            value = str(args[attrib])
+            print(key_list)
+
+            att = attrib.split('.')
+            if len(att) > 1:
+                print('task: attribute')
+                cj_object = session.query(CjObjectModel).filter(CjObjectModel.attributes[att[1]] == value).limit(50)
+            elif attrib == 'parent_id':  # get children, value = object_id
+                print('task: parent_id')
+                cj_object = session.query(CjObjectModel).join(FamilyModel,FamilyModel.child_id == CjObjectModel.object_id).filter(FamilyModel.parent_id == value).all()
+            elif attrib == 'child_id':  # get parents, value = object_id
+                print('task:child_id')
+                cj_object = session.query(CjObjectModel).join(FamilyModel,FamilyModel.parent_id == CjObjectModel.object_id).filter(FamilyModel.child_id == value).all()
+            elif attrib == 'id' or 'object_id' or 'import_meta_id' or 'type':
+                print('task:id / object_id / import_meta_id / type')
+                cj_object = session.query(CjObjectModel).filter(getattr(CjObjectModel, attrib) == value).limit(50)
+
+
+        if not cj_object:
+            return {"message": "The queried object does not exist"}, 404
+
+        output = parse_json(cityjson_list_schema.dump(cj_object))
+
+        # todo 1: add html as a format
+        # todo 2: add query by point and query by bbox
+
+        return jsonify(output)    
+
+    
 class DelObject(Resource):
     @classmethod
     def get(cls, object_id: str):
