@@ -30,3 +30,9 @@ for soon-to-be removed features.
 `Fixed`
 - silent error when resolving coordinates for multiple CityObjects within a CityJSONFeature, resulting in incorrect geometries
 - replaced psycopg2 requirement with psycopg2-binary requirement for easier installation
+- UpdateAttrib route in cjdb_api only works if the input value is the of the same type as the mapped attribute type. 
+
+
+`Added`
+- Deletion of Objects from the database with cjdb_api. If an object is deleted, it is both deleted in the cj_object as the family database. If the object has children, it recursively deletes those too. 
+- GetParent & GetChildren in cjdb_api, to retrieve the parents or children of an object. 
