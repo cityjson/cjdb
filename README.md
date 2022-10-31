@@ -16,7 +16,6 @@ See [cjdb_api/README.md](cjdb_api/README.md)
 ### [2. Installation & running](#install)
 ### [3. Local development](#local)
 ### [4. Local CLI development](#cli)
-### [5. Generating documentation](#docs)
 ---
 ## 1. Data model <a name="model"></a>
 For the underlying data model see [model/README.md](model/README.md)
@@ -109,22 +108,3 @@ python setup.py develop
 ```
 cj2pgsql --help
 ```
-
-### 5. Generating documentation <a name="docs"></a>
-1. Make sure sphinx is installed:
-```
-pip3 install python3-sphinx sphinx-argparse myst-parser
-```
-
-2. Generate documentation command, called from repository root:
-```
-make docs
-```
-or:
-```
-sphinx-build -b html docs/config docs
-```
-
-As a result, he documentation is generated in the docs folder. 
-
-Open `index.html` file to see the main page.

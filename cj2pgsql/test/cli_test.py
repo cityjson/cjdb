@@ -11,3 +11,4 @@ def test_single_import(arguments):
     args = parser.parse_args(arguments)
     print("Args: ", " ".join(arguments))
     run(args)
+    # todo - add data tests post import

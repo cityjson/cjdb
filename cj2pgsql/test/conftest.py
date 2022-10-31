@@ -1,8 +1,6 @@
 import pytest
 import os
 
-pytest_plugins = ["pytester"]
-
 
 def pytest_generate_tests(metafunc):
     if "arguments" in metafunc.fixturenames:

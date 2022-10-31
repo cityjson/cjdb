@@ -1,6 +1,6 @@
-.PHONY: docs,test
+.PHONY: doc,test
 
-docs:
+doc:
 	sphinx-build -b html docs/config docs
 
 test-cj2pgsql:

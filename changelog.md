@@ -18,6 +18,9 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 ## [Unreleased]
+--
+
+## [0.0.8a] - 2022-10-31
 `Changed`
 - detect when pyproj 3D transformation would be incomplete and attempt to download missing transformation grids
 - moved argument parser help texts to a separate file

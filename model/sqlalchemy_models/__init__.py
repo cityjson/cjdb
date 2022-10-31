@@ -29,6 +29,7 @@ class ImportMetaModel(BaseModel):
     extra_properties = Column(NullableJSONB())
     started_at = Column(TIMESTAMP, default=func.now())
     finished_at = Column(TIMESTAMP)
+    bbox = Column(Geometry('Polygon'))
 
     def compare_existing(self, session, ignore_repeated_file):
         result_ok = True
