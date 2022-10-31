@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-cjio = "*"
 geoalchemy2 = "*"
 flask = "*"
 python-dotenv = "*"
@@ -15,11 +14,11 @@ flask-restful = "*"
 mypy = "*"
 shapely = "*"
 pyproj = "*"
-pyyaml = "*"
 pygeoif = "==0.7"
 pygeofilter = {extras = ["backend-sqlalchemy"], version = "*"}
 requests = "*"
 psycopg2-binary = "*"
+numpy = "*"
 
 [dev-packages]
 

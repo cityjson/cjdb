@@ -20,8 +20,11 @@ for soon-to-be removed features.
 ## [Unreleased]
 `Changed`
 - detect when pyproj 3D transformation would be incomplete and attempt to download missing transformation grids
+- moved argument parser help texts to a separate file
 `Fixed`
 - fixed error for family table when importing in append mode
+`Added`
+- dockerfile
 
 ## [0.0.7a] - 2022-10-25
 `Fixed`

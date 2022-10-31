@@ -24,12 +24,14 @@ See [cjdb_api/README.md](cjdb_api/README.md)
 
 
 ## 2. Installation & running <a name="install"></a>
-The package is available in PyPI:
+### Using pip
+
 ```
 pip install cjdb
 ```
 It is recommended to install it in an isolated environment, because of fragile external library dependencies for CQL filter parsing.
 
+### Using the repository code
 Another option is to clone the repository and build the CLI from the code.
 From repository root, run:
 ```
@@ -41,6 +43,21 @@ Install the .whl file with pip:
 pip3 install dist/*.whl
 ```
 
+### Using docker
+Build:
+```
+docker build -t cjdb:latest .
+```
+
+Run:
+```
+docker run --rm -it cjdb cj2pgsql --help
+```
+
+To import some files, the `-v` option is needed to mount our local file directory in the container.
+```
+docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cj2pgsql -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
+```
 
 For instructions on running the software check specific READMEs.
 
