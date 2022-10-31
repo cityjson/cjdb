@@ -73,7 +73,6 @@ class CjObjectModel(BaseModel):
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
-    bbox = Column(Geometry('POLYGON'))
     ground_geometry=Column(Geometry('MultiPolygon'))
     import_meta = relationship(ImportMetaModel)
 

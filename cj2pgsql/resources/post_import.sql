@@ -4,7 +4,6 @@ create index if not exists import_meta_source_file_idx on {schema}.import_meta u
 
 -- cj_object indexes
 create index if not exists cj_object_type_idx on {schema}.cj_object using btree("type");
-create index if not exists cj_object_gix on {schema}.cj_object using gist(bbox);
 create index if not exists cj_object_ground_gix on {schema}.cj_object using gist(ground_geometry);
 
 -- family indexes

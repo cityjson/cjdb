@@ -25,6 +25,8 @@ for soon-to-be removed features.
 - fixed error for family table when importing in append mode
 `Added`
 - dockerfile
+`Removed`
+- bbox column for cjdb object (ground_geometry now used)
 
 ## [0.0.7a] - 2022-10-25
 `Fixed`
