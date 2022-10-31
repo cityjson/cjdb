@@ -25,12 +25,15 @@ for soon-to-be removed features.
 - detect when pyproj 3D transformation would be incomplete and attempt to download missing transformation grids
 - moved argument parser help texts to a separate file
 - use arg_parser mutually exclusive argument groups instead of manual checking (if flag1 and flag2...)
+
 `Fixed`
 - fixed error for family table when importing in append mode
+
 `Added`
 - dockerfile to build and run locally with docker
 - --ignore-existing/-e flag to check and ignore objects with duplicated ID
 - --update-existing/-u flag to update existing objects matched by ID with the new properties when importing a file
+
 `Removed`
 - bbox column for cjdb object (ground_geometry now used)
 
