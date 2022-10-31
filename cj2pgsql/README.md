@@ -80,16 +80,16 @@ cat file.jsonl | cj2pgsql ...
 ```
 
 ### Coordinate Reference Systems <a name="crs"></a>
-The `cj2pgsql` importer does not allow inconsistent reference systems within the same database schema. For storing data in separate CRS using multiple schemas is required.
+The `cj2pgsql` importer does not allow inconsistent CRS (coordinate reference systems) within the same database schema. For storing data in separate CRS using multiple schemas is required.
 
 The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
 
 **Note:** reprojections slow down the import significantly.
 
-Source data with missing `referenceSystem` cannot be reprojected due to unknown source reference system.
+**Note:** Source data with missing `"metadata"/"referenceSystem"` cannot be reprojected due to unknown source reference system.
 
 ### 3D reprojections <a name="3d"></a>
-`Pyproj` is used for coordinate reprojections. It supports 3D CRS transformations between different systems. However, sometimes downloading additional [grids](https://pyproj4.github.io/pyproj/stable/transformation_grids.html) is required. The importer will attempt to download the grids needed for the reprojection, with the following message:
+`Pyproj` is used for CRS reprojections. It supports 3D CRS transformations between different systems. However, sometimes downloading additional [grids](https://pyproj4.github.io/pyproj/stable/transformation_grids.html) is required. The importer will attempt to download the grids needed for the reprojection, with the following message:
 ```
 Attempting to download additional grids required for CRS transformation.
 This can also be done manually, and the files should be put in this folder:
@@ -100,11 +100,10 @@ If that fails, the user will have to download the required grids and put them in
 
 
 ### CityJSON Extensions <a name="extensions"></a>
-The extensions which were present in the imported file can be found listed in the `extensions` column in the `import_meta` table.
+If [CityJSON Extensions](https://www.cityjson.org/extensions/) were present in the imported file, they can be found listed in the `extensions` column in the `import_meta` table.
 
-[CityJSON docs](https://www.cityjson.org/specs/1.1.2/#extensions) mentions 3 different extendable features.
+The [CityJSON specifications](https://www.cityjson.org/specs/1.1.2/#extensions) mention 3 different extendable features, and the `cj2pgsql` importer deals with them as follows:
 
-The `cj2pgsql` importer deals with them followingly:
 1. Complex attributes
 
 No action is taken. These attributes end up in the `attributes` JSONB column. Querying by complex attributes values is not supported in the `cjdb_api` as of v0.0.7a.
@@ -118,7 +117,8 @@ Additional root properties are placed in the `extra properties` JSONB column in 
 Additional CityObject types are appended to the list of allowed CityJSON objects.
 
 ### Data validation <a name="validation"></a>
-The importer does not validate the structure of the file. It sends out warnings when:
+The importer does not validate the structure of the file. It is assumed that the input file is schema-valid ([CityJSON validator](https://validator.cityjson.org/)).
+It sends out warnings when:
 - there appear CityObject types defined neither in the main CityJSON specification nor any of the supplied extensions. 
 - the specified target CRS does not have the Z-axis defined
 - the source dataset does not have a CRS defined at all
