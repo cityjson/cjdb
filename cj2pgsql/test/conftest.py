@@ -11,22 +11,23 @@ def pytest_generate_tests(metafunc):
         test_files_dir = "cj2pgsql/test/files"
         files = []
         for entry in os.scandir(test_files_dir):
-            if entry.is_file():
-                files.append(entry.path)
+            files.append(entry.path)
 
         # prepare sets of arguments for the CLI
         test_arguments_file = "cj2pgsql/test/inputs/arguments"
         argument_sets = []
         ids = []
+        arg_set_cnt = 0
         with open(test_arguments_file) as f:
-            for i, line in enumerate(f.readlines(), start=1):
+            for line in f.readlines():
                 stripped = line.rstrip("\n")
                 if stripped and stripped[0] != '#':
+                    arg_set_cnt += 1
                     arglist = stripped.split(" ")
 
                     for f in files:
                         argument_sets.append(arglist + [f])
-                        ids.append(f"ARGSET_{i}:FILE_{os.path.basename(f)}")
+                        ids.append(f"ARGSET_{arg_set_cnt}:FILE_{os.path.basename(f)}")
 
         # parameterize tests
         metafunc.parametrize("arguments", argument_sets, ids=ids)
