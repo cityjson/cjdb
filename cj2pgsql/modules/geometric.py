@@ -114,31 +114,6 @@ def resolve_geometry_vertices(geometry, vertices,
     return geometry
 
 
-def calculate_object_bbox(geometry):
-    min_X, min_Y = float('inf'), float('inf')
-    max_X, max_Y = -float('inf'), -float('inf')
-
-    for boundary in geometry[0]["boundaries"]:
-        for i, shell in enumerate(boundary):
-            if type(shell[0]) is list:
-                if type(shell[0][0]) is list:
-                    for ring in shell:
-                        for x, y, z in ring:
-                            if min_X > x: min_X = x
-                            if min_Y > y: min_Y = y
-                            if max_X < x: max_X = x
-                            if max_Y < y: max_Y = y
-                else:
-                    for x, y, z in shell:
-                        if min_X > x: min_X = x
-                        if min_Y > y: min_Y = y
-                        if max_X < x: max_X = x
-                        if max_Y < y: max_Y = y
-         
-    return box(min_X, min_Y, max_X, max_Y)
-
-
-# todo by Lan Yan
 def get_ground_geometry(geometry):
     # returns a shapely multipolygon (see shapely.geometry.MultiPolygon)
     # the MultiPolygon should be a 2D geometry (Z coordinate is omitted)

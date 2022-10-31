@@ -1,7 +1,6 @@
 from cj2pgsql.modules.checks import check_object_type, check_root_properties, check_reprojection
 from cj2pgsql.modules.extensions import ExtensionHandler
-from cj2pgsql.modules.geometric import calculate_object_bbox, \
-    get_ground_geometry, get_srid, \
+from cj2pgsql.modules.geometric import get_ground_geometry, get_srid, \
     reproject_vertex_list, resolve_geometry_vertices, transform_vertex
 from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine
 from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
@@ -186,7 +185,7 @@ class Importer:
             # create CityJSONObjects
             for obj_id, cityobj in line_json["CityObjects"].items():
                 # get 3D geom, ground geom and bbox
-                geometry, ground_geometry, bbox = self.get_geometries(cityobj, vertices,
+                geometry, ground_geometry = self.get_geometries(cityobj, vertices,
                                                                         source_target_srid)
                     
                 # check if the object type is allowed by the official spec or extension
@@ -202,7 +201,6 @@ class Importer:
                     type=cityobj.get("type"),
                     attributes=cityobj.get("attributes") or None,
                     geometry=geometry,
-                    bbox=bbox,
                     ground_geometry=ground_geometry
                 )
 
@@ -282,7 +280,7 @@ class Importer:
 
     def get_geometries(self, cityobj, vertices, source_target_srid):
         if "geometry" not in cityobj:
-            return None, None, None
+            return None, None
         
         # returned geometry is already in the required projection
         geometry = resolve_geometry_vertices(cityobj["geometry"], 
@@ -290,11 +288,7 @@ class Importer:
                                             self.current.import_meta.geometry_templates,
                                             source_target_srid)
 
-        # todo - keep either bbox or ground_geometry. both are not needed
-        bbox = calculate_object_bbox(geometry)
-        bbox = func.st_geomfromtext(bbox.wkt, self.current.target_srid)
-
         ground_geometry = get_ground_geometry(geometry)
         ground_geometry = func.st_geomfromtext(ground_geometry.wkt, self.current.target_srid)
 
-        return geometry, ground_geometry, bbox
+        return geometry, ground_geometry
