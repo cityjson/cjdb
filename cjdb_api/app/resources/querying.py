@@ -8,9 +8,7 @@ from pygeofilter.parsers.ecql import parse as parse_ecql
 from pygeofilter.backends.sqlalchemy import to_filter
 from sqlalchemy import update, delete
 import ast
-import json
 
-# time stamp
 import calendar
 import time
 from datetime import datetime
@@ -18,12 +16,10 @@ from datetime import datetime
 cityjson_schema = CjObjectSchema()
 cityjson_list_schema = CjObjectSchema(many=True)
 
-# global tm
 global FIELD_MAPPING
 FIELD_MAPPING = {
     "object_id": CjObjectModel.object_id,
     "type": CjObjectModel.type,
-    "bbox": CjObjectModel.bbox,
     "geometry": CjObjectModel.geometry,
     "ground_geometry": CjObjectModel.ground_geometry,
 }
@@ -71,11 +67,6 @@ def delete_children(has_children):
         engine.execute(u)
         engine.execute(c)
 
-def in_database(object_id):
-    in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).all()
-    if not in_db:
-        return {"message": "This object is not in the database " + object_id}, 404
-
 def time_stamp():
     current_GMT = time.gmtime()
     timestamp = calendar.timegm(current_GMT)
@@ -110,7 +101,7 @@ def parse_html(parse):
     return headings, data
 
 
-#Select all objects in the database
+#Select a certain amount of objects in the database
 class show(Resource):
     @classmethod
     def get(cls, lim: int):
@@ -146,7 +137,7 @@ class Item(Resource):
         # column: import_meta_id, type
         # attributes: attributes.xxx
         # family: parent, child
-        # geometries: point, bbox
+        # geometries: point
 
         key_list = list(args.keys())
         if key_list == {}:
@@ -178,15 +169,17 @@ class Item(Resource):
         output = parse_json(cityjson_list_schema.dump(cj_object))
 
         # todo 1: add html as a format
-        # todo 2: add query by point and query by bbox
+        # todo 2: add query by point and query by ground_geometry
 
         return jsonify(output)    
 
-    
+#delet an object, and it's children from database
 class DelObject(Resource):
     @classmethod
     def get(cls, object_id: str):
-        in_database(object_id)
+        in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+        if not in_db:
+            return {"message": "This object is not in the database " + object_id}, 404
 
         has_children = session.query(FamilyModel).join(CjObjectModel, CjObjectModel.object_id == FamilyModel.parent_id).filter(FamilyModel.parent_id == object_id).all()
         if has_children:
@@ -227,7 +220,9 @@ class QueryByAttribute(Resource):
 class GetInfo(Resource):
     @classmethod
     def get(cls, attrib: str, object_id: str):
-        in_database(object_id)
+        in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+        if not in_db:
+            return {"message": "This object is not in the database " + object_id}, 404
 
         att = attrib.split('.')
         cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
@@ -241,10 +236,13 @@ class GetInfo(Resource):
 
         return attribute
 
+#Get the children of an object, given an object_id
 class GetChildren(Resource):
     @classmethod
     def get(cls, object_id: str):
-        in_database(object_id)
+        in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+        if not in_db:
+            return {"message": "This object is not in the database " + object_id}, 404
 
         cj_object = session.query(CjObjectModel).join(FamilyModel, FamilyModel.child_id == CjObjectModel.object_id).filter(FamilyModel.parent_id == object_id).all()
         if not cj_object:
@@ -254,11 +252,13 @@ class GetChildren(Resource):
 
         return jsonify(output)
     
-
+#Get the parent of an object, given an object_id
 class GetParent(Resource):
     @classmethod
     def get(cls, object_id: str):
-        in_database(object_id)
+        in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+        if not in_db:
+            return {"message": "This object is not in the database " + object_id}, 404
 
         cj_object = session.query(CjObjectModel).join(FamilyModel, FamilyModel.parent_id == CjObjectModel.object_id).filter(FamilyModel.child_id == object_id).all()
         if not cj_object:
@@ -268,6 +268,7 @@ class GetParent(Resource):
 
         return jsonify(output)
 
+#Filter objects based on attribute values
 class FilterAttributes(Resource):
     @classmethod
     def get(cls, attrib: str, operator:str, value: str):
@@ -290,8 +291,7 @@ class FilterAttributes(Resource):
 class QueryByPoint(Resource):
     @classmethod
     def get(cls, coor: str):
-        sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakePoint' + coor)
-        # query = session.query(CjObjectModel).filter((CjObjectModel.bbox.ST_Contains("POINT(84498.772 445820.167")))
+        sql = text('SELECT * FROM cjdb.cj_object WHERE ground_geometry && ST_MakePoint' + coor)
 
         results = engine.execute(sql)
 
@@ -304,10 +304,10 @@ class QueryByPoint(Resource):
 
 
 # Given 2D bounding box, like (81400, 451400, 81600, 451600), return the table of object_id
-class QueryByBbox(Resource):
+class QueryByGroundGeometry(Resource):
     @classmethod
     def get(cls, coor: str):
-        sql = text('SELECT * FROM cjdb.cj_object WHERE bbox && ST_MakeEnvelope'+coor)
+        sql = text('SELECT * FROM cjdb.cj_object WHERE ground_geometry && ST_MakeEnvelope'+coor)
         results = engine.execute(sql)
 
         # View the records
@@ -315,7 +315,7 @@ class QueryByBbox(Resource):
         for record in results:
             record_list.append(record[2])
 
-        # test URL: http://127.0.0.1:5000/api/bbox/(81400, 451400, 81600, 451600)
+        # test URL: http://127.0.0.1:5000/api/ground_geometry/(81400, 451400, 81600, 451600)
         return record_list
 
     
@@ -323,7 +323,9 @@ class QueryByBbox(Resource):
 class CalculateFootprint(Resource):
     @classmethod
     def get(cls, object_id: str):
-        in_database(object_id)
+        in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+        if not in_db:
+            return {"message": "This object is not in the database " + object_id}, 404
 
         cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
 
@@ -331,7 +333,7 @@ class CalculateFootprint(Resource):
             return {"message": "Object not found"}, 404
 
         with engine.connect() as connection:
-            area_pointer = connection.execute(cj_object.bbox.ST_Area())
+            area_pointer = connection.execute(cj_object.ground_geometry.ST_Area())
 
         for row in area_pointer:
             area = row[0]
@@ -341,7 +343,7 @@ class CalculateFootprint(Resource):
 
         return area
 
-## in progress
+#Add an attribute to an or all objects
 class AddAttribute(Resource):
     @classmethod
     def get(cls, object_id: str, attrib: str, new_value: str):
@@ -352,7 +354,9 @@ class AddAttribute(Resource):
             obs = session.query(CjObjectModel)
             show = session.query(CjObjectModel).limit(50)
         else:
-            in_database(object_id)
+            in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+            if not in_db:
+                return {"message": "This object is not in the database " + object_id}, 404
             obs = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id)
 
         for object in obs:
@@ -362,7 +366,7 @@ class AddAttribute(Resource):
                 listObj = {}
             if attrib == "FootPrintArea":
                 with engine.connect() as connection:
-                    area_pointer = connection.execute(object.bbox.ST_Area())
+                    area_pointer = connection.execute(object.ground_geometry.ST_Area())
 
                 for row in area_pointer:
                     value = row[0]
@@ -381,6 +385,7 @@ class AddAttribute(Resource):
         else:
             return cityjson_list_schema.dump(obs)
 
+#Delete an attribute of an or all objects
 class DelAttrib(Resource):
     @classmethod
     def get(cls, object_id:str, attrib:str):
@@ -388,7 +393,9 @@ class DelAttrib(Resource):
         if object_id == "all":
             obs = session.query(CjObjectModel).all()
         else:
-            in_database(object_id)
+            in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+            if not in_db:
+                return {"message": "This object is not in the database " + object_id}, 404
             obs = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id)
 
         for object in obs:
@@ -406,10 +413,10 @@ class DelAttrib(Resource):
         else:
             return cityjson_list_schema.dump(obs)
 
+#Update an attribute of an or all objects
 class UpdateAttrib(Resource):
     @classmethod
     def get(cls, object_id:str, attrib:str, new_value:str):
-
         if type(ast.literal_eval(new_value)) != tm[attrib]:
             print("type of type map = ", tm[attrib], "input type = ", type(ast.literal_eval(new_value)))
             return {"message": "Input type and mapped type don't match"}, 404
@@ -420,7 +427,9 @@ class UpdateAttrib(Resource):
         if object_id == "all":
             obs = session.query(CjObjectModel).all()
         else:
-            in_database(object_id)
+            in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
+            if not in_db:
+                return {"message": "This object is not in the database " + object_id}, 404
             obs = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id)
 
         for object in obs:
@@ -429,7 +438,7 @@ class UpdateAttrib(Resource):
 
                 if attrib == "FootPrintArea":
                     with engine.connect() as connection:
-                        area_pointer = connection.execute(object.bbox.ST_Area())
+                        area_pointer = connection.execute(object.ground_geometry.ST_Area())
 
                     for row in area_pointer:
                         value = row[0]
@@ -449,7 +458,7 @@ class UpdateAttrib(Resource):
         else:
             return cityjson_list_schema.dump(obs)
 
-
+#Use CQL language to do queries.
 class CQL_query(Resource):
     @classmethod
     def get(cls):
