@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, \
-    String, func, Integer
+    String, func, Integer, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from geoalchemy2 import Geometry
@@ -105,3 +105,5 @@ class FamilyModel(BaseModel):
 
     parent = relationship(CjObjectModel, foreign_keys=[parent_id], post_update=True)
     child = relationship(CjObjectModel, foreign_keys=[child_id], post_update=True)
+
+    parent_child_unique = UniqueConstraint(parent_id, child_id)

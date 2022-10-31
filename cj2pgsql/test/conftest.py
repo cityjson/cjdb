@@ -17,15 +17,14 @@ def pytest_generate_tests(metafunc):
         test_arguments_file = "cj2pgsql/test/inputs/arguments"
         argument_sets = []
         ids = []
-        arg_set_cnt = 0
-        with open(test_arguments_file) as f:
-            for line in f.readlines():
-                stripped = line.rstrip("\n")
-                if stripped and stripped[0] != '#':
-                    arg_set_cnt += 1
-                    arglist = stripped.split(" ")
-
-                    for f in files:
+        for f in files:
+            arg_set_cnt = 0
+            with open(test_arguments_file) as o:
+                for line in o.readlines():
+                    stripped = line.rstrip("\n")
+                    if stripped and stripped[0] != '#':
+                        arg_set_cnt += 1
+                        arglist = stripped.split(" ")
                         argument_sets.append(arglist + [f])
                         ids.append(f"ARGSET_{arg_set_cnt}:FILE_{os.path.basename(f)}")
 

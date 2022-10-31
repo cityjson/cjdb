@@ -184,6 +184,21 @@ class Importer:
 
             # create CityJSONObjects
             for obj_id, cityobj in line_json["CityObjects"].items():
+                obj_to_update = None
+
+                # optionally check if the object exists - to skip it or update it
+                if self.args.skip_existing or self.args.update_existing:
+                    existing = self.session.query(CjObjectModel).filter_by(object_id=obj_id).first()
+
+                    if existing:
+                        if self.args.skip_existing:
+                            print(f"CityObject (id:{obj_id}) already exists. Skipping.")
+                            continue
+                        
+                        elif self.args.update_existing:
+                            print(f"CityObject (id:{obj_id}) already exists. Updating.")
+                            obj_to_update = existing
+
                 # get 3D geom, ground geom and bbox
                 geometry, ground_geometry = self.get_geometries(cityobj, vertices,
                                                                         source_target_srid)
@@ -195,24 +210,40 @@ class Importer:
                 if not check_result:
                     print(message)
 
+                # update or insert the object
                 # 'or None' is added to change empty json "{}" to database null
-                cj_object = CjObjectModel(
-                    object_id=obj_id,
-                    type=cityobj.get("type"),
-                    attributes=cityobj.get("attributes") or None,
-                    geometry=geometry,
-                    ground_geometry=ground_geometry
-                )
+                
+                if obj_to_update:
+                    cj_object = obj_to_update
+                    cj_object.type = cityobj.get("type")
+                    cj_object.attributes = cityobj.get("attributes") or None
+                    cj_object.geometry=geometry
+                    cj_object.ground_geometry=ground_geometry
+                else:
+                    cj_object = CjObjectModel(
+                        object_id=obj_id,
+                        type=cityobj.get("type"),
+                        attributes=cityobj.get("attributes") or None,
+                        geometry=geometry,
+                        ground_geometry=ground_geometry
+                    )
 
-                # add CityJson object to the database
-                cj_object.__table__.schema = self.args.db_schema
-                cj_object.import_meta = self.current.import_meta
-                self.session.add(cj_object)
+                    # add CityJson object to the database
+                    cj_object.__table__.schema = self.args.db_schema
+                    cj_object.import_meta = self.current.import_meta
+                    self.session.add(cj_object)
+            
                 cj_feature_objects[obj_id] = cj_object
 
                 # save children-parent links
                 for child_id in cityobj.get("children", []):
                     family_ties.append((obj_id, child_id))
+
+                    # delete previous ties if updating object
+                    if obj_to_update:
+                        children = self.session.query(FamilyModel).filter_by(child_id=child_id)
+                        children.delete()
+
 
             # create children-parent links after all objects from the CityJSONFeature already exist
             for parent_id, child_id in family_ties:
@@ -253,7 +284,7 @@ class Importer:
         type_mapping = CjObjectModel.get_attributes_and_types(self.session)
 
         # sql index command
-        cmd_base = "create index {table}_{attr_name}_idx " + \
+        cmd_base = "create index if not exists {table}_{attr_name}_idx " + \
                 "on {schema}.{table} using btree(((attributes->>'{attr_name}')::{attr_type}))" + \
                 " WHERE attributes->>'{attr_name}' IS NOT NULL;"
 

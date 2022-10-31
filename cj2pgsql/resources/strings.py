@@ -28,3 +28,10 @@ overwrite_help = "Overwrite the data that is currently in the database schema. "
 
 ignore_file_help = "Ignore repeated file names warning when importing. " +\
     "By default, the importer will send out warnings if a specific file has already been imported."
+
+skip_existing = "Check if the object with given ID exists before inserting, and skip it if it does. " +\
+    "By default, the importer does not check existence for performance reasons, " +\
+    "which means that importing the same object twice will result in an error."
+
+update_existing = "Check if the object with given ID exists before inserting, and update it if it does. " +\
+    "The old object will be updated with the new object's properties."

@@ -12,6 +12,7 @@
  - [Coordinate Reference Systems](#crs)
  - [3D reprojections](#3d)
  - [CityJSON Extensions](#extensions)
+ - [CityJSON GeometryTemplate](#geomtemplate)
  - [Data validation](#validation)
 
 ### [3. Running with local code](#local)
@@ -115,6 +116,10 @@ Additional root properties are placed in the `extra properties` JSONB column in 
 3. Additional CityObject type
 
 Additional CityObject types are appended to the list of allowed CityJSON objects.
+
+### CityJSON GeometryTemplates <a name="geomtemplate"></a>
+[Geometry templates](https://www.cityjson.org/specs/1.1.2/#geometry-templates)
+are resolved for each object geometry, so that the object in the table ends up with its real-world coordinates (instead of vertex references or relative template coordinates).
 
 ### Data validation <a name="validation"></a>
 The importer does not validate the structure of the file. It is assumed that the input file is schema-valid ([CityJSON validator](https://validator.cityjson.org/)).

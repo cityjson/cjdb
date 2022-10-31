@@ -28,33 +28,40 @@ def Parser():
                     action='append', default=[],
                     help=s.index_help, 
                     dest="indexed_attributes")
-    parser.add_argument('-a', '--append', default=False,
+
+    parser.add_argument('-g', '--ignore-repeated-file', default=False,
+            action='store_const', const=True,
+            help=s.ignore_file_help,
+            dest="ignore_repeated_file")
+
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('-a', '--append', default=False,
                 action='store_const', const=True,
                 help=s.append_help,
                 dest="append_mode")
-    parser.add_argument('-o', '--overwrite', default=False,
+    mode.add_argument('-o', '--overwrite', default=False,
                 action='store_const', const=True,
                 help=s.overwrite_help, 
                 dest="overwrite")
-    parser.add_argument('-g', '--ignore-repeated-file', default=False,
-                action='store_const', const=True,
-                help=s.ignore_file_help,
-                dest="ignore_repeated_file")
 
+    existing_action = parser.add_mutually_exclusive_group()
+    existing_action.add_argument('-e', '--skip-existing', default=False,
+                action='store_const', const=True,
+                help=s.skip_existing,
+                dest="skip_existing")
+    existing_action.add_argument('-u', '--update-existing', default=False,
+            action='store_const', const=True,
+            help=s.update_existing,
+            dest="update_existing")
 
     return parser
 
 
-# todo validate args
 # perform some other checks for validity
 def validate_args(args):
     result = True
     msg = ""
     if not args.db_password:
         args.db_password = getpass(prompt=f'Password for user "{args.db_user}": ')
-
-    if args.overwrite and args.append_mode:
-        result = False
-        msg += "Cannot use --overwrite/-o and --append/-a flags simultaneously.\n"
         
     return result, msg

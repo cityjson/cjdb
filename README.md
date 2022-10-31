@@ -5,6 +5,12 @@ CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database.
 
 Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powalka
 
+### cj2pgsql
+See [cj2pgsql/README.md](cj2pgsql/README.md)
+### cjdb_api
+See [cjdb_api/README.md](cjdb_api/README.md)
+
+
 ## Table of Contents  
 ### [1. Data model](#model)
 ### [2. Installation & running](#install)
