@@ -318,31 +318,6 @@ class QueryByGroundGeometry(Resource):
         # test URL: http://127.0.0.1:5000/api/ground_geometry/(81400, 451400, 81600, 451600)
         return record_list
 
-    
-# Given an object_id, return the value of the footprint area
-class CalculateFootprint(Resource):
-    @classmethod
-    def get(cls, object_id: str):
-        in_db = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
-        if not in_db:
-            return {"message": "This object is not in the database " + object_id}, 404
-
-        cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
-
-        if not cj_object:
-            return {"message": "Object not found"}, 404
-
-        with engine.connect() as connection:
-            area_pointer = connection.execute(cj_object.ground_geometry.ST_Area())
-
-        for row in area_pointer:
-            area = row[0]
-
-        if not area:
-            return {"message": "Object not found"}, 404
-
-        return area
-
 #Add an attribute to an or all objects
 class AddAttribute(Resource):
     @classmethod
