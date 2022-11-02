@@ -219,6 +219,7 @@ class Importer:
                     cj_object.attributes = cityobj.get("attributes") or None
                     cj_object.geometry=geometry
                     cj_object.ground_geometry=ground_geometry
+                    cj_object.import_meta = self.current.import_meta
                 else:
                     cj_object = CjObjectModel(
                         object_id=obj_id,

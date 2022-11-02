@@ -59,7 +59,8 @@ class ImportMetaModel(BaseModel):
             print("Inconsistent Coordinate Reference Systems detected")
             print(f"Currently imported SRID: {self.srid}")
             print(f"Recently imported SRID: {different_srid_meta.srid}")
-            print("Use the '-I/--srid' flag to reproject everything to a single specified CRS.")
+            print("Use the '-I/--srid' flag to reproject everything to a single specified CRS",
+                    "or modify source data.")
             return False
 
         return result_ok
