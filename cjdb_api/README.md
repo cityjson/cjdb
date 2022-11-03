@@ -1,4 +1,4 @@
-# cjdb
+# cjdb API
 ![MIT badge](https://img.shields.io/pypi/l/cjdb)
 
 CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database.
@@ -16,9 +16,9 @@ This API can be used to work with CJDB in a browser.
 
 ## 2. Installation & running <a name="install"></a>
 
-1. Use [../cj2pgsql](../cj2pgsql) to import data
+1. Use [cj2pgsql](../cj2pgsql) to import data
 2. Clone the cjdb repo
-3. Set up a python environment with the [../Pipfile](../Pipfile)
+3. Set up a python environment with the [Pipfile](../Pipfile)
 4. Create a .env file, to set up the connection to the database:
    Example .env file: 
 ```
@@ -40,7 +40,7 @@ http://localhost:5000/api
 http://localhost:5000/api/show/5 
 ```
 
-**QueryByAttribute ** - Look for specific values of attributes. For instance to select the object with id 5:
+**QueryByAttribute** - Look for specific values of attributes. For instance to select the object with id 5:
 ```
 http://localhost:5000/api/select/id/5
 ```
