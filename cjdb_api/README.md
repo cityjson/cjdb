@@ -64,7 +64,7 @@ http://localhost:5000/api/children/NL.IMBAG.Pand.0503100000000021
 http://localhost:5000/api/parent/NL.IMBAG.Pand.0503100000000021
 ```
 
-### 3.2 Advanced Queries
+### 3.2 Complex Queries
 **QueryByGroundGeometry** - Returns all objects within a given bounding box. For instance:
 ```
 http://localhost:5000/api/ground_geometry/(81400,451400,81600,451600)
