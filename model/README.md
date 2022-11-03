@@ -1,5 +1,5 @@
 # cjdb data model
-cjdb data model is designed to store cityJSON files in a Postgres database.
+cjdb data model is designed to store CityJSONL files in a Postgres database.
 
 ## Table of Contents
 ### [1. Overview](#overview)
@@ -16,7 +16,7 @@ The conceptual data model contains two main tables. The **import_meta** table fo
 
 ![UML data model](https://user-images.githubusercontent.com/92783160/198852049-1fa78a6b-734a-46ec-aa38-9c0a4eb9b794.png)
 
-The physical data model adds one more table on the conceptual data model: the **family** table to store relations between city objects, e.g the parent-children relationship. This table is added because it improves certain operation performances. 
+The physical data model adds one more table on the conceptual data model: the **family** table to store relations between city objects, e.g the parent-children relationship. This table is added to achieve higher querying speed when selecting objects by their parent/child relationship. Example of this would be: "give me all the objects which are children of X". 
 
 ![2 Physical Model_Lan_Oct29](https://user-images.githubusercontent.com/92783160/198853247-ac5103c3-e221-4a5a-b9dc-d3505f8747bb.png)
 
@@ -34,8 +34,8 @@ The import_meta table stores information from imported files, e.g. name or metad
 **extensions**: [cityJSON Extensions](https://www.cityjson.org/specs/1.1.2/#extensions), a JSON file that documents how the core data model of CityJSON is extended.<br/>
 **extra_properties**: [extraRootProperties](https://www.cityjson.org/specs/1.1.2/#case-2-adding-new-properties-at-the-root-of-a-document), a JSON object with added new properties at the root of the imported document.<br/>
 **started_at**: importing start time.<br/>
-**finished_at**: importing finish time.<br/>
-**Bounding box**: bounding box of the input file's geographic extent is calculated and stored as one geometry attribute.
+**finished_at**: importing finish time. `null` if not finished.<br/>
+**Bounding box**: bounding box is taken from the `geographicExtent` object from the `metadata` section
 
 ### 2. cj_object <a name="cj_object"></a>
 
@@ -59,7 +59,7 @@ The family model stores the relations between city objects.
 
 ## 3. Indexing
 
-Indexing certain attributes in the tables can potentially speed up database operations. 
+Indexing certain columns or [expressions](https://www.postgresql.org/docs/current/indexes-expressional.html) speeds up querying on them. 
 
 The users can use GIN index on lod, to speed up queries on geometries:
 
