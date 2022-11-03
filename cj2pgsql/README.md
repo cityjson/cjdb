@@ -1,4 +1,7 @@
 # cj2pgsql
+
+![MIT badge](https://img.shields.io/pypi/l/cjdb)
+
 `cj2pgsql` is a Python based importer of CityJSONL files to a PostgreSQL database.
 
 ## Table of Contents  
