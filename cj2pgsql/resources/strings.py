@@ -20,6 +20,12 @@ srid_help = "Target coordinate system SRID. " +\
 index_help = "CityObject attribute to be indexed using a btree index. " +\
     "Can be specified multiple times, for each attribute once."
 
+partial_index_help = "CityObject attribute to be indexed using a btree partial index. " +\
+    "Can be specified multiple times, for each attribute once. " + \
+    "This index indexes on a condition 'where {{ATTR_NAME}} is not null'. " + \
+    "This means that it saves space and improves query performance when the attribute " +\
+    "is not present for all imported CityObjects."
+
 append_help = "Run in append mode (as opposed to default create mode). " +\
             "This assumes the database structure exists already and new data is to be appended."
 

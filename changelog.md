@@ -18,7 +18,10 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 ## [Unreleased]
---
+`Added`
+- user can choose between an ordinary (-x) and partial index (-px) on any attribute
+- lod is indexed using GIN by default
+
 
 ## [0.0.8a] - 2022-10-31
 `Changed`

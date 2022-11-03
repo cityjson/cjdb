@@ -65,6 +65,10 @@ The `cj2pgsql` importer loads the data in accordance with a specific data model,
 Model documentation:
  [model/README](../model/README.md)
 
+#### Indexes
+Some indexes are created by default (refer to [model/README](../model/README.md)).
+
+Additionally, the user can specify which CityObject attributes are to be indexed with the `-x/--attr-index` or `-px/--partial-attr-index` flag. The second option uses a partial index with a `not null` condition on the attribute. This saves disk space when indexing an attribute that is not present among all the imported CityObjects. This is often the case with CityJSON, because in a single dataset there can be different object types, with different attributes.
 
 ### What is a City Model? How to organize CityJSON data from various sources? <a name="citymodel"></a>
 

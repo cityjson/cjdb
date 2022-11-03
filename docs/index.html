@@ -43,7 +43,7 @@
 <p><p>Import CityJSONL to a PostgreSQL database</p>
 </p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">cj2pgsql</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">H</span> <span class="n">DB_HOST</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">DB_PORT</span><span class="p">]</span> <span class="o">-</span><span class="n">U</span> <span class="n">DB_USER</span> <span class="p">[</span><span class="o">-</span><span class="n">W</span> <span class="n">DB_PASSWORD</span><span class="p">]</span> <span class="o">-</span><span class="n">d</span> <span class="n">DB_NAME</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">DB_SCHEMA</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">I</span> <span class="n">TARGET_SRID</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="n">INDEXED_ATTRIBUTES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span> <span class="o">|</span> <span class="o">-</span><span class="n">o</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">e</span> <span class="o">|</span> <span class="o">-</span><span class="n">u</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="n">INDEXED_ATTRIBUTES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">px</span> <span class="n">PARTIAL_INDEXED_ATTRIBUTES</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span> <span class="o">|</span> <span class="o">-</span><span class="n">o</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">e</span> <span class="o">|</span> <span class="o">-</span><span class="n">u</span><span class="p">]</span>
                 <span class="p">[</span><span class="n">file_or_directory</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -72,6 +72,7 @@
 </dd>
 <dt><kbd>-W, --password</kbd></dt>
 <dd><p>PostgreSQL database user password</p>
+<p>Default: “ “</p>
 </dd>
 <dt><kbd>-d, --database</kbd></dt>
 <dd><p>PostgreSQL database name</p>
@@ -85,6 +86,10 @@
 </dd>
 <dt><kbd>-x, --attr-index</kbd></dt>
 <dd><p>CityObject attribute to be indexed using a btree index. Can be specified multiple times, for each attribute once.</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>-px, --partial-attr-index</kbd></dt>
+<dd><p>CityObject attribute to be indexed using a btree partial index. Can be specified multiple times, for each attribute once. This index indexes on a condition ‘where {{ATTR_NAME}} is not null’. This means that it saves space and improves query performance when the attribute is not present for all CityObjects</p>
 <p>Default: []</p>
 </dd>
 <dt><kbd>-g, --ignore-repeated-file</kbd></dt>

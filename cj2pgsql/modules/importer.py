@@ -286,19 +286,30 @@ class Importer:
 
         # sql index command
         cmd_base = "create index if not exists {table}_{attr_name}_idx " + \
-                "on {schema}.{table} using btree(((attributes->>'{attr_name}')::{attr_type}))" + \
-                " WHERE attributes->>'{attr_name}' IS NOT NULL;"
+                "on {schema}.{table} using btree(((attributes->>'{attr_name}')::{attr_type}))"
+
+        # prepare partial and non partial indexes in one list
+        attributes = [(a, True) for a in self.args.partial_indexed_attributes] + \
+                    [(a, False) for a in self.args.indexed_attributes]
 
         # for each attribute to be indexed
-        for attr_name in self.args.indexed_attributes:
-            print(f"Indexing CityObject attribute: '{attr_name}'")
+        for attr_name, is_partial in attributes:
+            msg = f"Indexing CityObject attribute: '{attr_name}'"
+            if is_partial:
+                msg += " with partial index"
+            print(msg)
 
             # get proper postgres type
             if attr_name in type_mapping:
                 postgres_type = postgres_type_mapping[type_mapping[attr_name]]
 
                 # prepare and run sql command
-                cmd = cmd_base.format(
+                if is_partial:
+                    cmd = cmd_base + " WHERE attributes->>'{attr_name}' IS NOT NULL"
+                else:
+                    cmd = cmd_base
+
+                cmd = cmd.format(
                     table=CjObjectModel.__table__.name,
                     schema=CjObjectModel.__table__.schema,
                     attr_name=attr_name,
@@ -308,7 +319,6 @@ class Importer:
 
             else:
                 print(f"Specified attribute to be indexed: '{attr_name}' does not exist")
-            # maybe create partial index?
 
     def get_geometries(self, cityobj, vertices, source_target_srid):
         if "geometry" not in cityobj:

@@ -28,6 +28,10 @@ def Parser():
                     action='append', default=[],
                     help=s.index_help, 
                     dest="indexed_attributes")
+    parser.add_argument('-px', '--partial-attr-index', type=str,
+                    action='append', default=[],
+                    help=s.partial_index_help, 
+                    dest="partial_indexed_attributes")
 
     parser.add_argument('-g', '--ignore-repeated-file', default=False,
             action='store_const', const=True,
