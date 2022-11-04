@@ -5,12 +5,22 @@ cjdb data model is designed to store CityJSONL files in a Postgres database.
 ### [1. Overview](#overview)
 
 ### [2. Table Structure](#table_structure)
+ - [import_meta](#import_meta)
+ - [cj_object](#cj_object)
+ - [Family](#family)
 
-### [3. Indexing](#family)
+### [3. Indexing](#Indexing)
+
  
-## 1. Overview
+## 1. Overview <a name="overview"></a>
 
-## 2. Table Structure <a name="table structure"></a>
+After reading the readme, the user will:
+
+1) Understand the table structure of cjdb model.
+
+2) Understand the indexing possiblities within the database, and their effects on operations.
+
+## 2. Table Structure <a name="table_structure"></a>
 
 The conceptual data model contains two main tables. The **import_meta** table for storing imported files' information, e.g. name or metadata of the source file. The **cj_object** table for storing city objects. 
 
@@ -39,7 +49,7 @@ The import_meta table stores information from imported files, e.g. name or metad
 
 ### 2. cj_object <a name="cj_object"></a>
 
-The cj_object model stores individual city objects, for instance buildings, roads, or bridges. Its attributes are described below.
+The cj_object model stores individual city objects, for instance buildings, roads, or bridges. Its attributes are described below. The **attributes** and **geometry** are seperated into two jsonb column for query optimization purpose.
 
 **id**: city object's index within the database.<br/>
 **import_meta_id**: the source file id of the city object, foriegn key to the id column of import_meta table.<br/>
@@ -47,7 +57,6 @@ The cj_object model stores individual city objects, for instance buildings, road
 **type**: type of the city object (e.g. building, buildingparts, etc.).<br/>
 **attributes**:[cityJSON attributes](https://www.cityjson.org/specs/1.1.2/#attributes-for-all-city-objects), a JSON object that describes attributes of the city object (e.g. roof type, area, etc.).<br/>
 **geometry**: [cityJSON geometry](https://www.cityjson.org/specs/1.1.2/#geometry-objects), a JSON object that describes the geometry of the city object.<br/>
-**bbox**: bounding box of the city object, in geometry type.<br/>
 **ground_geometry**: ground geometry of the city object, in geometry type.<br/>
 
 ### 3. Family <a name="family"></a>
@@ -65,9 +74,6 @@ The users can use GIN index on lod, to speed up queries on geometries:
 
 CREATE INDEX lod ON cjdb.cj_object USING GIN (geometry jsonb_path_ops);
 
-The users can use B-tree partial index on attributes, to speed up queries on attributes:
+The users can use B-tree partial index on attributes. It will slightly increase the query speed.
 
-CREATE INDEX bouwjaar2 ON cjdb.cj_object USING BTREE
-
-## 4. Clustering
 
