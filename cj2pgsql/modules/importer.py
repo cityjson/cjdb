@@ -2,13 +2,13 @@ from cj2pgsql.modules.checks import check_object_type, check_root_properties, ch
 from cj2pgsql.modules.extensions import ExtensionHandler
 from cj2pgsql.modules.geometric import get_ground_geometry, get_srid, \
     reproject_vertex_list, resolve_geometry_vertices, transform_vertex
-from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine
+from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine, to_dict
 from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 import os
 import json
 import sys
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, insert
 from pathlib import Path
 from pyproj import CRS
 
@@ -20,6 +20,8 @@ class SingleFileImport:
         self.import_meta = None # meta read from the file
         self.source_srid = None
         self.extension_handler = None # data about extensions - extra properties, root attributes...
+        self.cj_objects = []
+        self.families = []
 
 # importer class called once per whole import
 class Importer:
@@ -165,6 +167,7 @@ class Importer:
             self.current.import_meta = import_meta
             self.session.add(import_meta)
             self.session.commit()
+
         else:
             # unpack vertices for the cityobjects based on the CityJSON transform
             # this is done once for the CityJSONFeature
@@ -231,8 +234,8 @@ class Importer:
 
                     # add CityJson object to the database
                     cj_object.__table__.schema = self.args.db_schema
-                    cj_object.import_meta = self.current.import_meta
-                    self.session.add(cj_object)
+                    cj_object.import_meta_id = self.current.import_meta.id
+                    self.current.cj_objects.append(to_dict(cj_object))
             
                 cj_feature_objects[obj_id] = cj_object
 
@@ -248,10 +251,7 @@ class Importer:
 
             # create children-parent links after all objects from the CityJSONFeature already exist
             for parent_id, child_id in family_ties:
-                parent = cj_feature_objects[parent_id]
-                child = cj_feature_objects[child_id]
-                family = FamilyModel(parent=parent, child=child)
-                self.session.add(family)
+                self.current.families.append({"parent_id": parent_id, "child_id": child_id})
 
 
     def process_file(self, filepath):
@@ -261,6 +261,14 @@ class Importer:
         with open(filepath) as f:
             for line in f.readlines():
                 self.process_line(line)
+
+        if self.current.cj_objects:
+            obj_insert = insert(CjObjectModel).values(self.current.cj_objects)
+            self.session.execute(obj_insert)
+
+        if self.current.families:
+            family_insert = insert(FamilyModel).values(self.current.families)
+            self.session.execute(family_insert)
 
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
