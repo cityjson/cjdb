@@ -6,34 +6,54 @@ CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database.
 Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powalka
 
 ## Table of Contents  
-### [1. Usage](#usage)
-### [2. Installation & running](#install)
+### [1. Installation](#Installation)
+### [2. Run](#Run)
 ### [3. Functionality](#Functionality)
+#### [3.1 Simple Queries](#Simple Queries)
+#### [3.2 Complex Queries](#Complex Queries)
+#### [3.3 Add/Update](#Add/Update)
+#### [3.4 Deletion](#Deletion)
 
 ---
-## 1. Usage <a name="usage"></a>
-This API can be used to work with CJDB in a browser. 
+## 1. Installation <a name="Installation"></a>
+See [README.md](../README.md)
 
-## 2. Installation & running <a name="install"></a>
+## 2. Run <a name="Run"></a>
 
-1. Use [cj2pgsql](../cj2pgsql) to import data
-2. Clone the cjdb repo
-3. Set up a python environment with the [Pipfile](../Pipfile)
-4. Create a .env file, to set up the connection to the database:
-   Example .env file: 
+### Using CLI
+
 ```
-CJDB_CONN_STRING=postgresql://postgres:postgres@localhost:5432/cjdb
+cjdb_api -C postgresql://postgres:postgres@localhost:5432/cjdb -s cjdb2 -p 5000
 ```
 
-5. Run [run.py](run.py) to launch the API
-6. Go to your localhost to perform queries. 
+### Using the repository code
+```
+pipenv run python cjdb_api/run.py -C postgresql://postgres:postgres@localhost:5432/cjdbv5 -s cjd
+b2 -p 5000
+```
+API will be launched at localhost:
 ```
 http://localhost:5000/api
 ```
 
+### Arguments 
+
+1. 'C' 
+Data base connection string, in format of:
+```
+"postgresql://<user>:<password>@<host>:<port>/<database>"
+```
+2. 'p'
+Port to connect API to. Default = 8080
+3. 's'
+Database schema, where the CityObjects are kept
+
+4. 'd'
+To run in debug mode.
+
 ## 3. Functionality <a name="Functionality"></a>
  
-### 3.1 Simple Queries 
+### 3.1 Simple Queries <a name="Simple Queries"></a>
 **Show** - Show an x amount of entries in the db. For instance: 
 ```
 http://localhost:5000/api/show/5 
@@ -63,7 +83,7 @@ http://localhost:5000/api/children/NL.IMBAG.Pand.0503100000000021
 http://localhost:5000/api/parent/NL.IMBAG.Pand.0503100000000021
 ```
 
-### 3.2 Complex Queries
+### 3.2 Complex Queries <a name="Complex Queries"></a>
 **QueryByGroundGeometry** - Returns all objects within a given bounding box. For instance:
 ```
 http://localhost:5000/api/ground_geometry/(81400,451400,81600,451600)
@@ -77,7 +97,7 @@ http://localhost:5000/api/point/(81402.6705,451405.4224)
 localhost:5000/api/cql?CQL_FILTER=type="Building"ANDdata_area>30
 ```
 
-### 3.3 Add/Update 
+### 3.3 Add/Update <a name="Add/Update"></a>
 **AddAttribute** - Add an attribute to an object, or to all, by replacing the object_id with “all”. For instance: 
 ```
 http://localhost:5000/api/add/NL.IMBAG.Pand.0503100000000021/attrib/10
@@ -87,7 +107,7 @@ http://localhost:5000/api/add/NL.IMBAG.Pand.0503100000000021/attrib/10
 http://localhost:5000/api/update/all/attrib/12
 ```
 
-### 3.4 Deletion
+### 3.4 Deletion <a name="Deletion"></a>
 **DelAttrib** - Delete an attribute from an object, or from all, by replacing the object_id with “all”. For instance:
 ```
 http://localhost:5000/api/del/NL.IMBAG.Pand.0503100000000021/attrib
