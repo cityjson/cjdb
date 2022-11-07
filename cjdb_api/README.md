@@ -1,7 +1,7 @@
-# cjdb API
+# cjdb_api
 ![MIT badge](https://img.shields.io/pypi/l/cjdb)
 
-CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database.
+cjdb_api is  a set of tools enabling usage, querying and maintenance of cjdb data. 
 
 Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powalka
 
@@ -11,8 +11,9 @@ Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powa
 ### [3. Functionality](#Functionality)
    #### [3.1 Simple Queries](#Simple)
    #### [3.2 Complex Queries](#Complex)
-   #### [3.3 Add/Update](#Add/Update)
-   #### [3.4 Deletion](#Deletion)
+   #### [3.3 CQL](#CQL)
+   #### [3.4 Add/Update](#Add/Update)
+   #### [3.5 Deletion](#Deletion)
 
 ---
 ## 1. Installation <a name="Installation"></a>
@@ -94,12 +95,14 @@ http://localhost:5000/api/ground_geometry/(81400,451400,81600,451600)
 ```
 http://localhost:5000/api/point/(81402.6705,451405.4224)
 ```
+
+### 3.3 CQL <a name="CQL"></a>
 **CQL_query** - Allows the usage of common query language to chain queries. For instance:
 ```
 localhost:5000/api/cql?CQL_FILTER=type="Building"ANDdata_area>30
 ```
 
-### 3.3 Add/Update <a name="Add/Update"></a>
+### 3.4 Add/Update <a name="Add/Update"></a>
 **AddAttribute** - Add an attribute to an object, or to all, by replacing the object_id with “all”. For instance: 
 ```
 http://localhost:5000/api/add/NL.IMBAG.Pand.0503100000000021/attrib/10
@@ -109,7 +112,7 @@ http://localhost:5000/api/add/NL.IMBAG.Pand.0503100000000021/attrib/10
 http://localhost:5000/api/update/all/attrib/12
 ```
 
-### 3.4 Deletion <a name="Deletion"></a>
+### 3.5 Deletion <a name="Deletion"></a>
 **DelAttrib** - Delete an attribute from an object, or from all, by replacing the object_id with “all”. For instance:
 ```
 http://localhost:5000/api/del/NL.IMBAG.Pand.0503100000000021/attrib
