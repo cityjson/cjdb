@@ -31,6 +31,7 @@ cjdb_api -C postgresql://postgres:postgres@localhost:5432/cjdb -s cjdb2 -p 5000
 pipenv run python cjdb_api/run.py -C postgresql://postgres:postgres@localhost:5432/cjdbv5 -s cjd
 b2 -p 5000
 ```
+
 API will be launched at localhost:
 ```
 http://localhost:5000/api
@@ -50,6 +51,7 @@ Database schema, where the CityObjects are kept
 
 4. 'd'
 To run in debug mode.
+
 
 ## 3. Functionality <a name="Functionality"></a>
  
