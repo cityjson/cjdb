@@ -9,10 +9,10 @@ Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powa
 ### [1. Installation](#Installation)
 ### [2. Run](#Run)
 ### [3. Functionality](#Functionality)
-#### [3.1 Simple Queries](#Simple Queries)
-#### [3.2 Complex Queries](#Complex Queries)
-#### [3.3 Add/Update](#Add/Update)
-#### [3.4 Deletion](#Deletion)
+   #### [3.1 Simple Queries](#Simple)
+   #### [3.2 Complex Queries](#Complex)
+   #### [3.3 Add/Update](#Add/Update)
+   #### [3.4 Deletion](#Deletion)
 
 ---
 ## 1. Installation <a name="Installation"></a>
@@ -53,7 +53,7 @@ To run in debug mode.
 
 ## 3. Functionality <a name="Functionality"></a>
  
-### 3.1 Simple Queries <a name="Simple Queries"></a>
+### 3.1 Simple Queries <a name="Simple"></a>
 **Show** - Show an x amount of entries in the db. For instance: 
 ```
 http://localhost:5000/api/show/5 
@@ -83,7 +83,7 @@ http://localhost:5000/api/children/NL.IMBAG.Pand.0503100000000021
 http://localhost:5000/api/parent/NL.IMBAG.Pand.0503100000000021
 ```
 
-### 3.2 Complex Queries <a name="Complex Queries"></a>
+### 3.2 Complex Queries <a name="Complex"></a>
 **QueryByGroundGeometry** - Returns all objects within a given bounding box. For instance:
 ```
 http://localhost:5000/api/ground_geometry/(81400,451400,81600,451600)
