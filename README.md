@@ -54,7 +54,7 @@ Build:
 docker build -t cjdb:latest .
 ```
 
-Run:
+Run: **cj2pgsql**
 ```
 docker run --rm -it cjdb cj2pgsql --help
 ```
@@ -63,6 +63,13 @@ To import some files, the `-v` option is needed to mount our local file director
 ```
 docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cj2pgsql -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
 ```
+
+Run: **cjdb_api**
+```
+docker run --rm -it --network host cjdb cjdb_api --help
+```
+
+
 
 For instructions on running the software check specific READMEs.
 
