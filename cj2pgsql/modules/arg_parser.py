@@ -4,23 +4,27 @@ from getpass import getpass
 from cj2pgsql.resources import strings as s
 
 def Parser():
-    parser = argparse.ArgumentParser(description='Import CityJSONL to a PostgreSQL database')
+    parser = argparse.ArgumentParser(description='Import CityJSONL to a PostgreSQL database',
+                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('filepath', nargs='?', default='stdin', 
-                        type=str, metavar="file_or_directory",
-                        help=s.filepath_help)
-    parser.add_argument('-H', '--host', type=str, default='localhost',
+                    type=str, metavar="file_or_directory",
+                    help=s.filepath_help)
+
+    db = parser.add_argument_group(title="Database connection arguments")
+
+    db.add_argument('-H', '--host', type=str, default='localhost',
                         help=s.host_help, dest="db_host")
-    parser.add_argument('-p', '--port', type=int, default=5432,
+    db.add_argument('-p', '--port', type=int, default=5432,
                         help=s.port_help, dest="db_port")
-    parser.add_argument('-U', '--user', type=str, required=True,
+    db.add_argument('-U', '--user', type=str, required=True,
                         help=s.user_help, dest="db_user")
-    parser.add_argument('-W', '--password', type=str, 
+    db.add_argument('-W', '--password', type=str, 
                         default=os.getenv("PGPASSWORD", None),
                         help=s.password_help, dest="db_password")
-    parser.add_argument('-d', '--database', type=str, required=True,
+    db.add_argument('-d', '--database', type=str, required=True,
                         help=s.database_help, dest="db_name")
-    parser.add_argument('-s', '--schema', type=str, default='public',
+    db.add_argument('-s', '--schema', type=str, default='public',
                         help=s.schema_help, dest="db_schema")
     parser.add_argument('-I', '--srid', type=int, default=None,
                     help=s.srid_help, dest="target_srid")

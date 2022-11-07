@@ -59,28 +59,6 @@
 <section id="Named Arguments">
 <h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this heading">¶</a></h2>
 <dl class="option-list">
-<dt><kbd>-H, --host</kbd></dt>
-<dd><p>PostgreSQL database host</p>
-<p>Default: “localhost”</p>
-</dd>
-<dt><kbd>-p, --port</kbd></dt>
-<dd><p>PostgreSQL database port</p>
-<p>Default: 5432</p>
-</dd>
-<dt><kbd>-U, --user</kbd></dt>
-<dd><p>PostgreSQL database user name</p>
-</dd>
-<dt><kbd>-W, --password</kbd></dt>
-<dd><p>PostgreSQL database user password</p>
-<p>Default: “ “</p>
-</dd>
-<dt><kbd>-d, --database</kbd></dt>
-<dd><p>PostgreSQL database name</p>
-</dd>
-<dt><kbd>-s, --schema</kbd></dt>
-<dd><p>Target database schema</p>
-<p>Default: “public”</p>
-</dd>
 <dt><kbd>-I, --srid</kbd></dt>
 <dd><p>Target coordinate system SRID. All 3D and 2D geometries will be reprojected.</p>
 </dd>
@@ -89,7 +67,7 @@
 <p>Default: []</p>
 </dd>
 <dt><kbd>-px, --partial-attr-index</kbd></dt>
-<dd><p>CityObject attribute to be indexed using a btree partial index. Can be specified multiple times, for each attribute once. This index indexes on a condition ‘where {{ATTR_NAME}} is not null’. This means that it saves space and improves query performance when the attribute is not present for all CityObjects</p>
+<dd><p>CityObject attribute to be indexed using a btree partial index. Can be specified multiple times, for each attribute once. This index indexes on a condition ‘where {{ATTR_NAME}} is not null’. This means that it saves space and improves query performance when the attribute is not present for all imported CityObjects.</p>
 <p>Default: []</p>
 </dd>
 <dt><kbd>-g, --ignore-repeated-file</kbd></dt>
@@ -111,6 +89,32 @@
 <dt><kbd>-u, --update-existing</kbd></dt>
 <dd><p>Check if the object with given ID exists before inserting, and update it if it does. The old object will be updated with the new object’s properties.</p>
 <p>Default: False</p>
+</dd>
+</dl>
+</section>
+<section id="Database connection arguments">
+<h2>Database connection arguments<a class="headerlink" href="#Database connection arguments" title="Permalink to this heading">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>-H, --host</kbd></dt>
+<dd><p>PostgreSQL database host</p>
+<p>Default: “localhost”</p>
+</dd>
+<dt><kbd>-p, --port</kbd></dt>
+<dd><p>PostgreSQL database port</p>
+<p>Default: 5432</p>
+</dd>
+<dt><kbd>-U, --user</kbd></dt>
+<dd><p>PostgreSQL database user name</p>
+</dd>
+<dt><kbd>-W, --password</kbd></dt>
+<dd><p>PostgreSQL database user password</p>
+</dd>
+<dt><kbd>-d, --database</kbd></dt>
+<dd><p>PostgreSQL database name</p>
+</dd>
+<dt><kbd>-s, --schema</kbd></dt>
+<dd><p>Target database schema</p>
+<p>Default: “public”</p>
 </dd>
 </dl>
 </section>
