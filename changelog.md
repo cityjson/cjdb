@@ -22,6 +22,7 @@ for soon-to-be removed features.
 - user can choose between an ordinary (-x) and partial index (-px) on any attribute
 - lod is indexed using GIN by default
 - use multi inserts for performance
+- cjdb_api is now also a CLI
 
 
 ## [0.0.8a] - 2022-10-31
