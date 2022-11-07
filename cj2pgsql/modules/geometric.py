@@ -136,7 +136,7 @@ def get_ground_geometry(geometry):
                             z_count=z_count+1
                             p=Point(x,y,z)
                             Point_list.append(p)
-                        z_avg=round(z_tot/z_count,4)
+                        z_avg=round(z_tot/z_count,6)
                         z_min=z_avg
                         planes[str(z_avg)]=Point_list                
                 else:
@@ -148,9 +148,9 @@ def get_ground_geometry(geometry):
                         z_count=z_count+1
                         p=Point(x,y,z)
                         Point_list.append(p)
-                    z_avg=round(z_tot/z_count,4)
+                    z_avg=round(z_tot/z_count,6)
+                    z_min=z_avg
                     planes[str(z_avg)]=Point_list
-    
     
     for key in planes:
         z_num=float(key)
