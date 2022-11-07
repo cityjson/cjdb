@@ -18,6 +18,7 @@
  - [CityJSON Extensions](#extensions)
  - [CityJSON GeometryTemplate](#geomtemplate)
  - [Data validation](#validation)
+ - [Repeated object IDs](#repeated)
 
 ### [3. Running with local code](#local)
 
@@ -136,6 +137,11 @@ It sends out warnings when:
 - there appear CityObject types defined neither in the main CityJSON specification nor any of the supplied extensions. 
 - the specified target CRS does not have the Z-axis defined
 - the source dataset does not have a CRS defined at all
+
+### Repeated object IDs <a name="repeated"></a>
+By default, the importer does not check if an object with a given ID exists already in the database. This is because such an operation for every inserted object results in a performance penalty.
+
+The user can choose to run the import with either the `-e/--skip-existing` option to skip existing objects or `-u, --update-existing` to update existing objects. This will slow down the import, but it will also ensure that repeated object cases are handled.
 
 ## 3. Running with local code <a name="local"></a>
 Create `pipenv` environment in repository root:

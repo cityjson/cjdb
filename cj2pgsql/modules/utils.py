@@ -47,3 +47,9 @@ def find_extra_properties(json_obj):
             property_names.append(key)
 
     return property_names
+
+# Sqlalchemy model as dict
+def to_dict(model):
+    d = dict(model.__dict__)
+    d.pop('_sa_instance_state', None)
+    return d
