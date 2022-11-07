@@ -1,15 +1,16 @@
 import os
 from dotenv import load_dotenv
 from model.sqlalchemy_models import ImportMetaModel, CjObjectModel
+from cjdb_api.app.arg_parser import Parser
 
-# this is the file for application-wide parameters
-# for example if it should be launched in debug mode
-print(os.getcwd())
-load_dotenv("../.env")
 
-DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
-SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")
-DB_SCHEMA = os.environ.get("DB_SCHEMA", "cjdb")
+parser = Parser()
+args = parser.parse_args()
+
+DEBUG = args.debug_mode
+CONN_STRING = args.conn_string or os.environ.get("CJDB_CONN_STRING")
+DB_SCHEMA = args.db_schema
+PORT = args.port
 
 ImportMetaModel.__table__.schema = DB_SCHEMA
 CjObjectModel.__table__.schema = DB_SCHEMA

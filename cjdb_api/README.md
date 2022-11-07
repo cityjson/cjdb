@@ -22,8 +22,7 @@ This API can be used to work with CJDB in a browser.
 4. Create a .env file, to set up the connection to the database:
    Example .env file: 
 ```
-SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@localhost:5432/cjdb
-DB_SCHEMA=cjdb
+CJDB_CONN_STRING=postgresql://postgres:postgres@localhost:5432/cjdb
 ```
 
 5. Run [run.py](run.py) to launch the API

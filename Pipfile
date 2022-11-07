@@ -18,6 +18,7 @@ pygeofilter = {extras = ["backend-sqlalchemy"], version = "*"}
 requests = "*"
 psycopg2-binary = "*"
 numpy = "*"
+marshmallow-sqlalchemy = "*"
 
 [dev-packages]
 
