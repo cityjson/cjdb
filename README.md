@@ -1,5 +1,5 @@
 # cjdb
-![MIT badge](https://img.shields.io/pypi/l/cjdb)
+![MIT badge](https://img.shields.io/pypi/l/cjdb) &nbsp; ![PyPI](https://img.shields.io/pypi/v/cjdb)
 
 CJDB is a set of tools enabling CityJSON integration with a PostgreSQL database.
 
