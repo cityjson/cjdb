@@ -1,5 +1,5 @@
 # cjdb_api
-![MIT badge](https://img.shields.io/pypi/l/cjdb)
+![MIT badge](https://img.shields.io/pypi/l/cjdb) &nbsp; ![PyPI](https://img.shields.io/pypi/v/cjdb)
 
 cjdb_api is Flask application enabling querying and maintenance of cjdb data via a REST interface.
 
