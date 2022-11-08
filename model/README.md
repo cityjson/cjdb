@@ -24,12 +24,13 @@ After reading the readme, the user will:
 
 The conceptual data model contains two main tables. The **import_meta** table for storing imported files' information, e.g. name or metadata of the source file. The **cj_object** table for storing city objects. 
 
-![cjdb (1) drawio (5)](https://user-images.githubusercontent.com/92783160/200629316-d8d76c55-1e81-445e-a46f-5b51a8647673.png)
+![UML drawio](https://user-images.githubusercontent.com/92783160/200633172-e33fc6ae-26b4-4b16-a2a7-968cc9a34d5e.png)
 
 
 The physical data model adds one more table on the conceptual data model: the **family** table to store relations between city objects, e.g the parent-children relationship. This table is added to achieve higher querying speed when selecting objects by their parent/child relationship. Example of this would be: "give me all the objects which are children of X". 
-![Physical Model drawio (2)](https://user-images.githubusercontent.com/92783160/200629180-114bd754-96c4-42f3-89b1-e43ef4fa2ee8.png)
 
+
+![Physical Model drawio (3)](https://user-images.githubusercontent.com/92783160/200633220-92f95184-edce-44b9-bfa9-7db5fccbfc0e.png)
 
 
 ### 1. import_meta <a name="import_meta"></a>
