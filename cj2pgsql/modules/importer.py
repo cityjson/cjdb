@@ -71,11 +71,7 @@ class Importer:
     def parse_cityjson(self):
         source_path = self.args.filepath
 
-        if source_path.lower() == "stdin":
-            for line in sys.stdin:
-                self.process_line(line.rstrip("\n"))
-
-        elif os.path.isfile(source_path):
+        if os.path.isfile(source_path) or source_path.lower() == "stdin":
             self.process_file(source_path)
 
         elif os.path.isdir(source_path):
@@ -258,9 +254,13 @@ class Importer:
         self.current = SingleFileImport(filepath)
         print("Running import for file: ", filepath)
 
-        with open(filepath) as f:
-            for line in f.readlines():
-                self.process_line(line)
+        if filepath.lower() == "stdin":
+            for line in sys.stdin:
+                self.process_line(line.rstrip("\n"))
+        else:
+            with open(filepath) as f:
+                for line in f.readlines():
+                    self.process_line(line)
 
         if self.current.cj_objects:
             obj_insert = insert(CjObjectModel).values(self.current.cj_objects)
