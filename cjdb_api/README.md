@@ -1,9 +1,7 @@
 # cjdb_api
 ![MIT badge](https://img.shields.io/pypi/l/cjdb)
 
-cjdb_api is  a set of tools enabling usage, querying and maintenance of cjdb data. 
-
-Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powalka
+cjdb_api is Flask application enabling querying and maintenance of cjdb data via a REST interface.
 
 ## Table of Contents  
 ### [1. Installation](#Installation)
