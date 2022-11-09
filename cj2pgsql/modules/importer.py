@@ -217,7 +217,7 @@ class Importer:
                     cj_object.type = cityobj.get("type")
                     cj_object.attributes = cityobj.get("attributes") or None
                     cj_object.geometry=geometry
-                    cj_object.ground_geometry=ground_geometry
+                    cj_object.ground_geometry=ground_geometry or None
                     cj_object.import_meta = self.current.import_meta
                 else:
                     cj_object = CjObjectModel(
@@ -339,6 +339,12 @@ class Importer:
                                             source_target_srid)
 
         ground_geometry = get_ground_geometry(geometry)
-        ground_geometry = func.st_geomfromtext(ground_geometry.wkt, self.current.target_srid)
+
+        if ((ground_geometry is None) is False):
+            if (not self.current.target_srid):
+                ground_geometry = func.st_geomfromtext(ground_geometry.wkt)
+            else:
+                ground_geometry = func.st_geomfromtext(ground_geometry.wkt, self.current.target_srid)
+                
 
         return geometry, ground_geometry

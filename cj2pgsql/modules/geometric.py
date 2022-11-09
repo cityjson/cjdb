@@ -1,9 +1,10 @@
 import copy
 from shapely.geometry import box, MultiPolygon, Point, Polygon
-from shapely.validation import explain_validity
+from shapely.validation import explain_validity,make_valid
 from pyproj import CRS, Transformer
 from pyproj.transformer import TransformerGroup
 import numpy as np
+from collections import OrderedDict
 
 
 # get srid from a CRS string definition
@@ -120,7 +121,6 @@ def get_ground_geometry(geometry):
     # this geometry should be obtained by parsing the "geometry" object from cityjson -> the argument of this function
     # the geometry is a multipolygon of all the ground surfaces in the lowest available LOD
 
-    polygons=[]
     planes=dict()
     z_min=0
     for boundary in geometry[0]["boundaries"]:
@@ -131,7 +131,7 @@ def get_ground_geometry(geometry):
                         Point_list=[]
                         z_tot=0
                         z_count=0
-                        for x, y,z in ring:
+                        for x,y,z in ring:
                             z_tot=z+z_tot
                             z_count=z_count+1
                             p=Point(x,y,z)
@@ -158,14 +158,28 @@ def get_ground_geometry(geometry):
             z_min=z_num
 
     ground_points=[]
+    ground_points_dic={}
 
     for key in planes:
         if(abs(float(key)-z_min)<0.3):
             poly = Polygon([[p.x, p.y] for p in planes[key]])
             for p in planes[key]:
-                ground_points.append(p)
-                
-    ground_polygon=Polygon([[p.x, p.y] for p in ground_points])
+                str_p=str(p.x)+" "+str(p.y)
+                if((str_p in ground_points_dic.keys())is False):
+                    ground_points_dic[str_p]=0
+    
+    for key in ground_points_dic:
+        p_x=key.split()[0]
+        p_y=key.split()[1]
+        p=Point(float(p_x),float(p_y))
+        ground_points.append(p) 
+
+    if(len(ground_points)>=3):
+        ground_polygon=Polygon([[p.x, p.y] for p in ground_points])
+    else:
+        print("Warning: There is a empty ground geometry!")
+        return None
+    
     if(ground_polygon.is_valid==False):
         ground_polygon=ground_polygon.buffer(0)
         if(ground_polygon.is_valid==False):
@@ -173,5 +187,5 @@ def get_ground_geometry(geometry):
 
     if (type(ground_polygon) is Polygon):
         ground_polygon=MultiPolygon([ground_polygon])
-    
+
     return ground_polygon
