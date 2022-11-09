@@ -18,11 +18,15 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 ## [Unreleased]
+
+
+## [0.0.8b] - 2022-11-09
 `Added`
 - user can choose between an ordinary (-x) and partial index (-px) on any attribute
 - lod is indexed using GIN by default
 - use multi inserts for performance
 - cjdb_api is now also a CLI
+- warnings if ground_geometry cannot be calculated
 
 
 ## [0.0.8a] - 2022-10-31
