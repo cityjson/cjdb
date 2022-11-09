@@ -210,10 +210,7 @@ class Importer:
                     print(message)
 
                 # update or insert the object
-                # 'or None' is added to change empty json "{}" to database null
-                if ground_geometry is None:
-                    a = 1
-                
+                # 'or None' is added to change empty json "{}" to database null                
                 if obj_to_update:
                     cj_object = obj_to_update
                     cj_object.type = cityobj.get("type")
