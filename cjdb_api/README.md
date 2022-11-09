@@ -27,8 +27,7 @@ cjdb_api -C postgresql://postgres:postgres@localhost:5432/cjdb -s cjdb2 -p 5000
 
 ### Using the repository code
 ```
-pipenv run python cjdb_api/run.py -C postgresql://postgres:postgres@localhost:5432/cjdbv5 -s cjd
-b2 -p 5000
+pipenv run python cjdb_api/run.py -C postgresql://postgres:postgres@localhost:5432/cjdbv5 -s cjdb2 -p 5000
 ```
 
 API will be launched at localhost:
