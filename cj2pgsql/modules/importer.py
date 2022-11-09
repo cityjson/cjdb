@@ -211,13 +211,15 @@ class Importer:
 
                 # update or insert the object
                 # 'or None' is added to change empty json "{}" to database null
+                if ground_geometry is None:
+                    a = 1
                 
                 if obj_to_update:
                     cj_object = obj_to_update
                     cj_object.type = cityobj.get("type")
                     cj_object.attributes = cityobj.get("attributes") or None
                     cj_object.geometry=geometry
-                    cj_object.ground_geometry=ground_geometry or None
+                    cj_object.ground_geometry=ground_geometry
                     cj_object.import_meta = self.current.import_meta
                 else:
                     cj_object = CjObjectModel(
