@@ -199,7 +199,7 @@ class Importer:
                             obj_to_update = existing
 
                 # get 3D geom, ground geom and bbox
-                geometry, ground_geometry = self.get_geometries(cityobj, vertices,
+                geometry, ground_geometry = self.get_geometries(obj_id, cityobj, vertices,
                                                                         source_target_srid)
                     
                 # check if the object type is allowed by the official spec or extension
@@ -328,7 +328,7 @@ class Importer:
             else:
                 print(f"Specified attribute to be indexed: '{attr_name}' does not exist")
 
-    def get_geometries(self, cityobj, vertices, source_target_srid):
+    def get_geometries(self, obj_id, cityobj, vertices, source_target_srid):
         if "geometry" not in cityobj:
             return None, None
         
@@ -338,7 +338,7 @@ class Importer:
                                             self.current.import_meta.geometry_templates,
                                             source_target_srid)
 
-        ground_geometry = get_ground_geometry(geometry)
+        ground_geometry = get_ground_geometry(geometry, obj_id)
 
         if ((ground_geometry is None) is False):
             if (not self.current.target_srid):

@@ -115,7 +115,7 @@ def resolve_geometry_vertices(geometry, vertices,
     return geometry
 
 
-def get_ground_geometry(geometry):
+def get_ground_geometry(geometry, obj_id):
     # returns a shapely multipolygon (see shapely.geometry.MultiPolygon)
     # the MultiPolygon should be a 2D geometry (Z coordinate is omitted)
     # this geometry should be obtained by parsing the "geometry" object from cityjson -> the argument of this function
@@ -177,7 +177,7 @@ def get_ground_geometry(geometry):
     if(len(ground_points)>=3):
         ground_polygon=Polygon([[p.x, p.y] for p in ground_points])
     else:
-        print("Warning: There is a empty ground geometry!")
+        print(f"Warning: Ground geometry for object ID=({obj_id}) could not be calculated.")
         return None
     
     if(ground_polygon.is_valid==False):
