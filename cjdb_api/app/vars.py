@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from model.sqlalchemy_models import ImportMetaModel, CjObjectModel
+from model.sqlalchemy_models import ImportMetaModel, CjObjectModel, FamilyModel
 from cjdb_api.app.arg_parser import Parser
 
 
@@ -14,4 +14,5 @@ PORT = args.port
 
 ImportMetaModel.__table__.schema = DB_SCHEMA
 CjObjectModel.__table__.schema = DB_SCHEMA
+FamilyModel.__table__.schema = DB_SCHEMA
 

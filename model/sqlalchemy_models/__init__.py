@@ -18,7 +18,7 @@ def NullableJSONB():
 
 class ImportMetaModel(BaseModel):
     __tablename__ = 'import_meta'
-    __table_args__ = {'schema':'cjdb2'}
+    __table_args__ = {'schema':'cjdb'}
     source_file = Column(String)
     version = Column(String(10), nullable=False)
     meta = Column(JSONB, name="metadata")
@@ -68,7 +68,7 @@ class ImportMetaModel(BaseModel):
 
 class CjObjectModel(BaseModel):
     __tablename__ = 'cj_object'
-    __table_args__ = {'schema':'cjdb2'}
+    __table_args__ = {'schema':'cjdb'}
     import_meta_id = Column(Integer, ForeignKey(ImportMetaModel.id))
     object_id = Column(String, nullable=False, unique=True)
     type = Column(String, nullable=False)
@@ -101,7 +101,7 @@ class CjObjectModel(BaseModel):
 
 class FamilyModel(BaseModel):
     __tablename__ = 'family'
-    __table_args__ = {'schema':'cjdb2'}
+    __table_args__ = {'schema':'cjdb'}
     parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
     child_id = Column(String, ForeignKey(CjObjectModel.object_id))
 
