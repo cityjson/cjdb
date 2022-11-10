@@ -1,6 +1,6 @@
 # cj2pgsql
 
-![MIT badge](https://img.shields.io/pypi/l/cjdb) &nbsp; ![PyPI](https://img.shields.io/pypi/v/cjdb)
+[![MIT badge](https://img.shields.io/pypi/l/cjdb)](LICENSE) &nbsp; [![PyPI](https://img.shields.io/pypi/v/cjdb)](https://pypi.org/project/cjdb)
 
 `cj2pgsql` is a Python based importer of CityJSONL files to a PostgreSQL database. It requires [PostGIS](https://postgis.net/) extension for geometry types.
 
