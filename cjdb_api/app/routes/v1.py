@@ -17,19 +17,19 @@ v1_api.add_resource(query.GetInfo, "/info/<string:attrib>/<string:object_id>")
 v1_api.add_resource(query.GetChildren, "/children/<string:object_id>")
 v1_api.add_resource(query.GetParent, "/parent/<string:object_id>")
 
-# - Query by CQL
-v1_api.add_resource(query.CQL_query, "/cql")
-
-
-# - Query by geometry
+# - Query by Geometry
 v1_api.add_resource(query.QueryByPoint, "/point/<string:coor>")
 v1_api.add_resource(query.QueryByBbox, "/bbox/<string:coor>")
 
+# - Query by CQL
+v1_api.add_resource(query.CQL_query, "/cql")
+
+# - Calculate Footprint
+v1_api.add_resource(querying.CalculateFootprint, "/footprint", endpoint='footprint')
 
 # - Update
 v1_api.add_resource(updating.AddAttribute, "/operation/add")
 v1_api.add_resource(updating.UpdateAttrib, "/operation/update")
-
 
 # - Deletion
 v1_api.add_resource(deletion.DelAttrib, "/operation/delete")
