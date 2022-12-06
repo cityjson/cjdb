@@ -52,6 +52,10 @@ To run in debug mode.
 
 
 ## 3. Functionality <a name="Functionality"></a>
+
+Home page: http://localhost:5000
+View the first 50th collections: http://localhost:5000/collections
+API documentation: http://localhost:5000/api
  
 ### 3.1 Simple Queries <a name="Simple"></a>
 **Show** - Show an x amount of entries in the db. For instance: 
@@ -62,7 +66,7 @@ http://localhost:5000/collections?limit=5
 ```
 http://localhost:5000/collections/items?id=5
 ```
-http://localhost:5000/colletions/items?type=Building
+http://localhost:5000/collections/items?type=Building
 ```
 **GetChildren** - Get the children of an object. For instance:
 ```
@@ -70,7 +74,7 @@ http://localhost:5000/collections/items?parent_id=NL.IMBAG.Pand.0503100000000018
 ```
 **GetParent** - Get the parent of an object. For instance:
 ```
-http://localhost:5000/colletions/items?child_id=NL.IMBAG.Pand.0503100000000018-0
+http://localhost:5000/collections/items?child_id=NL.IMBAG.Pand.0503100000000018-0
 ```
 
 ### 3.2 Complex Queries <a name="Complex"></a>
@@ -86,7 +90,7 @@ http://localhost:5000/collections/items?point=(81402.6705,451405.4224)
 ### 3.3 CQL <a name="CQL"></a>
 **CQL_query** - Allows the usage of common query language to chain queries. For instance:
 ```
-localhost:5000/api/cql?FILTER=type="Building"ANDdata_area>30
+localhost:5000/collections/cql?FILTER=type="Building"ANDdata_area>30
 ```
 
 ### 3.4 Add/Update <a name="Add/Update"></a>
