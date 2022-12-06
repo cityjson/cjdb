@@ -13,7 +13,7 @@ api.add_resource(querying.Show, "/collections", endpoint='collections')
 # Query
 api.add_resource(querying.Item, "/collections/items", endpoint='items')
 api.add_resource(querying.CQL_query, "/collections/cql", endpoint='cql')
-api.add_resource(querying.CalculateFootprint, "/footprint/<string:object_id>")
+api.add_resource(querying.CalculateFootprint, "/footprint", endpoint='footprint')
 
 # Add, Update
 api.add_resource(updating.AddAttribute, "/operation/add")
