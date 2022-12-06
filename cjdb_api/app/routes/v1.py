@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask_restful import Api
-import  cjdb_api.app.resources.querying as query
+from cjdb_api.app.resources import server, querying, updating, deletion
 
 
 v1_api_blueprint = Blueprint("api", __name__)
