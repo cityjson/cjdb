@@ -4,9 +4,8 @@ from sqlalchemy import update
 import ast
 
 from cjdb_api.app.db import session, engine
-from cjdb_api.app.resources import FIELD_MAPPING,  what_type, in_database
+from cjdb_api.app.resources import cityjson_schema, cityjson_list_schema, FIELD_MAPPING, what_type, in_database, parse_json
 from model.sqlalchemy_models import CjObjectModel, FamilyModel, ImportMetaModel
-from cjdb_api.app.resources import cityjson_schema, cityjson_list_schema, in_database, parse_json, time_stamp
 
 
 def type_mapping():
@@ -35,7 +34,9 @@ class AddAttribute(Resource):
         if attrib in FIELD_MAPPING:
             return {"message": "This object already has " + attrib + ". If you want to Update the attribute, use /update instead"}, 404
 
-        if object_id == "all":
+        if object_id is Null:
+            return {"message": "Invalid parameter. Please include the right object_id."}, 404
+        elif object_id == "all":
             obs = session.query(CjObjectModel)
             show = session.query(CjObjectModel).limit(50)
         else:
@@ -64,9 +65,12 @@ class AddAttribute(Resource):
             engine.execute(u)
 
         if object_id == "all":
-            return cityjson_list_schema.dump(show)
+            show = session.query(CjObjectModel).limit(50)
+            output = parse_json(cityjson_list_schema.dump(show))
         else:
-            return cityjson_list_schema.dump(obs)
+            output = parse_json(cityjson_list_schema.dump(obs))
+        
+        return jsonify(output)
 
 
 # Update the value of an attribute from a CityJSON object.
@@ -83,8 +87,10 @@ class UpdateAttrib(Resource):
 
         if attrib not in FIELD_MAPPING and attrib != "FootPrintArea":
             return {"message": "This attribute does not exist, to create a new attribute, use /add instead"}, 404
-
-        if object_id == "all":
+    
+        if object_id is Null:
+            return {"message": "Invalid parameter. Please include the right object_id."}, 404
+        elif object_id == "all":
             obs = session.query(CjObjectModel).all()
         else:
             in_database(object_id)
@@ -113,7 +119,7 @@ class UpdateAttrib(Resource):
         if object_id == "all":
             show = session.query(CjObjectModel).limit(50)
             output = parse_json(cityjson_list_schema.dump(show))
-            return jsonify(output)
         else:
             output = cityjson_list_schema.dump(obs)
-            return parse_json(output)
+            
+        return parse_json(output)
