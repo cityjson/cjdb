@@ -105,11 +105,13 @@ class CalculateFootprint(Resource):
     def get(cls):
         # required parameter: object_id
         object_id = request.args.get('object_id', None)
-
-        in_database(object_id)
+        
+        if object_id is None:
+            return {"message": "Invalid parameter. Please include the right object_id."}, 404
+        else:
+            in_database(object_id)
 
         cj_object = session.query(CjObjectModel).filter(CjObjectModel.object_id == object_id).first()
-
         if not cj_object:
             return {"message": "Object not found"}, 404
 
