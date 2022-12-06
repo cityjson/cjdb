@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+  <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-exp.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-icons.min.css">
+
     <meta charset="UTF-8">
     <title>All CityJSON objects</title>
     <style>
@@ -22,6 +27,20 @@
     </style>
 </head>
 <body>
+<div class="container">
+  <div class="section bg-primary">
+    <h1>CJDB API Demo</h1>
+  </div>
+
+    <div class="section bg-gray">
+      <ul class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="http://localhost:5000">/home</a>
+        </li>
+      </ul>
+    </div>
+</div>
+
 <h2>All CityJSON Objects</h2>
 <table>
     <tr>{% for header in headings %}
@@ -36,5 +55,11 @@
     </tr>
     {% endfor %}
 </table>
+
+<div class="divider"></div>
+<div class="footer">
+    <a href="https://github.com/leoleonsio/cjdb">Code in GitHub</a>
+</div>
+
 </body>
 </html>
