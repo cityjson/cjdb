@@ -17,6 +17,10 @@ for soon-to-be removed features.
 
 `Security` in case of vulnerabilities.
 
+
+## [0.1.0] - 2022-11-11
+First official release
+
 ## [0.0.8] - 2022-11-10
 `Fixed`
 Bug when deleting an object
