@@ -61,7 +61,7 @@ Password can be specified in the `PGPASSWORD` environment variable. If not speci
 ## 2. cj2pgsql explanations <a name="explanation"></a>
 ---
 ### Model assumptions <a name="model"></a>
-The `cj2pgsql` importer loads the data in accordance with a specific data model, which is also shared with the [`cjdb_api`](../cjdb_api/README.md).
+The `cj2pgsql` importer loads the data in accordance with a specific data model.
 
 Model documentation:
  [model/README](../model/README.md)
@@ -117,7 +117,7 @@ The [CityJSON specifications](https://www.cityjson.org/specs/1.1.2/#extensions) 
 
 1. Complex attributes
 
-No action is taken. These attributes end up in the `attributes` JSONB column. Querying by complex attributes values is not supported in the `cjdb_api` as of v0.0.7a.
+No action is taken. These attributes end up in the `attributes` JSONB column.
 
 2. Additional root properties
 

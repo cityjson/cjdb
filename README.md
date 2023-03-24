@@ -7,8 +7,6 @@ Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powa
 
 ### cj2pgsql
 See [cj2pgsql/README.md](cj2pgsql/README.md)
-### cjdb_api
-See [cjdb_api/README.md](cjdb_api/README.md)
 
 
 ## Table of Contents  
@@ -24,9 +22,6 @@ Based on this model, there are 2 software components available:
 
 ### cj2pgsql
 See [cj2pgsql/README.md](cj2pgsql/README.md)
-### cjdb_api
-See [cjdb_api/README.md](cjdb_api/README.md)
-
 
 ## 2. Installation & running <a name="install"></a>
 ### Using pip
@@ -40,12 +35,13 @@ It is recommended to install it in an isolated environment, because of fragile e
 Another option is to clone the repository and build the CLI from the code.
 From repository root, run:
 ```
+pip3 install build wheel
 python3 -m build
 ```
 
 Install the .whl file with pip:
 ```
-pip3 install dist/*.whl
+pip3 install dist/*.whl --force-reinstall
 ```
 
 ### Using docker
@@ -63,13 +59,6 @@ To import some files, the `-v` option is needed to mount our local file director
 ```
 docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cj2pgsql -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
 ```
-
-Run: **cjdb_api**
-```
-docker run --rm -it --network host cjdb cjdb_api --help
-```
-
-
 
 For instructions on running the software check specific READMEs.
 
