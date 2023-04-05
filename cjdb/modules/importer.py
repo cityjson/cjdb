@@ -1,8 +1,8 @@
-from cj2pgsql.modules.checks import check_object_type, check_root_properties, check_reprojection
-from cj2pgsql.modules.extensions import ExtensionHandler
-from cj2pgsql.modules.geometric import get_ground_geometry, get_srid, \
+from cjdb.modules.checks import check_object_type, check_root_properties, check_reprojection
+from cjdb.modules.extensions import ExtensionHandler
+from cjdb.modules.geometric import get_ground_geometry, get_srid, \
     reproject_vertex_list, resolve_geometry_vertices, transform_vertex
-from cj2pgsql.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine, to_dict
+from cjdb.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine, to_dict
 from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
 import os
 import json

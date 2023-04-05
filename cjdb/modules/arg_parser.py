@@ -1,7 +1,7 @@
 import argparse
 import os
 from getpass import getpass
-from cj2pgsql.resources import strings as s
+from cjdb.resources import strings as s
 
 def Parser():
     parser = argparse.ArgumentParser(description='Import CityJSONL to a PostgreSQL database',
