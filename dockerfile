@@ -11,10 +11,9 @@ ARG BUILD_VERSION="build==0.8.0"
 
 RUN python3 -m pip install ${PIP_VERSION} ${SETUPTOOL_VERSION} ${BUILD_VERSION}
 
-COPY setup.py setup.cfg README.md LICENSE changelog.md /app/
+COPY README.md LICENSE changelog.md /app/
 COPY model /app/model
-COPY cjdb_api /app/cjdb_api
-COPY cj2pgsql /app/cj2pgsql
+COPY cjdb /app/cjdb
 
 RUN python3 -m build 
 RUN pip install dist/*.whl
