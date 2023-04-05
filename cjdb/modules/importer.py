@@ -60,9 +60,10 @@ class Importer:
         print(f"Imported from {self.args.filepath} successfully")
 
     def prepare_database(self):
-        if self.args.overwrite:
-            self.engine.execute(f"drop schema if exists {self.args.db_schema} cascade")
-        self.engine.execute(f"create schema if not exists {self.args.db_schema}")
+        with self.engine.connect() as conn:
+            if self.args.overwrite:
+                conn.execute(f"drop schema if exists {self.args.db_schema} cascade")
+            conn.execute(f"create schema if not exists {self.args.db_schema}")
 
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
@@ -88,7 +89,8 @@ class Importer:
 
         with open(sql_path) as f:
             cmd = f.read().format(schema=self.args.db_schema)
-        self.engine.execute(cmd)
+        with self.engine.connect() as conn:
+            conn.execute(cmd)
         self.index_attributes()
         
     def process_line(self, line):
@@ -322,7 +324,8 @@ class Importer:
                     attr_name=attr_name,
                     attr_type=postgres_type
                 )
-                self.engine.execute(cmd)
+                with self.engine.connect() as conn:
+                    conn.execute(cmd)
 
             else:
                 print(f"Specified attribute to be indexed: '{attr_name}' does not exist")
