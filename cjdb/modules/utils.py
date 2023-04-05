@@ -1,8 +1,10 @@
+import os
+from pathlib import Path
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from sqlalchemy import create_engine
-import os
-from pathlib import Path
+
 from cjdb.resources import object_types
 
 

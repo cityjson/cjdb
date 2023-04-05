@@ -1,17 +1,24 @@
-from cjdb.modules.checks import check_object_type, check_root_properties, check_reprojection
-from cjdb.modules.extensions import ExtensionHandler
-from cjdb.modules.geometric import get_ground_geometry, get_srid, \
-    reproject_vertex_list, resolve_geometry_vertices, transform_vertex
-from cjdb.modules.utils import find_extra_properties, get_cj_object_types, get_db_engine, to_dict
-from model.sqlalchemy_models import BaseModel, FamilyModel, ImportMetaModel, CjObjectModel
-import os
 import json
+import os
 import sys
-from sqlalchemy.orm import Session
-from sqlalchemy import func, insert
 from pathlib import Path
+
 from pyproj import CRS
-from sqlalchemy import text, exc
+from sqlalchemy import exc, func, insert, text
+from sqlalchemy.orm import Session
+
+from cjdb.modules.checks import (check_object_type, check_reprojection,
+                                 check_root_properties)
+from cjdb.modules.extensions import ExtensionHandler
+from cjdb.modules.geometric import (get_ground_geometry, get_srid,
+                                    reproject_vertex_list,
+                                    resolve_geometry_vertices,
+                                    transform_vertex)
+from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
+                                get_db_engine, to_dict)
+from model.sqlalchemy_models import (BaseModel, CjObjectModel, FamilyModel,
+                                     ImportMetaModel)
+
 
 # class to store variables per file import - for clarity
 class SingleFileImport:

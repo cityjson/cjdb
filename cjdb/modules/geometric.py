@@ -1,10 +1,11 @@
 import copy
-from shapely.geometry import box, MultiPolygon, Point, Polygon
-from shapely.validation import explain_validity,make_valid
+from collections import OrderedDict
+
+import numpy as np
 from pyproj import CRS, Transformer
 from pyproj.transformer import TransformerGroup
-import numpy as np
-from collections import OrderedDict
+from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.validation import explain_validity, make_valid
 
 
 # get srid from a CRS string definition

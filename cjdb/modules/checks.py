@@ -1,4 +1,4 @@
-from pyproj import datadir, CRS
+from pyproj import CRS, datadir
 from pyproj.transformer import TransformerGroup
 
 

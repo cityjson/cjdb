@@ -1,6 +1,7 @@
 import argparse
 import os
 from getpass import getpass
+
 from cjdb.resources import strings as s
 
 
