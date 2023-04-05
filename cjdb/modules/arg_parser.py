@@ -127,17 +127,7 @@ def Parser():
         dest="overwrite",
     )
 
-    existing_action = parser.add_mutually_exclusive_group()
-    existing_action.add_argument(
-        "-e",
-        "--skip-existing",
-        default=False,
-        action="store_const",
-        const=True,
-        help=s.skip_existing,
-        dest="skip_existing",
-    )
-    existing_action.add_argument(
+    parser.add_argument(
         "-u",
         "--update-existing",
         default=False,

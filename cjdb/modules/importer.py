@@ -242,7 +242,7 @@ class Importer:
 
                 # optionally check if the object exists - 
                 # to skip it or update it
-                if self.args.skip_existing or self.args.update_existing:
+                if self.args.update_existing:
                     existing = (
                         self.session.query(CjObjectModel)
                         .filter_by(object_id=obj_id)
@@ -250,13 +250,9 @@ class Importer:
                     )
 
                     if existing:
-                        if self.args.skip_existing:
-                            print(f"CityObject (id:{obj_id}) already exists. Skipping.") # noqa
-                            continue
-
-                        elif self.args.update_existing:
-                            print(f"CityObject (id:{obj_id}) already exists. Updating.") # noqa
-                            obj_to_update = existing
+                        # TODO: proper logging
+                        print(f"CityObject (id:{obj_id}) already exists. Updating.") # noqa
+                        obj_to_update = existing
 
                 # get 3D geom, ground geom and bbox
                 geometry, ground_geometry = self.get_geometries(
@@ -332,7 +328,7 @@ class Importer:
             obj_insert = (
                 insert(CjObjectModel)
                 .values(self.current.cj_objects)
-                #.on_conflict_do_nothing()
+                .on_conflict_do_nothing()
             )  # noqa
             self.session.execute(obj_insert)
 
@@ -340,7 +336,7 @@ class Importer:
             family_insert = (
                 insert(FamilyModel)
                 .values(self.current.families)
-                #.on_conflict_do_nothing()
+                .on_conflict_do_nothing()
             )  # noqa
             self.session.execute(family_insert)
         self.current.import_meta.finished_at = func.now()
