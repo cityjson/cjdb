@@ -18,6 +18,18 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 
+## [1.1.0] - 2023-04-05
+Version 1.1.0
+
+`Deprecated`
+cjdb_api
+--skip-existing flag
+
+`Changed` 
+pyenv to poetry
+and cli function from cj2pgsql to cjdb
+
+
 ## [0.1.0] - 2022-11-11
 First official release
 
