@@ -4,7 +4,8 @@ import sys
 from pathlib import Path
 
 from pyproj import CRS
-from sqlalchemy import exc, func, insert, text
+from sqlalchemy import func, text
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from cjdb.modules.checks import (check_object_type, check_reprojection,
@@ -55,18 +56,14 @@ class Importer:
         # create model if in create mode, else append data
         if not self.args.append_mode:
             self.prepare_database()
-        try:
-            self.parse_cityjson()
-            self.session.commit()
-            # post import operations like clustering, indexing...
-            if not self.args.append_mode:
-                self.post_import()
-            self.current.import_meta.finished_at = func.now()
-            self.session.commit()
-            print(f"Imported from {self.args.filepath} successfully")
-        except exc.IntegrityError:
-            self.session.rollback()
-            print(f"File {self.args.filepath} cannot be imported, some of the items are already imported.")
+        self.parse_cityjson()
+        self.session.commit()
+        # post import operations like clustering, indexing...
+        if not self.args.append_mode:
+            self.post_import()
+        self.current.import_meta.finished_at = func.now()
+        self.session.commit()
+        print(f"Imported from {self.args.filepath} successfully")
 
     def prepare_database(self):
         with self.engine.connect() as conn:
@@ -273,11 +270,11 @@ class Importer:
                     self.process_line(line)
 
         if self.current.cj_objects:
-            obj_insert = insert(CjObjectModel).values(self.current.cj_objects)
+            obj_insert = insert(CjObjectModel).values(self.current.cj_objects).on_conflict_do_nothing() # noqa
             self.session.execute(obj_insert)
 
         if self.current.families:
-            family_insert = insert(FamilyModel).values(self.current.families)
+            family_insert = insert(FamilyModel).values(self.current.families).on_conflict_do_nothing() # noqa
             self.session.execute(family_insert)
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
