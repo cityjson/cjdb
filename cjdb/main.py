@@ -1,5 +1,5 @@
-from cj2pgsql.modules.arg_parser import Parser, validate_args
-from cj2pgsql.modules.importer import Importer
+from cjdb.modules.arg_parser import Parser, validate_args
+from cjdb.modules.importer import Importer
 
 
 def get_args():

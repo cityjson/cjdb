@@ -6,13 +6,13 @@ def pytest_generate_tests(metafunc):
     if "arguments" in metafunc.fixturenames:
 
         # prepare input cityjson files
-        test_files_dir = "cj2pgsql/test/files"
+        test_files_dir = "cjdb/test/files"
         files = []
         for entry in os.scandir(test_files_dir):
             files.append(entry.path)
 
         # prepare sets of arguments for the CLI
-        test_arguments_file = "cj2pgsql/test/inputs/arguments"
+        test_arguments_file = "cjdb/test/inputs/arguments"
         argument_sets = []
         ids = []
         for f in files:
