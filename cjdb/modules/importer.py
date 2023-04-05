@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, insert
 from pathlib import Path
 from pyproj import CRS
+from sqlalchemy import text, exc
 
 # class to store variables per file import - for clarity
 class SingleFileImport:
@@ -47,23 +48,24 @@ class Importer:
         # create model if in create mode, else append data
         if not self.args.append_mode:
             self.prepare_database()
-
-        self.parse_cityjson()
-        self.session.commit()
-
-        # post import operations like clustering, indexing...
-        if not self.args.append_mode:
-            self.post_import()
-
-        self.current.import_meta.finished_at = func.now()
-        self.session.commit()
-        print(f"Imported from {self.args.filepath} successfully")
+        try:
+            self.parse_cityjson()
+            self.session.commit()
+            # post import operations like clustering, indexing...
+            if not self.args.append_mode:
+                self.post_import()
+            self.current.import_meta.finished_at = func.now()
+            self.session.commit()
+            print(f"Imported from {self.args.filepath} successfully")
+        except exc.IntegrityError:
+            self.session.rollback()
+            print(f"File {self.args.filepath} cannot be imported, some of the items are already imported.")
 
     def prepare_database(self):
         with self.engine.connect() as conn:
             if self.args.overwrite:
-                conn.execute(f"drop schema if exists {self.args.db_schema} cascade")
-            conn.execute(f"create schema if not exists {self.args.db_schema}")
+                conn.execute(text(f"drop schema if exists {self.args.db_schema} cascade"))
+            conn.execute(text(f"create schema if not exists {self.args.db_schema}"))
 
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
@@ -90,7 +92,7 @@ class Importer:
         with open(sql_path) as f:
             cmd = f.read().format(schema=self.args.db_schema)
         with self.engine.connect() as conn:
-            conn.execute(cmd)
+            conn.execute(text(cmd))
         self.index_attributes()
         
     def process_line(self, line):
@@ -270,7 +272,6 @@ class Importer:
         if self.current.families:
             family_insert = insert(FamilyModel).values(self.current.families)
             self.session.execute(family_insert)
-
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
 
@@ -325,7 +326,7 @@ class Importer:
                     attr_type=postgres_type
                 )
                 with self.engine.connect() as conn:
-                    conn.execute(cmd)
+                    conn.execute(text(cmd))
 
             else:
                 print(f"Specified attribute to be indexed: '{attr_name}' does not exist")
