@@ -44,7 +44,7 @@ class ImportMetaModel(BaseModel):
             if same_source_import:
                 print(f"\nFile '{self.source_file}' was previously imported at {same_source_import.finished_at}.\n" \
                         "Use the -g flag to suppress this warning")
-                user_answer = input("Should the import continue?\n [y / n]\n")
+                user_answer = input("Should the import continue? Already imported City objects will be skipped. \n [y / n]\n")
                 if user_answer.lower() != "y":
                     return False
     
