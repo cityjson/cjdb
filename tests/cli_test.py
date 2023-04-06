@@ -1,11 +1,13 @@
 from cjdb.main import run
 from cjdb.modules.arg_parser import Parser
 import pytest
+import io
 
 arguments = ['-H', 'localhost', '-U', 'postgres', '-d', 'postgres']
 
 
-def test_single_import():
+def test_single_import(monkeypatch):
+    monkeypatch.setattr('sys.stdin', io.StringIO('y'))
     current_arguments = arguments.copy()
     current_arguments.append("./tests/files/extension2.jsonl")
     parser = Parser()
@@ -14,7 +16,8 @@ def test_single_import():
     run(args)
 
 
-def test_single_import_withour_srid():
+def test_single_import_withour_srid(monkeypatch):
+    monkeypatch.setattr('sys.stdin', io.StringIO('y'))
     current_arguments = arguments.copy()
     current_arguments.append("./tests/files/vienna.jsonl")
     parser = Parser()
@@ -26,7 +29,8 @@ def test_single_import_withour_srid():
     assert excinfo.value.code == 1
 
 
-def test_single_import_with_target_srid():
+def test_single_import_with_target_srid(monkeypatch):
+    monkeypatch.setattr('sys.stdin', io.StringIO('y'))
     current_arguments = arguments.copy()
     current_arguments.append("./tests/files/vienna.jsonl")
     current_arguments.append("-I")
@@ -36,7 +40,8 @@ def test_single_import_with_target_srid():
     print("Args: ", " ".join(current_arguments))
     run(args)
     
-    # TODO: Add tests for other flags. 
+    # TODO: Add tests for other flags.
+    # TODO: Add tests for directory import.
     # TODO: Add data tests post import
     # TODO: Add test to postgres with testing.postgres
 
