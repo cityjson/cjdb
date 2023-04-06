@@ -26,7 +26,7 @@ from cjdb.modules.utils import (
     get_db_engine,
     to_dict,
 )
-from model.sqlalchemy_models import (
+from cjdb.model.sqlalchemy_models import (
     BaseModel,
     CjObjectModel,
     FamilyModel,
