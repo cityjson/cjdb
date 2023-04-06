@@ -5,102 +5,64 @@ CJDB is a tool for enabling CityJSON integration with a PostgreSQL database.
 
 Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powalka
 
-### cj2pgsql
-See [cj2pgsql/README.md](cj2pgsql/README.md)
-
+Maintainer: Gina Stavropoulou
 
 ## Table of Contents  
 ### [1. Data model](#model)
 ### [2. Installation & running](#install)
 ### [3. Local development](#local)
-### [4. Local CLI development](#cli)
 ---
 ## 1. Data model <a name="model"></a>
-For the underlying data model see [model/README.md](model/README.md)
+For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
 
-Based on this model, there are 2 software components available:
-
-### cj2pgsql
-See [cj2pgsql/README.md](cj2pgsql/README.md)
 
 ## 2. Installation & running <a name="install"></a>
 ### Using pip
 
-```
+```bash
 pip install cjdb
 ```
 It is recommended to install it in an isolated environment, because of fragile external library dependencies for CQL filter parsing.
 
-### Using the repository code
-Another option is to clone the repository and build the CLI from the code.
-From repository root, run:
-```
-pip3 install build wheel
-python3 -m build
-```
-
-Install the .whl file with pip:
-```
-pip3 install dist/*.whl --force-reinstall
-```
-
 ### Using docker
 Build:
-```
+```bash
 docker build -t cjdb:latest .
 ```
 
-Run: **cj2pgsql**
-```
-docker run --rm -it cjdb cj2pgsql --help
-```
-
-To import some files, the `-v` option is needed to mount our local file directory in the container.
-```
-docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cj2pgsql -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
+Run:
+```bash
+docker run --rm -it cjdb cjdb --help
 ```
 
-For instructions on running the software check specific READMEs.
+To import some files, the `-v` option is needed to mount our local file directory in the container:
+```bash
+docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
+```
 
 
 ## 3. Local development <a name="local"></a>
-Make sure pipenv is installed:
-```
-pip install pipenv
-```
-Create the environment:
-```
-pipenv install
+Make sure `poetry` is installed. Then, to create a local environment with all the necessary dependencies, run from the repository root:
+```bash
+poetry install
 ```
 
-## 4. Local CLI development <a name="cli"></a>
----
-To build the CLI app (so that it can be called as a command line tool from anywhere):
-
-
-1. Sync the pipenv requirements with the setup.py file:
-```
-pipenv run pipenv-setup sync
+To build the wheel run:
+```bash
+poetry build
 ```
 
-2. Create a venv just for testing the CLI build.
-
-**Note**: This is not the pipenv/development environment.
-```
-virtualenv venv
-```
-3. Activate environment (note: this is not the pipenv environment. This is a separate environment just to test the CLI build)
-```
-. venv/bin/activate
-
+Then install the .whl file with pip:
+```bash
+pip3 install dist/*.whl --force-reinstall
 ```
 
-4. Build the CLI:
-```
-python setup.py develop
+Then you can run the CLI command:
+```bash
+cjdb --help
 ```
 
-5. The cj2pgsql importer should now work as a command inside this environment:
-```
-cj2pgsql --help
-```
+
+
+
+
