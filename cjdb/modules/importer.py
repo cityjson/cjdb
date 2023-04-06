@@ -137,8 +137,10 @@ class Importer:
             if self.args.target_srid and self.current.source_srid:
                 self.current.target_srid = self.args.target_srid
                 check_reprojection(self.current.source_srid, self.current.target_srid) # noqa
-            else:
+            elif self.args.target_srid:
                 self.current.target_srid = self.args.target_srid
+            else:
+                self.current.target_srid = self.current.source_srid
 
             # calculate dataset bbox based on geographicalExtent
             bbox = None
@@ -202,7 +204,7 @@ class Importer:
             )
             if not result_ok:
                 print("Cancelling import")
-                sys.exit()
+                sys.exit(1)
 
             # add metadata to the database
             import_meta.__table__.schema = self.args.db_schema
