@@ -1,6 +1,3 @@
-import os
-import subprocess
-import sys
 from cjdb.main import run
 from cjdb.modules.arg_parser import Parser
 import pytest
@@ -39,4 +36,7 @@ def test_single_import_with_target_srid():
     print("Args: ", " ".join(current_arguments))
     run(args)
     
-    # todo - add data tests post import
+    # TODO: Add tests for other flags. 
+    # TODO: Add data tests post import
+    # TODO: Add test to postgres with testing.postgres
+
