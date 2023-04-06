@@ -3,7 +3,7 @@ from cjdb.modules.arg_parser import Parser
 import pytest
 import io
 
-arguments = ['-H', 'localhost', '-U', 'postgres', '-d', 'postgres']
+arguments = ['-H', 'localhost', '-U', 'gina', '-d', 'postgres']
 
 
 def test_single_import(monkeypatch):
@@ -32,9 +32,7 @@ def test_single_import_withour_srid(monkeypatch):
 def test_single_import_with_target_srid(monkeypatch):
     monkeypatch.setattr('sys.stdin', io.StringIO('y'))
     current_arguments = arguments.copy()
-    current_arguments.append("./tests/files/vienna.jsonl")
-    current_arguments.append("-I")
-    current_arguments.append("7415")
+    current_arguments.extend(["./tests/files/vienna.jsonl", "-I", "7415"])
     parser = Parser()
     args = parser.parse_args(current_arguments)
     print("Args: ", " ".join(current_arguments))
