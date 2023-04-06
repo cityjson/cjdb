@@ -18,16 +18,17 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 
-## [1.1.0] - 2023-04-05
+## [1.1.0] - 2023-04-06
 Version 1.1.0
 
 `Deprecated`
-cjdb_api
---skip-existing flag
+- removed cjdb_api, cli has import as single purpose. 
+- removed --skip-existing flag, skipping is default.
 
 `Changed` 
-pyenv to poetry
-and cli function from cj2pgsql to cjdb
+- Switched to using poetry instead of pyenv.
+- renamed cli function from cj2pgsql to cjdb.
+- Yanked version 1.0.0 (No CLI) 
 
 
 ## [0.1.0] - 2022-11-11
