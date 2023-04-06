@@ -1,15 +1,15 @@
-# cj2pgsql
+# cjdb
 
 [![MIT badge](https://img.shields.io/pypi/l/cjdb)](../LICENSE) &nbsp; [![PyPI](https://img.shields.io/pypi/v/cjdb)](https://pypi.org/project/cjdb)
 
-`cj2pgsql` is a Python based importer of CityJSONL files to a PostgreSQL database. It requires [PostGIS](https://postgis.net/) extension for geometry types.
+`cjdb` is a Python based importer of CityJSONL files to a PostgreSQL database. It requires [PostGIS](https://postgis.net/) extension for geometry types.
 
 ## Table of Contents  
 ### [1. CLI Usage](#usage)
 - [CLI instructions](#instructions)
 - [Quickstart example](#quickstart)
 
-### [2. cj2pgsql explanations](#explanation)
+### [2. cjdb explanations](#explanation)
  - [Model assumptions](#model)
  - [What is a City Model?](#citymodel)
  - [Types of input](#input)
@@ -20,9 +20,6 @@
  - [Data validation](#validation)
  - [Repeated object IDs](#repeated)
 
-### [3. Running with local code](#local)
-
-### [4. Running tests](#tests)
 ---------------------------------
 
 ## 1. CLI usage <a name="usage"></a>
@@ -33,7 +30,7 @@ https://leoleonsio.github.io/cjdb/#cj2pgsql-cli-usage
 ### Quickstart example <a name="quickstart"></a>
 Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/nl/download?tid=901).
 
-Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cj2pgsql is needed to import it to a specified schema in a database.
+Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cjdb is needed to import it to a specified schema in a database.
 
 1. Convert CityJSON to CityJSONL
 
@@ -43,13 +40,13 @@ cjio --suppress_msg tile_901.json export jsonl stdout > tile_901.jsonl
 
 2. Import CityJSONL to the database
 ```
-PGPASSWORD=postgres cj2pgsql -H localhost -U postgres -d postgres -s cjdb -o tile_901.jsonl   
+PGPASSWORD=postgres cjdb -H localhost -U postgres -d postgres -s cjdb -o tile_901.jsonl   
 ```
 
 **Alternatively steps 1 and 2 in a single command:**
 
 ```
-cjio --suppress_msg tile_901.json export jsonl stdout | cj2pgsql -H localhost -U postgres -d postgres -s cjdb -o
+cjio --suppress_msg tile_901.json export jsonl stdout | cjdb -H localhost -U postgres -d postgres -s cjdb -o
 ```
 
 The metadata and the objects can then be found in the tables in the specified schema (`cjdb` in this example).
@@ -58,10 +55,10 @@ The metadata and the objects can then be found in the tables in the specified sc
 Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
 
 
-## 2. cj2pgsql explanations <a name="explanation"></a>
+## 2. cjdb explanations <a name="explanation"></a>
 ---
 ### Model assumptions <a name="model"></a>
-The `cj2pgsql` importer loads the data in accordance with a specific data model.
+The `cjdb` importer loads the data in accordance with a specific data model.
 
 Model documentation:
  [model/README](../model/README.md)
@@ -87,11 +84,11 @@ The importer supports 3 kinds of input:
 - a directory of CityJSONL files (all files with *jsonl* extensions are located and imported)
 - STDIN using the pipe operator:
 ```
-cat file.jsonl | cj2pgsql ...
+cat file.jsonl | cjdb ...
 ```
 
 ### Coordinate Reference Systems <a name="crs"></a>
-The `cj2pgsql` importer does not allow inconsistent CRS (coordinate reference systems) within the same database schema. For storing data in separate CRS using multiple schemas is required.
+The `cjdb` importer does not allow inconsistent CRS (coordinate reference systems) within the same database schema. For storing data in separate CRS using multiple schemas is required.
 
 The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
 
@@ -113,7 +110,7 @@ If that fails, the user will have to download the required grids and put them in
 ### CityJSON Extensions <a name="extensions"></a>
 If [CityJSON Extensions](https://www.cityjson.org/extensions/) were present in the imported file, they can be found listed in the `extensions` column in the `import_meta` table.
 
-The [CityJSON specifications](https://www.cityjson.org/specs/1.1.2/#extensions) mention 3 different extendable features, and the `cj2pgsql` importer deals with them as follows:
+The [CityJSON specifications](https://www.cityjson.org/specs/1.1.2/#extensions) mention 3 different extendable features, and the `cjdb` importer deals with them as follows:
 
 1. Complex attributes
 
@@ -143,43 +140,5 @@ By default, the importer does not check if an object with a given ID exists alre
 
 The user can choose to run the import with either the `-e/--skip-existing` option to skip existing objects or `-u, --update-existing` to update existing objects. This will slow down the import, but it will also ensure that repeated object cases are handled.
 
-## 3. Running with local code <a name="local"></a>
-Create `pipenv` environment in repository root:
-```
-pipenv install
-```
-
-Run the importer:
-```
-PYTHONPATH=$PWD pipenv run python cj2pgsql/main.py --help
-```
-
-
-## 4. Running tests <a name="tests"></a>
----
-Test cases for Pytest are generated based on the CityJSONL files in:
-- cj2pgsql/test/files
-
-And the argument sets defined in the file:
-- cj2pgsql/test/inputs/arguments
-
-Where each line is a separate argument set.
-
-The tests are run for each combination of a file and argument set. To run them locally, the cj2pgsql/test/inputs/arguments file has to be modified.
-
-Install pytest first.
-```
-pip3 install pytest
-```
-
-Then, in repository root:
-```
-pytest cj2pgsql -v
-```
-
-or, to see the importer output:
-```
-pytest cj2pgsql -s
-```
 
 

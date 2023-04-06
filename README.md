@@ -11,6 +11,7 @@ Maintainer: Gina Stavropoulou
 ### [1. Data model](#model)
 ### [2. Installation & running](#install)
 ### [3. Local development](#local)
+### [4. Running tests](#tests)
 ---
 ## 1. Data model <a name="model"></a>
 For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
@@ -40,7 +41,6 @@ To import some files, the `-v` option is needed to mount our local file director
 docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
 ```
 
-
 ## 3. Local development <a name="local"></a>
 Make sure `poetry` is installed. Then, to create a local environment with all the necessary dependencies, run from the repository root:
 ```bash
@@ -60,6 +60,16 @@ pip3 install dist/*.whl --force-reinstall
 Then you can run the CLI command:
 ```bash
 cjdb --help
+```
+
+## 4. Running tests <a name="tests"></a>
+---
+Modify the arguments for the database connection to your own settings in:
+- /tests/cli_test.py
+
+Then run:
+```bash
+pytest -v
 ```
 
 
