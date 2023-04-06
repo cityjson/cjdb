@@ -24,6 +24,7 @@ Version 1.1.0
 `Removed`
 - cjdb_api, cli has import as single purpose. 
 - --skip-existing flag, skipping is default.
+- sphinx docs
 
 `Changed` 
 - Switched to using poetry instead of pyenv.
