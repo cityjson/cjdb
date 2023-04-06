@@ -3,7 +3,7 @@ from cjdb.modules.arg_parser import Parser
 import pytest
 import io
 
-arguments = ['-H', 'localhost', '-U', 'gina', '-d', 'postgres']
+arguments = ['-H', 'localhost', '-U', 'postgres', '-d', 'postgres']
 
 
 def test_single_import(monkeypatch):
