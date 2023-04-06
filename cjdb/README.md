@@ -25,7 +25,79 @@
 ## 1. CLI usage <a name="usage"></a>
 ---
 ### CLI instructions: <a name="instructions"></a>
-https://leoleonsio.github.io/cjdb/#cj2pgsql-cli-usage
+
+usage: 
+
+```bash
+cj2pgsql [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [-W DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-I TARGET_SRID][-x INDEXED_ATTRIBUTES] [-px PARTIAL_INDEXED_ATTRIBUTES] [-g] [-a | -o] [-e | -u] [file_or_directory]
+```
+#### Positional Arguments
+file_or_directory
+Source CityJSONL file or a directory with CityJSONL files. STDIN if not specified. If specifying a directory, all the *.jsonl files inside of it will be imported.
+
+Default: “stdin”
+
+#### Named Arguments
+-I, --srid
+Target coordinate system SRID. All 3D and 2D geometries will be reprojected.
+
+-x, --attr-index
+CityObject attribute to be indexed using a btree index. Can be specified multiple times, for each attribute once.
+
+Default: []
+
+-px, --partial-attr-index
+CityObject attribute to be indexed using a btree partial index. Can be specified multiple times, for each attribute once. This index indexes on a condition ‘where {
+                {ATTR_NAME
+                }
+        } is not null’. This means that it saves space and improves query performance when the attribute is not present for all imported CityObjects.
+
+Default: []
+
+-g, --ignore-repeated-file
+Ignore repeated file names warning when importing. By default, the importer will send out warnings if a specific file has already been imported.
+
+Default: False
+
+-a, --append
+Run in append mode (as opposed to default create mode). This assumes the database structure exists already and new data is to be appended.
+
+Default: False
+
+-o, --overwrite
+Overwrite the data that is currently in the database schema. Warning: this causes the loss of what was imported before to the database schema.
+
+Default: False
+
+-u, --update-existing
+Check if the object with given ID exists before inserting, and update it if it does. The old object will be updated with the new object’s properties.
+
+Default: False
+
+#### Database connection arguments
+-H, --host
+PostgreSQL database host
+
+Default: “localhost”
+
+-p, --port
+PostgreSQL database port
+
+Default: 5432
+
+-U, --user
+PostgreSQL database user name
+
+-W, --password
+PostgreSQL database user password
+
+-d, --database
+PostgreSQL database name
+
+-s, --schema
+Target database schema
+
+Default: “public”
 
 ### Quickstart example <a name="quickstart"></a>
 Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/nl/download?tid=901).
@@ -61,10 +133,10 @@ Password can be specified in the `PGPASSWORD` environment variable. If not speci
 The `cjdb` importer loads the data in accordance with a specific data model.
 
 Model documentation:
- [model/README](../model/README.md)
+ [model/README](model/README.md)
 
 #### Indexes
-Some indexes are created by default (refer to [model/README](../model/README.md)).
+Some indexes are created by default (refer to [model/README](model/README.md)).
 
 Additionally, the user can specify which CityObject attributes are to be indexed with the `-x/--attr-index` or `-px/--partial-attr-index` flag. The second option uses a partial index with a `not null` condition on the attribute. This saves disk space when indexing an attribute that is not present among all the imported CityObjects. This is often the case with CityJSON, because in a single dataset there can be different object types, with different attributes.
 
