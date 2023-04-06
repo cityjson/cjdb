@@ -1,3 +1,7 @@
 # argument sets for the importer tests
 # each argument set in a single new line
--H localhost -U gina -d postgres
+-H localhost -U postgres -d postgres -s cjdb2 -p 5555 -W postgres -o
+-H localhost -U postgres -d postgres -s cjdb2 -p 5555 -W postgres -u -a -g
+-H localhost -U postgres -d postgres -s cjdb2 -p 5555 -W postgres -e -a -g
+-H localhost -U postgres -d postgres -s cjdb2 -p 5555 -W postgres -I 4979 -o
+-H localhost -U postgres -d postgres -s cjdb2 -p 5555 -W postgres -x documentnummer -x reconstruction_skipped -x oorspronkelijkbouwjaar -o
