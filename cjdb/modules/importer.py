@@ -138,7 +138,7 @@ class Importer:
                 self.current.target_srid = self.args.target_srid
                 check_reprojection(self.current.source_srid, self.current.target_srid) # noqa
             else:
-                self.current.target_srid = self.current.source_srid
+                self.current.target_srid = self.args.target_srid
 
             # calculate dataset bbox based on geographicalExtent
             bbox = None
