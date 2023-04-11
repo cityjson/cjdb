@@ -50,7 +50,8 @@ class SingleFileImport:
 
 # importer class called once per whole import
 class Importer:
-    def __init__(self, args):
+    def __init__(self, engine, args):
+        self.engine = engine
         self.args = args
         # get allowed types for validation
         self.cj_object_types = get_cj_object_types()
@@ -60,7 +61,6 @@ class Importer:
             table.schema = self.args.db_schema
 
     def __enter__(self):
-        self.engine = get_db_engine(self.args)
         self.session = Session(self.engine)
         return self
 
@@ -79,6 +79,7 @@ class Importer:
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
         print(f"Imported from {self.args.filepath} successfully")
+        return 0
 
     def prepare_database(self):
         with self.engine.connect() as conn:
@@ -90,7 +91,7 @@ class Importer:
                 )
             conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
                                   {self.args.db_schema}"""))
-
+            conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
             table.create(self.engine, checkfirst=True)

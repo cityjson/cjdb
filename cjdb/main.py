@@ -1,5 +1,6 @@
 from cjdb.modules.arg_parser import Parser, validate_args
 from cjdb.modules.importer import Importer
+from cjdb.modules.utils import get_db_engine
 
 
 def get_args():
@@ -15,8 +16,10 @@ def get_args():
 
 # organized like this to be able to call it in tests and also as CLI
 def run(args):
-    with Importer(args) as imp:
+    engine = get_db_engine(args)
+    with Importer(engine, args) as imp:
         imp.run_import()
+
 
 def main():
     args = get_args()
