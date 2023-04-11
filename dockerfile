@@ -1,20 +1,17 @@
-FROM python:3.8-slim-buster
-# RUN apt-get update && \
-#     apt-get install
+FROM python:3.11-slim-buster
+RUN apt-get update && \
+    apt-get install
 
 RUN mkdir /app
 WORKDIR /app
 
-ARG PIP_VERSION="pip==22.3.0"
-ARG SETUPTOOL_VERSION="setuptools==65.5.0"
-ARG BUILD_VERSION="build==0.8.0"
+ARG PIP_VERSION="pip==23.0.0"
+ARG POETRY_VERSION="poetry==1.3.2"
 
-RUN python3 -m pip install ${PIP_VERSION} ${SETUPTOOL_VERSION} ${BUILD_VERSION}
+RUN python3 -m pip install ${PIP_VERSION} ${POETRY_VERSION}
 
-COPY setup.py setup.cfg README.md LICENSE changelog.md /app/
-COPY model /app/model
-COPY cjdb_api /app/cjdb_api
-COPY cj2pgsql /app/cj2pgsql
+COPY README.md poetry.lock pyproject.toml /app/
+COPY cjdb /app/cjdb
 
-RUN python3 -m build 
-RUN pip install dist/*.whl
+RUN poetry config virtualenvs.create false \
+  && poetry install --no-interaction --no-ansi --without dev

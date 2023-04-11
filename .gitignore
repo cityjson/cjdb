@@ -1,4 +1,4 @@
-cj2pgsql/__pycache__
+*__pycache__
 .vscode
 *launch.json
 *.env
@@ -10,4 +10,3 @@ venv
 *.whl
 *.gz
 done
-cj2pgsql/modules/projtest.py
