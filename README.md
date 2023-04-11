@@ -63,6 +63,7 @@ cjdb --help
 ```
 
 ## 4. Running tests <a name="tests"></a>
+In onrder to run the tests you need to have PostgreSQL installed. Then you can run:
 
 ```bash
 pytest -v
