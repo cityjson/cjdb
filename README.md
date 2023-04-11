@@ -63,11 +63,7 @@ cjdb --help
 ```
 
 ## 4. Running tests <a name="tests"></a>
----
-Modify the arguments for the database connection to your own settings in:
-- /tests/cli_test.py
 
-Then run:
 ```bash
 pytest -v
 ```
