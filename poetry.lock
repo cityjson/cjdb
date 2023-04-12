@@ -165,10 +165,32 @@ files = [
 ]
 
 [[package]]
+name = "cjio"
+version = "0.8.1"
+description = "CLI to process and manipulate CityJSON files"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "cjio-0.8.1-py2.py3-none-any.whl", hash = "sha256:49889e1565580764e154558d4eafe46305e7b4a249f7d320d1169638be95be63"},
+    {file = "cjio-0.8.1.tar.gz", hash = "sha256:d07f51b5ccc4cd05f045642a13cb8a79959fc41d3f54ab89cf46c3ac0fc0d4bf"},
+]
+
+[package.dependencies]
+Click = ">=8.1.0"
+numpy = "*"
+
+[package.extras]
+develop = ["bump2version", "pytest"]
+export = ["mapbox-earcut", "pandas", "triangle"]
+reproject = ["pyproj (>=3.0.0)"]
+validate = ["cjvalpy (>=0.3.0)"]
+
+[[package]]
 name = "click"
 version = "8.1.3"
 description = "Composable command line interface toolkit"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -183,7 +205,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
@@ -949,4 +971,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "65fda9eaf22061375882e86fe76d1568587cb94b5e620a2675b91b54558072ac"
+content-hash = "18dbadea518efa5699bfb36be2c8cbfdefe57fa3434096d454ad6b8d04790041"
