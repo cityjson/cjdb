@@ -7,7 +7,7 @@ def get_args():
     parser = Parser()
     args = parser.parse_args()
     validation_result, validation_msg = validate_args(args)
-    
+
     if validation_result:
         return args
     else:
