@@ -23,28 +23,13 @@ def Parser():
     db = parser.add_argument_group(title="Database connection arguments")
 
     db.add_argument(
-        "-H",
-        "--host",
-        type=str,
-        default="localhost",
-        help=s.host_help,
-        dest="db_host"
+        "-H", "--host", type=str, default="localhost", help=s.host_help, dest="db_host"
     )
     db.add_argument(
-        "-p",
-        "--port",
-        type=int,
-        default=5432,
-        help=s.port_help,
-        dest="db_port"
+        "-p", "--port", type=int, default=5432, help=s.port_help, dest="db_port"
     )
     db.add_argument(
-        "-U",
-        "--user",
-        type=str,
-        required=True,
-        help=s.user_help,
-        dest="db_user"
+        "-U", "--user", type=str, required=True, help=s.user_help, dest="db_user"
     )
     db.add_argument(
         "-W",
@@ -71,12 +56,7 @@ def Parser():
         dest="db_schema",
     )
     parser.add_argument(
-        "-I",
-        "--srid",
-        type=int,
-        default=None,
-        help=s.srid_help,
-        dest="target_srid"
+        "-I", "--srid", type=int, default=None, help=s.srid_help, dest="target_srid"
     )
     parser.add_argument(
         "-x",
@@ -145,6 +125,8 @@ def validate_args(args):
     result = True
     msg = ""
     if not args.db_password:
-        args.db_password = getpass(prompt=f'Password for user "{args.db_user}": ') # noqa
+        args.db_password = getpass(
+            prompt=f'Password for user "{args.db_user}": '
+        )  # noqa
 
     return result, msg

@@ -42,18 +42,14 @@ def check_reprojection(source_srid, target_srid):
 
     # attempt to download missing grids
     if not group.best_available:
-        print(
-            """Attempting to download additional grids\
-               required for CRS transformation."""
-        )
-        print(
-            f"""This can also be done manually, and the grid\
-            should be put in this folder:\n\t{datadir.get_data_dir()}"""
-        )
+        print("""Attempting to download additional grids\
+               required for CRS transformation.""")
+        print(f"""This can also be done manually, and the grid\
+            should be put in this folder:\n\t{datadir.get_data_dir()}""")
 
         try:
             group.download_grids(datadir.get_data_dir())
-        except (...):
+        except ...:
             print("Failed to download the missing grids.")
         else:
             print("Download successful.")

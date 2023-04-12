@@ -7,31 +7,17 @@ from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from cjdb.modules.checks import (
-    check_object_type,
-    check_reprojection,
-    check_root_properties,
-)
+from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
+                                          FamilyModel, ImportMetaModel)
+from cjdb.modules.checks import (check_object_type, check_reprojection,
+                                 check_root_properties)
 from cjdb.modules.extensions import ExtensionHandler
-from cjdb.modules.geometric import (
-    get_ground_geometry,
-    get_srid,
-    reproject_vertex_list,
-    resolve_geometry_vertices,
-    transform_vertex,
-)
-from cjdb.modules.utils import (
-    find_extra_properties,
-    get_cj_object_types,
-    get_db_engine,
-    to_dict,
-)
-from cjdb.model.sqlalchemy_models import (
-    BaseModel,
-    CjObjectModel,
-    FamilyModel,
-    ImportMetaModel,
-)
+from cjdb.modules.geometric import (get_ground_geometry, get_srid,
+                                    reproject_vertex_list,
+                                    resolve_geometry_vertices,
+                                    transform_vertex)
+from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
+                                get_db_engine, to_dict)
 
 
 # class to store variables per file import - for clarity
@@ -84,11 +70,9 @@ class Importer:
     def prepare_database(self):
         with self.engine.connect() as conn:
             if self.args.overwrite:
-                conn.execute(
-                    text(f"""DROP SCHEMA
+                conn.execute(text(f"""DROP SCHEMA
                              IF EXISTS {self.args.db_schema}
-                             CASCADE""")
-                )
+                             CASCADE"""))
             conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
                                   {self.args.db_schema}"""))
             conn.commit()
@@ -128,16 +112,16 @@ class Importer:
                 line_json["metadata"].get("referenceSystem")
             )
             if not self.current.source_srid:
-                print(
-                    """Warning: No Coordinate Reference System
-                       specified for the dataset."""
-                )
+                print("""Warning: No Coordinate Reference System
+                       specified for the dataset.""")
 
             # use specified target SRID for all the geometries
             # If not specified use same as source.
             if self.args.target_srid and self.current.source_srid:
                 self.current.target_srid = self.args.target_srid
-                check_reprojection(self.current.source_srid, self.current.target_srid) # noqa
+                check_reprojection(
+                    self.current.source_srid, self.current.target_srid
+                )  # noqa
             elif self.args.target_srid:
                 self.current.target_srid = self.args.target_srid
             else:
@@ -243,7 +227,7 @@ class Importer:
             for obj_id, cityobj in line_json["CityObjects"].items():
                 obj_to_update = None
 
-                # optionally check if the object exists - 
+                # optionally check if the object exists -
                 # to skip it or update it
                 if self.args.update_existing:
                     existing = (
@@ -254,7 +238,9 @@ class Importer:
 
                     if existing:
                         # TODO: proper logging
-                        print(f"CityObject (id:{obj_id}) already exists. Updating.") # noqa
+                        print(
+                            f"CityObject (id:{obj_id}) already exists. Updating."
+                        )  # noqa
                         obj_to_update = existing
 
                 # get 3D geom, ground geom and bbox
@@ -372,7 +358,9 @@ class Importer:
         )
 
         # prepare partial and non partial indexes in one list
-        attributes = [(a, True) for a in self.args.partial_indexed_attributes] + [ #noqa
+        attributes = [
+            (a, True) for a in self.args.partial_indexed_attributes
+        ] + [  # noqa
             (a, False) for a in self.args.indexed_attributes
         ]
 
@@ -390,7 +378,7 @@ class Importer:
                 # prepare and run sql command
                 if is_partial:
                     cmd = cmd_base
-                    + " WHERE attributes->>'{attr_name}' IS NOT NULL"
+                    +" WHERE attributes->>'{attr_name}' IS NOT NULL"
                 else:
                     cmd = cmd_base
 
@@ -405,7 +393,7 @@ class Importer:
 
             else:
                 print(
-                    f"Specified attribute to be indexed: '{attr_name}' does not exist" # noqa
+                    f"Specified attribute to be indexed: '{attr_name}' does not exist"  # noqa
                 )
 
     def get_geometries(self, obj_id, cityobj, vertices, source_target_srid):
