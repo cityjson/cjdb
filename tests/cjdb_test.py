@@ -42,8 +42,8 @@ def test_single_import(engine_postgresql, monkeypatch):
         update_existing=False,
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
-        sucess_code = imp.run_import()
-        assert sucess_code == 0
+        success_code = imp.run_import()
+        assert success_code == 0
 
 
 def test_single_import_withour_srid(engine_postgresql, monkeypatch):
