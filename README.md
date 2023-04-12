@@ -8,30 +8,33 @@ Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powa
 Maintainer: Gina Stavropoulou
 
 ## Table of Contents  
-### [1. Data model](#model)
-### [2. Installation](#install)
-### [3. Usage](#usage)
-### [3. Quickstart](#quickstart)
-### [5. Local development](#local)
-### [6. Testing](#tests)
-### [7. Explanation](#explanation)
- - [Model assumptions](#model)
- - [What is a City Model?](#citymodel)
- - [Types of input](#input)
- - [Coordinate Reference Systems](#crs)
- - [3D reprojections](#3d)
- - [CityJSON Extensions](#extensions)
- - [CityJSON GeometryTemplate](#geomtemplate)
- - [Data validation](#validation)
- - [Repeated object IDs](#repeated)
+### [1.Data model](#1-data-model)
+### [2.Installation](#2-installation)
+- [Using pip](#using-pip)
+- [Using Docker](#using-docker)
+### [3.Usage](#3-usage)
+- [CLI](#cli)
+- [Quickstart](#quickstart)
+### [4.Local development](#4-local-development)
+- [Install and Build](#install-and-build)
+- [Testing](#testing)
+### [5.Explanation](#5-explanation)
+ - [Model assumptions](#model-assumptions)
+ - [What is a City Model?](#what-is-a-city-model)
+ - [Types of input](#types-of-input)
+ - [Coordinate Reference Systems](#coordinate-reference-systems)
+ - [3D reprojections](#3d-reprojections)
+ - [CityJSON Extensions](#cityjson-extensions)
+ - [CityJSON GeometryTemplate](#cityjson-geometrytemplate)
+ - [Data validation](#data-validation)
+ - [Repeated object IDs](#repeated-object-ids)
 ---
-## 1. Data model <a name="model"></a>
+## 1. Data model
 For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
 
 
-## 2. Installation <a name="install"></a>
+## 2. Installation
 ### Using pip
-
 ```bash
 pip install cjdb
 ```
@@ -54,17 +57,18 @@ docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb -H localhost
 ```
 ## 3. Usage <a name="usage"></a>
 
+### CLI <a name="cli"></a>
 
 ```bash
 cj2pgsql [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [-W DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-I TARGET_SRID][-x INDEXED_ATTRIBUTES] [-px PARTIAL_INDEXED_ATTRIBUTES] [-g] [-a | -o] [-e | -u] [file_or_directory]
 ```
-### Positional Arguments
+#### Positional Arguments
 file_or_directory
 Source CityJSONL file or a directory with CityJSONL files. STDIN if not specified. If specifying a directory, all the *.jsonl files inside of it will be imported.
 
 Default: “stdin”
 
-### Named Arguments
+#### Named Arguments
 `-I, --srid`
 Target coordinate system SRID. All 3D and 2D geometries will be reprojected.
 
@@ -101,7 +105,7 @@ Check if the object with given ID exists before inserting, and update it if it d
 
 Default: False
 
-### Database connection arguments
+#### Database connection arguments
 `-H, --host`
 PostgreSQL database host
 
@@ -126,7 +130,8 @@ Target database schema
 
 Default: “public”
 
-## 4. Quickstart example <a name="quickstart"></a>
+### Quickstart <a name="quickstart"></a>
+
 Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/nl/download?tid=901). Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cjdb is needed to import it to a specified schema in a database. 
 
 1. Convert CityJSON to CityJSONL
@@ -152,9 +157,9 @@ The metadata and the objects can then be found in the tables in the specified sc
 Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
 
 
+## 4. Local development
 
-
-## 5. Local development <a name="local"></a>
+### Install and Build
 Make sure [poetry](https://python-poetry.org/docs/) is installed. Then, to create a local environment with all the necessary dependencies, run from the repository root:
 ```bash
 poetry install
@@ -174,17 +179,16 @@ Then you can run the CLI command:
 ```bash
 cjdb --help
 ```
-
-## 6. Running tests <a name="tests"></a>
+### Testing
 In onder to run the tests you need to have [PostgreSQL](https://www.postgresql.org/download/) installed. Then you can run:
 
 ```bash
 pytest -v
 ```
 
-## 7. Explanation <a name="explanation"></a>
+## 5. Explanation
 ---
-### Model assumptions <a name="model"></a>
+### Model assumptions
 The `cjdb` importer loads the data in accordance with a specific data model.
 
 Model documentation:
@@ -195,13 +199,13 @@ Some indexes are created by default (refer to [model/README](model/README.md)).
 
 Additionally, the user can specify which CityObject attributes are to be indexed with the `-x/--attr-index` or `-px/--partial-attr-index` flag. The second option uses a partial index with a `not null` condition on the attribute. This saves disk space when indexing an attribute that is not present among all the imported CityObjects. This is often the case with CityJSON, because in a single dataset there can be different object types, with different attributes.
 
-### What is a City Model? How to organize CityJSON data from various sources? <a name="citymodel"></a>
+### What is a City Model?
 
 The definition and scope of the City Model are for the user to decide. It is recommended to group together semantically coherent objects, by importing them to the same database schema.
 
 While the static table structure (columns don't change) does support loading any type of CityJSON objects together, the data becomes harder to manage for the user. Example of this would be having different attributes for the same CityObject type (which should be consistent for data coming from the same source).
 
-### Types of input <a name="input"></a>
+### Types of input
 The importer works only on *CityJSONL* files.
 Instructions on how to obtain such a file from a *CityJSON* file: https://cjio.readthedocs.io/en/latest/includeme.html#stdin-and-stdout
 
@@ -214,7 +218,7 @@ The importer supports 3 kinds of input:
 cat file.jsonl | cjdb ...
 ```
 
-### Coordinate Reference Systems <a name="crs"></a>
+### Coordinate Reference Systems
 The `cjdb` importer does not allow inconsistent CRS (coordinate reference systems) within the same database schema. For storing data in separate CRS using multiple schemas is required.
 
 The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
@@ -223,7 +227,7 @@ The data needs to be either harmonized beforehand, or the `-I/--srid` flag can b
 
 **Note:** Source data with missing `"metadata"/"referenceSystem"` cannot be reprojected due to unknown source reference system.
 
-### 3D reprojections <a name="3d"></a>
+### 3D reprojections
 `Pyproj` is used for CRS reprojections. It supports 3D CRS transformations between different systems. However, sometimes downloading additional [grids](https://pyproj4.github.io/pyproj/stable/transformation_grids.html) is required. The importer will attempt to download the grids needed for the reprojection, with the following message:
 ```
 Attempting to download additional grids required for CRS transformation.
@@ -234,7 +238,7 @@ This can also be done manually, and the files should be put in this folder:
 If that fails, the user will have to download the required grids and put them in the printed `{pyproj_directory}` themselves. 
 
 
-### CityJSON Extensions <a name="extensions"></a>
+### CityJSON Extensions
 If [CityJSON Extensions](https://www.cityjson.org/extensions/) were present in the imported file, they can be found listed in the `extensions` column in the `import_meta` table.
 
 The [CityJSON specifications](https://www.cityjson.org/specs/1.1.2/#extensions) mention 3 different extendable features, and the `cjdb` importer deals with them as follows:
@@ -251,18 +255,18 @@ Additional root properties are placed in the `extra properties` JSONB column in 
 
 Additional CityObject types are appended to the list of allowed CityJSON objects.
 
-### CityJSON GeometryTemplates <a name="geomtemplate"></a>
+### CityJSON GeometryTemplate
 [Geometry templates](https://www.cityjson.org/specs/1.1.2/#geometry-templates)
 are resolved for each object geometry, so that the object in the table ends up with its real-world coordinates (instead of vertex references or relative template coordinates).
 
-### Data validation <a name="validation"></a>
+### Data validation
 The importer does not validate the structure of the file. It is assumed that the input file is schema-valid ([CityJSON validator](https://validator.cityjson.org/)).
 It sends out warnings when:
 - there appear CityObject types defined neither in the main CityJSON specification nor any of the supplied extensions. 
 - the specified target CRS does not have the Z-axis defined
 - the source dataset does not have a CRS defined at all
 
-### Repeated object IDs <a name="repeated"></a>
+### Repeated object IDs
 By default, the importer does not check if an object with a given ID exists already in the database. This is because such an operation for every inserted object results in a performance penalty.
 
 The user can choose to run the import with either the `-e/--skip-existing` option to skip existing objects or `-u, --update-existing` to update existing objects. This will slow down the import, but it will also ensure that repeated object cases are handled.
