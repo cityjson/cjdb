@@ -1,16 +1,21 @@
 -- import_meta indexes
-create index if not exists import_meta_gix on {schema}.import_meta using gist(bbox);
-create index if not exists import_meta_source_file_idx on {schema}.import_meta using hash(source_file);
+CREATE INDEX IF NOT EXISTS import_meta_gix ON { schema }.import_meta USING gist(bbox);
+
+CREATE INDEX IF NOT EXISTS import_meta_source_file_idx ON { schema }.import_meta USING hash(source_file);
 
 -- cj_object indexes
-create index if not exists cj_object_type_idx on {schema}.cj_object using btree("type");
-create index if not exists cj_object_ground_gix on {schema}.cj_object using gist(ground_geometry);
-create index lod on {schema}.cj_object using gin (geometry);
+CREATE INDEX IF NOT EXISTS cj_object_type_idx ON { schema }.cj_object USING btree("type");
+
+CREATE INDEX IF NOT EXISTS cj_object_ground_gix ON { schema }.cj_object USING gist(ground_geometry);
+
+CREATE INDEX lod ON { schema }.cj_object USING gin (geometry);
 
 -- family indexes
-create index if not exists family_parent_idx on {schema}.family using btree(parent_id);
-create index if not exists family_child_idx on {schema}.family using btree(child_id);
+CREATE INDEX IF NOT EXISTS family_parent_idx ON { schema }.family USING btree(parent_id);
+
+CREATE INDEX IF NOT EXISTS family_child_idx ON { schema }.family USING btree(child_id);
 
 -- clustering
-cluster {schema}.import_meta using import_meta_gix;
-cluster {schema}.cj_object using cj_object_ground_gix;
+cluster { schema }.import_meta USING import_meta_gix;
+
+cluster { schema }.cj_object USING cj_object_ground_gix;
