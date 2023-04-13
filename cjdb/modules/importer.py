@@ -7,17 +7,31 @@ from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
-                                          FamilyModel, ImportMetaModel)
-from cjdb.modules.checks import (check_object_type, check_reprojection,
-                                 check_root_properties)
+from cjdb.model.sqlalchemy_models import (
+    BaseModel,
+    CjObjectModel,
+    FamilyModel,
+    ImportMetaModel,
+)
+from cjdb.modules.checks import (
+    check_object_type,
+    check_reprojection,
+    check_root_properties,
+)
 from cjdb.modules.extensions import ExtensionHandler
-from cjdb.modules.geometric import (get_ground_geometry, get_srid,
-                                    reproject_vertex_list,
-                                    resolve_geometry_vertices,
-                                    transform_vertex)
-from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
-                                get_db_engine, to_dict)
+from cjdb.modules.geometric import (
+    get_ground_geometry,
+    get_srid,
+    reproject_vertex_list,
+    resolve_geometry_vertices,
+    transform_vertex,
+)
+from cjdb.modules.utils import (
+    find_extra_properties,
+    get_cj_object_types,
+    is_cityjson_object,
+    to_dict,
+)
 
 
 # class to store variables per file import - for clarity
@@ -70,11 +84,19 @@ class Importer:
     def prepare_database(self):
         with self.engine.connect() as conn:
             if self.args.overwrite:
-                conn.execute(text(f"""DROP SCHEMA
+                conn.execute(
+                    text(
+                        f"""DROP SCHEMA
                              IF EXISTS {self.args.db_schema}
-                             CASCADE"""))
-            conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
-                                  {self.args.db_schema}"""))
+                             CASCADE"""
+                    )
+                )
+            conn.execute(
+                text(
+                    f"""CREATE SCHEMA IF NOT EXISTS
+                                  {self.args.db_schema}"""
+                )
+            )
             conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
@@ -104,221 +126,226 @@ class Importer:
             conn.execute(text(cmd))
         self.index_attributes()
 
-    def process_line(self, line):
-        line_json = json.loads(line)
-        if "metadata" in line_json:
-            extra_root_properties = find_extra_properties(line_json)
-            self.current.source_srid = get_srid(
-                line_json["metadata"].get("referenceSystem")
-            )
-            if not self.current.source_srid:
-                print("""Warning: No Coordinate Reference System
-                       specified for the dataset.""")
-
-            # use specified target SRID for all the geometries
-            # If not specified use same as source.
-            if self.args.target_srid and self.current.source_srid:
-                self.current.target_srid = self.args.target_srid
-                check_reprojection(
-                    self.current.source_srid, self.current.target_srid
-                )  # noqa
-            elif self.args.target_srid:
-                self.current.target_srid = self.args.target_srid
-            else:
-                self.current.target_srid = self.current.source_srid
-
-            # calculate dataset bbox based on geographicalExtent
-            bbox = None
-            if "geographicalExtent" in line_json["metadata"]:
-                bbox_coords = line_json["metadata"]["geographicalExtent"]
-                bbox_vertices = [bbox_coords[:3], bbox_coords[3:]]
-
-                if (
-                    self.current.source_srid
-                    and self.current.target_srid != self.current.source_srid
-                ):
-                    bbox_vertices = reproject_vertex_list(
-                        bbox_vertices,
-                        self.current.source_srid,
-                        self.current.target_srid,
-                    )
-
-                bbox = func.st_makeenvelope(
-                    bbox_vertices[0][0],
-                    bbox_vertices[0][1],
-                    bbox_vertices[1][0],
-                    bbox_vertices[1][1],
-                    self.current.target_srid,
-                )
-
-            # store extensions data - extra root properties, extra city objects
-            self.current.extension_handler = ExtensionHandler(
-                line_json.get("extensions")
+    def extract_import_metadata(self, line_json):
+        if "metadata" not in line_json:
+            print("No metadata available!")
+            sys.exit(1)
+        extra_root_properties = find_extra_properties(line_json)
+        self.current.source_srid = get_srid(
+            line_json["metadata"].get("referenceSystem")
+        )
+        if not self.current.source_srid:
+            print(
+                """Warning: No Coordinate Reference System
+                  specified for the dataset."""
             )
 
-            # prepare extra properties coming from extensions
-            # they will be placed in the extra_properties jsonb column
-            extra_properties_obj = {}
-            for prop_name in extra_root_properties:
-                extra_properties_obj[prop_name] = line_json[prop_name]
-
-            # check the occurring properties against
-            # the extension defined extra properties
-            check_root_properties(
-                extra_root_properties,
-                self.current.extension_handler.extra_root_properties,
-            )
-
-            # "or None" is added to change empty json "{}" to database null
-            import_meta = ImportMetaModel(
-                source_file=os.path.basename(self.current.file),
-                version=line_json["version"],
-                meta=line_json.get("metadata") or None,
-                transform=line_json.get("transform") or None,
-                geometry_templates=line_json.get("geometry-templates") or None,
-                srid=self.current.target_srid,
-                extensions=line_json.get("extensions") or None,
-                extra_properties=extra_properties_obj or None,
-                bbox=bbox,
-            )
-
-            # compare to existing import metas
-            # for example to detect inconsistent CRS from different files
-            result_ok = import_meta.compare_existing(
-                self.session, self.args.ignore_repeated_file
-            )
-            if not result_ok:
-                print("Cancelling import")
-                sys.exit(1)
-
-            # add metadata to the database
-            import_meta.__table__.schema = self.args.db_schema
-            self.current.import_meta = import_meta
-            self.session.add(import_meta)
-            self.session.commit()
-
+        # use specified target SRID for all the geometries
+        # If not specified use same as source.
+        if self.args.target_srid and self.current.source_srid:
+            self.current.target_srid = self.args.target_srid
+            check_reprojection(self.current.source_srid, self.current.target_srid)
+        elif self.args.target_srid:
+            self.current.target_srid = self.args.target_srid
         else:
-            # unpack vertices for the cityobjects based on
-            # the CityJSON transform
-            # this is done once for the CityJSONFeature
-            vertices = [
-                transform_vertex(v, self.current.import_meta.transform)
-                for v in line_json["vertices"]
-            ]
+            self.current.target_srid = self.current.source_srid
 
-            # reproject if needed
-            source_target_srid = None
+        # calculate dataset bbox based on geographicalExtent
+        bbox = None
+        if "geographicalExtent" in line_json["metadata"]:
+            bbox_coords = line_json["metadata"]["geographicalExtent"]
+            bbox_vertices = [bbox_coords[:3], bbox_coords[3:]]
+
             if (
                 self.current.source_srid
                 and self.current.target_srid != self.current.source_srid
             ):
-                source_target_srid = (
+                bbox_vertices = reproject_vertex_list(
+                    bbox_vertices,
                     self.current.source_srid,
                     self.current.target_srid,
                 )
-                vertices = reproject_vertex_list(vertices, *source_target_srid)
 
-            # list of relationships for the CityJSONFeature
-            family_ties = []
-            # objects for the CityJSONFeature
-            cj_feature_objects = {}
+            bbox = func.st_makeenvelope(
+                bbox_vertices[0][0],
+                bbox_vertices[0][1],
+                bbox_vertices[1][0],
+                bbox_vertices[1][1],
+                self.current.target_srid,
+            )
 
-            # create CityJSONObjects
-            for obj_id, cityobj in line_json["CityObjects"].items():
-                obj_to_update = None
+        # store extensions data - extra root properties, extra city objects
+        self.current.extension_handler = ExtensionHandler(line_json.get("extensions"))
 
-                # optionally check if the object exists -
-                # to skip it or update it
-                if self.args.update_existing:
-                    existing = (
-                        self.session.query(CjObjectModel)
-                        .filter_by(object_id=obj_id)
-                        .first()
-                    )
+        # prepare extra properties coming from extensions
+        # they will be placed in the extra_properties jsonb column
+        extra_properties_obj = {}
+        for prop_name in extra_root_properties:
+            extra_properties_obj[prop_name] = line_json[prop_name]
 
-                    if existing:
-                        # TODO: proper logging
-                        print(
-                            f"CityObject (id:{obj_id}) already exists. Updating."
-                        )  # noqa
-                        obj_to_update = existing
+        # check the occurring properties against
+        # the extension defined extra properties
+        check_root_properties(
+            extra_root_properties,
+            self.current.extension_handler.extra_root_properties,
+        )
 
-                # get 3D geom, ground geom and bbox
-                geometry, ground_geometry = self.get_geometries(
-                    obj_id, cityobj, vertices, source_target_srid
+        # "or None" is added to change empty json "{}" to database null
+        import_meta = ImportMetaModel(
+            source_file=os.path.basename(self.current.file),
+            version=line_json["version"],
+            meta=line_json.get("metadata") or None,
+            transform=line_json.get("transform") or None,
+            geometry_templates=line_json.get("geometry-templates") or None,
+            srid=self.current.target_srid,
+            extensions=line_json.get("extensions") or None,
+            extra_properties=extra_properties_obj or None,
+            bbox=bbox,
+        )
+
+        # compare to existing import metas
+        # for example to detect inconsistent CRS from different files
+        result_ok = import_meta.compare_existing(
+            self.session, self.args.ignore_repeated_file
+        )
+        if not result_ok:
+            print("Import metadata not valid")
+            sys.exit(1)
+
+        # add metadata to the database
+        import_meta.__table__.schema = self.args.db_schema
+        self.current.import_meta = import_meta
+        self.session.add(import_meta)
+        self.session.commit()
+
+    def process_line(self, line_json):
+        # unpack vertices for the cityobjects based on
+        # the CityJSON transform
+        # this is done once for the CityJSONFeature
+        vertices = [
+            transform_vertex(v, self.current.import_meta.transform)
+            for v in line_json["vertices"]
+        ]
+
+        # reproject if needed
+        source_target_srid = None
+        if (
+            self.current.source_srid
+            and self.current.target_srid != self.current.source_srid
+        ):
+            source_target_srid = (
+                self.current.source_srid,
+                self.current.target_srid,
+            )
+            vertices = reproject_vertex_list(vertices, *source_target_srid)
+
+        # list of relationships for the CityJSONFeature
+        family_ties = []
+        # objects for the CityJSONFeature
+        cj_feature_objects = {}
+
+        # create CityJSONObjects
+        for obj_id, cityobj in line_json["CityObjects"].items():
+            obj_to_update = None
+
+            # optionally check if the object exists -
+            # to skip it or update it
+            if self.args.update_existing:
+                existing = (
+                    self.session.query(CjObjectModel)
+                    .filter_by(object_id=obj_id)
+                    .first()
                 )
 
-                # check if the object type is allowed by the official
-                # spec or extension
-                check_result, message = check_object_type(
-                    cityobj.get("type"),
-                    self.cj_object_types,
-                    self.current.extension_handler.extra_city_objects,
-                )
-                if not check_result:
-                    print(message)
+                if existing:
+                    # TODO: proper logging
+                    print(f"CityObject (id:{obj_id}) already exists. Updating.")  # noqa
+                    obj_to_update = existing
 
-                # update or insert the object
-                # 'or None' is added to change empty json "{}" to database null
+            # get 3D geom, ground geom and bbox
+            geometry, ground_geometry = self.get_geometries(
+                obj_id, cityobj, vertices, source_target_srid
+            )
+
+            # check if the object type is allowed by the official
+            # spec or extension
+            check_result, message = check_object_type(
+                cityobj.get("type"),
+                self.cj_object_types,
+                self.current.extension_handler.extra_city_objects,
+            )
+            if not check_result:
+                print(message)
+
+            # update or insert the object
+            # 'or None' is added to change empty json "{}" to database null
+            if obj_to_update:
+                cj_object = obj_to_update
+                cj_object.type = cityobj.get("type")
+                cj_object.attributes = cityobj.get("attributes") or None
+                cj_object.geometry = geometry
+                cj_object.ground_geometry = ground_geometry
+                cj_object.import_meta = self.current.import_meta
+            else:
+                cj_object = CjObjectModel(
+                    object_id=obj_id,
+                    type=cityobj.get("type"),
+                    attributes=cityobj.get("attributes") or None,
+                    geometry=geometry,
+                    ground_geometry=ground_geometry,
+                )
+
+                # add CityJson object to the database
+                cj_object.__table__.schema = self.args.db_schema
+                cj_object.import_meta_id = self.current.import_meta.id
+                self.current.cj_objects.append(to_dict(cj_object))
+
+            cj_feature_objects[obj_id] = cj_object
+
+            # save children-parent links
+            for child_id in cityobj.get("children", []):
+                family_ties.append((obj_id, child_id))
+
+                # delete previous ties if updating object
                 if obj_to_update:
-                    cj_object = obj_to_update
-                    cj_object.type = cityobj.get("type")
-                    cj_object.attributes = cityobj.get("attributes") or None
-                    cj_object.geometry = geometry
-                    cj_object.ground_geometry = ground_geometry
-                    cj_object.import_meta = self.current.import_meta
-                else:
-                    cj_object = CjObjectModel(
-                        object_id=obj_id,
-                        type=cityobj.get("type"),
-                        attributes=cityobj.get("attributes") or None,
-                        geometry=geometry,
-                        ground_geometry=ground_geometry,
+                    children = self.session.query(FamilyModel).filter_by(
+                        child_id=child_id
                     )
+                    children.delete()
 
-                    # add CityJson object to the database
-                    cj_object.__table__.schema = self.args.db_schema
-                    cj_object.import_meta_id = self.current.import_meta.id
-                    self.current.cj_objects.append(to_dict(cj_object))
-
-                cj_feature_objects[obj_id] = cj_object
-
-                # save children-parent links
-                for child_id in cityobj.get("children", []):
-                    family_ties.append((obj_id, child_id))
-
-                    # delete previous ties if updating object
-                    if obj_to_update:
-                        children = self.session.query(FamilyModel).filter_by(
-                            child_id=child_id
-                        )
-                        children.delete()
-
-            # create children-parent links after all objects
-            # from the CityJSONFeature already exist
-            for parent_id, child_id in family_ties:
-                self.current.families.append(
-                    {"parent_id": parent_id, "child_id": child_id}
-                )
+        # create children-parent links after all objects
+        # from the CityJSONFeature already exist
+        for parent_id, child_id in family_ties:
+            self.current.families.append({"parent_id": parent_id, "child_id": child_id})
 
     def process_file(self, filepath):
         self.current = SingleFileImport(filepath)
         print("Running import for file: ", filepath)
 
         if filepath.lower() == "stdin":
-            for line in sys.stdin:
-                self.process_line(line.rstrip("\n"))
+            f = sys.stdin
         else:
-            with open(filepath) as f:
-                for line in f.readlines():
-                    self.process_line(line)
+            f = open(filepath, "rt")
+
+        first_line = f.readline()
+        first_line_json = json.loads(first_line.rstrip("\n"))
+        if not is_cityjson_object(first_line_json):
+            print(
+                """First line should be CityJSON object containing
+                a 'metadata' property. Aborting."""
+            )
+            sys.exit(1)
+        self.extract_import_metadata(first_line_json)
+        for line in f.readlines():
+            line_json = json.loads(line.rstrip("\n"))
+            self.process_line(line_json)
 
         if self.current.cj_objects:
             obj_insert = (
                 insert(CjObjectModel)
                 .values(self.current.cj_objects)
                 .on_conflict_do_nothing()
-            )  # noqa
+            )
             self.session.execute(obj_insert)
 
         if self.current.families:
