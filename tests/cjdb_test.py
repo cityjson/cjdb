@@ -31,6 +31,24 @@ def engine_postgresql(postgresql_proc):
 def test_single_import(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     args = Namespace(
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with Importer(engine=engine_postgresql, args=args) as imp:
+        success_code = imp.run_import()
+        assert success_code == 0
+
+
+def test_single_import_with_extentions(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    args = Namespace(
         filepath="./tests/files/extension2.jsonl",
         db_schema="cjdb",
         target_srid=None,
@@ -46,7 +64,7 @@ def test_single_import(engine_postgresql, monkeypatch):
         assert success_code == 0
 
 
-def test_single_import_withour_srid(engine_postgresql, monkeypatch):
+def test_single_import_without_srid(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     args = Namespace(
         filepath="./tests/files/vienna.jsonl",
@@ -81,3 +99,43 @@ def test_single_import_with_target_srid(engine_postgresql, monkeypatch):
     with Importer(engine=engine_postgresql, args=args) as imp:
         sucess_code = imp.run_import()
         assert sucess_code == 0
+
+
+def test_single_import_without_metadata(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    args = Namespace(
+        filepath="./tests/files/no_metadata.city.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with pytest.raises(SystemExit) as excinfo:
+        with Importer(engine=engine_postgresql, args=args) as imp:
+            imp.run_import()
+    assert excinfo.value.code == 1
+
+
+def test_single_import_without_cityjson_obj_in_first_line(
+    engine_postgresql, monkeypatch
+):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    args = Namespace(
+        filepath="./tests/files/no_cityjson_obj.city.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with pytest.raises(SystemExit) as excinfo:
+        with Importer(engine=engine_postgresql, args=args) as imp:
+            imp.run_import()
+    assert excinfo.value.code == 1

@@ -1,5 +1,4 @@
-import os
-from pathlib import Path
+from typing import Any, Dict
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -43,6 +42,18 @@ def get_cj_object_types():
                 type_list.append(v)
 
     return sorted(type_list)
+
+
+def is_cityjson_object(json: Dict[str, Any]) -> bool:
+    """Check if the json is a cityjson object"""
+    if (
+        "version" in json
+        and "transform" in json
+        and "type" in json
+        and json["type"] == "CityJSON"
+    ):
+        return True
+    return False
 
 
 # find extended properties
