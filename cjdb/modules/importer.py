@@ -7,31 +7,17 @@ from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from cjdb.model.sqlalchemy_models import (
-    BaseModel,
-    CjObjectModel,
-    FamilyModel,
-    ImportMetaModel,
-)
-from cjdb.modules.checks import (
-    check_object_type,
-    check_reprojection,
-    check_root_properties,
-)
+from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
+                                          FamilyModel, ImportMetaModel)
+from cjdb.modules.checks import (check_object_type, check_reprojection,
+                                 check_root_properties)
 from cjdb.modules.extensions import ExtensionHandler
-from cjdb.modules.geometric import (
-    get_ground_geometry,
-    get_srid,
-    reproject_vertex_list,
-    resolve_geometry_vertices,
-    transform_vertex,
-)
-from cjdb.modules.utils import (
-    find_extra_properties,
-    get_cj_object_types,
-    is_cityjson_object,
-    to_dict,
-)
+from cjdb.modules.geometric import (get_ground_geometry, get_srid,
+                                    reproject_vertex_list,
+                                    resolve_geometry_vertices,
+                                    transform_vertex)
+from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
+                                is_cityjson_object, to_dict)
 
 
 # class to store variables per file import - for clarity
@@ -84,19 +70,11 @@ class Importer:
     def prepare_database(self):
         with self.engine.connect() as conn:
             if self.args.overwrite:
-                conn.execute(
-                    text(
-                        f"""DROP SCHEMA
+                conn.execute(text(f"""DROP SCHEMA
                              IF EXISTS {self.args.db_schema}
-                             CASCADE"""
-                    )
-                )
-            conn.execute(
-                text(
-                    f"""CREATE SCHEMA IF NOT EXISTS
-                                  {self.args.db_schema}"""
-                )
-            )
+                             CASCADE"""))
+            conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
+                                  {self.args.db_schema}"""))
             conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
@@ -135,10 +113,8 @@ class Importer:
             line_json["metadata"].get("referenceSystem")
         )
         if not self.current.source_srid:
-            print(
-                """Warning: No Coordinate Reference System
-                  specified for the dataset."""
-            )
+            print("""Warning: No Coordinate Reference System
+                  specified for the dataset.""")
 
         # use specified target SRID for all the geometries
         # If not specified use same as source.
@@ -330,10 +306,8 @@ class Importer:
         first_line = f.readline()
         first_line_json = json.loads(first_line.rstrip("\n"))
         if not is_cityjson_object(first_line_json):
-            print(
-                """First line should be CityJSON object containing
-                a 'metadata' property. Aborting."""
-            )
+            print("""First line should be CityJSON object containing
+                a 'metadata' property. Aborting.""")
             sys.exit(1)
         self.extract_import_metadata(first_line_json)
         for line in f.readlines():
