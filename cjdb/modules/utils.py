@@ -45,6 +45,18 @@ def get_cj_object_types():
     return sorted(type_list)
 
 
+# Check if the line is a cityjson object
+def is_cityjson_object(line):
+    if (
+        "version" in line
+        and "transform" in line
+        and "type" in line
+        and line["type"] == "CityJSON"
+    ):
+        return True
+    return False
+
+
 # find extended properties
 def find_extra_properties(json_obj):
     property_names = []
