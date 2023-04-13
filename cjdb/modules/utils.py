@@ -1,5 +1,4 @@
-import os
-from pathlib import Path
+from typing import Any, Dict
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -45,13 +44,13 @@ def get_cj_object_types():
     return sorted(type_list)
 
 
-# Check if the line is a cityjson object
-def is_cityjson_object(line):
+def is_cityjson_object(json: Dict[str, Any]) -> bool:
+    """Check if the json is a cityjson object"""
     if (
-        "version" in line
-        and "transform" in line
-        and "type" in line
-        and line["type"] == "CityJSON"
+        "version" in json
+        and "transform" in json
+        and "type" in json
+        and json["type"] == "CityJSON"
     ):
         return True
     return False
