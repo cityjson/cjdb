@@ -120,7 +120,8 @@ class Importer:
         # If not specified use same as source.
         if self.args.target_srid and self.current.source_srid:
             self.current.target_srid = self.args.target_srid
-            check_reprojection(self.current.source_srid, self.current.target_srid)
+            check_reprojection(self.current.source_srid,
+                               self.current.target_srid)
         elif self.args.target_srid:
             self.current.target_srid = self.args.target_srid
         else:
@@ -151,7 +152,7 @@ class Importer:
             )
 
         # store extensions data - extra root properties, extra city objects
-        self.current.extension_handler = ExtensionHandler(line_json.get("extensions"))
+        self.current.extension_handler = ExtensionHandler(line_json.get("extensions")) # noqa
 
         # prepare extra properties coming from extensions
         # they will be placed in the extra_properties jsonb column
@@ -292,7 +293,8 @@ class Importer:
         # create children-parent links after all objects
         # from the CityJSONFeature already exist
         for parent_id, child_id in family_ties:
-            self.current.families.append({"parent_id": parent_id, "child_id": child_id})
+            self.current.families.append({"parent_id": parent_id,
+                                          "child_id": child_id})
 
     def process_file(self, filepath):
         self.current = SingleFileImport(filepath)
