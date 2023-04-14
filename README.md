@@ -15,6 +15,7 @@ Maintainer: Gina Stavropoulou
 ### [3.Usage](#3-usage)
 - [CLI](#cli)
 - [Quickstart](#quickstart)
+- [Basic Queries](#basic-queries)
 ### [4.Local development](#4-local-development)
 - [Install and Build](#install-and-build)
 - [Testing](#testing)
@@ -130,7 +131,7 @@ Target database schema
 
 Default: “public”
 
-### Quickstart <a name="quickstart"></a>
+### Quickstart
 
 Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/nl/download?tid=901). Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cjdb is needed to import it to a specified schema in a database. 
 
@@ -156,6 +157,59 @@ The metadata and the objects can then be found in the tables in the specified sc
 
 Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
 
+
+### Basic Queries
+
+- Query an object with a specific id:
+```SQL
+SELECT * FROM cjdb.cj_object
+WHERE object_id = 'NL.IMBAG.Pand.0503100000000334';
+```
+
+- Query a building with a specific child
+```SQL
+SELECT o.* FROM cjdb.family f
+INNER JOIN cjdb.cj_object o ON o.object_id = f.parent_id
+WHERE f.child_id = 'NL.IMBAG.Pand.0503100000000334-0'
+```
+
+- Query all buildings within a bounding box
+```SQL
+SELECT * FROM cjdb.cj_object
+WHERE type = 'Building'
+AND ST_Contains(ST_MakeEnvelope(81900.00, 446850.00, 81930.00, 446900.00, 7415), ground_geometry)
+ORDER BY id ASC;
+```
+
+- Query the building intersecting with a point
+```SQL
+SELECT * FROM cjdb.cj_object
+WHERE ground_geometry && ST_MakePoint(81915.00, 446850.00)
+AND type = 'Building'
+ORDER BY object_id ASC;
+```
+
+- Query all objects with a slanted roof
+```SQL
+SELECT * FROM cjdb.cj_object
+WHERE (attributes->'dak_type')::varchar = '"slanted"'
+ORDER BY id ASC;
+```
+
+- Query all the buildings made after 2000:
+```SQL
+SELECT * FROM cjdb.cj_object
+WHERE (attributes->'oorspronkelijkbouwjaar')::int > 2000
+AND type = 'Building'
+ORDER BY id ASC;
+```
+
+- Query all objects with LOD 1.2
+
+```SQL
+SELECT * FROM cjdb.cj_object
+WHERE geometry::jsonb @> '[{"lod": 1.2}]'::jsonb
+```
 
 ## 4. Local development
 
