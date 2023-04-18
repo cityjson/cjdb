@@ -73,7 +73,7 @@ class Importer:
                 conn.execute(text(f"""DROP SCHEMA
                              IF EXISTS {self.args.db_schema}
                              CASCADE"""))
-            conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
+                conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
                                   {self.args.db_schema}"""))
             conn.commit()
         # create all tables defined as SqlAlchemy models
