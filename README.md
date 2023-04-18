@@ -141,7 +141,12 @@ Sample CityJSON data can be downloaded from [3DBAG download service](https://3db
 cjio --suppress_msg tile_901.json export jsonl tile_901.jsonl 
 ```
 
-2. Import CityJSONL to the database
+2. Create a new database and load the PostGIS extension (mandatory)
+
+  - [how to create a new database](https://postgis.net/workshops/postgis-intro/creating_db.html)
+  - `CREATE EXTENSION postgis;` to load PostGIS
+
+3. Import CityJSONL to the database
 ```bash
 PGPASSWORD=postgres cjdb -H localhost -U postgres -d postgres -s cjdb -o tile_901.jsonl   
 ```
@@ -251,38 +256,49 @@ Model documentation:
 #### Indexes
 Some indexes are created by default (refer to [model/README](model/README.md)).
 
-Additionally, the user can specify which CityObject attributes are to be indexed with the `-x/--attr-index` or `-px/--partial-attr-index` flag. The second option uses a partial index with a `not null` condition on the attribute. This saves disk space when indexing an attribute that is not present among all the imported CityObjects. This is often the case with CityJSON, because in a single dataset there can be different object types, with different attributes.
+Additionally, the user can specify which CityObject attributes are to be indexed with the `-x/--attr-index` or `-px/--partial-attr-index` flag, we recommend doing this if several queries are made on specific attributes. 
+The second option uses a partial index with a `not null` condition on the attribute. This saves disk space when indexing an attribute that is not present among all the imported CityObjects. 
+This is often the case with CityJSON, because in a single dataset there can be different object types, with different attributes.
+
 
 ### What is a City Model?
+The definition and scope of the City Model are for the user to decide. 
+It is recommended to group together semantically coherent objects, by importing them to the same database schema.
 
-The definition and scope of the City Model are for the user to decide. It is recommended to group together semantically coherent objects, by importing them to the same database schema.
+While the static table structure (columns don't change) does support loading any type of CityJSON objects together, the data becomes harder to manage for the user. 
+Example of this would be having different attributes for the same CityObject type (which should be consistent for data coming from the same source).
 
-While the static table structure (columns don't change) does support loading any type of CityJSON objects together, the data becomes harder to manage for the user. Example of this would be having different attributes for the same CityObject type (which should be consistent for data coming from the same source).
 
 ### Types of input
-The importer works only on *CityJSONL* files.
-Instructions on how to obtain such a file from a *CityJSON* file: https://cjio.readthedocs.io/en/latest/includeme.html#stdin-and-stdout
+The importer works only on [*CityJSONL* files](https://www.cityjson.org/specs/#text-sequences-and-streaming-with-cityjsonfeature), that is where a CityJSON file is decomposed into its *features*.
 
+The easiest way to obtain these is with [cjio](https://github.com/cityjson/cjio), and to follow [those instructions](https://github.com/cityjson/cjio#stdin-and-stdout).
 
 The importer supports 3 kinds of input:
-- a single CityJSONL file
-- a directory of CityJSONL files (all files with *jsonl* extensions are located and imported)
-- STDIN using the pipe operator:
+  1. a single CityJSONL file (only those as the output of cjio currently work)
+  1. a directory of CityJSONL files (all files with *jsonl* extensions are located and imported)
+  1. STDIN using the pipe operator:
+
 ```
 cat file.jsonl | cjdb ...
 ```
 
 ### Coordinate Reference Systems
-The `cjdb` importer does not allow inconsistent CRS (coordinate reference systems) within the same database schema. For storing data in separate CRS using multiple schemas is required.
+The `cjdb` importer does not allow inconsistent CRSs (coordinate reference systems) within the same database schema. For storing data in separate CRSs, you have to use different databases.
 
-The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
+The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. 
+Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
 
 **Note:** reprojections slow down the import significantly.
 
 **Note:** Source data with missing `"metadata"/"referenceSystem"` cannot be reprojected due to unknown source reference system.
 
+
 ### 3D reprojections
-`Pyproj` is used for CRS reprojections. It supports 3D CRS transformations between different systems. However, sometimes downloading additional [grids](https://pyproj4.github.io/pyproj/stable/transformation_grids.html) is required. The importer will attempt to download the grids needed for the reprojection, with the following message:
+[`pyproj`](https://pyproj4.github.io/pyproj/stable/) is used for CRS reprojections. 
+While it supports 3D CRS transformations between different systems, sometimes downloading additional [grids](https://pyproj4.github.io/pyproj/stable/transformation_grids.html) is required. 
+The importer will attempt to download the grids needed for the reprojection, with the following message:
+
 ```
 Attempting to download additional grids required for CRS transformation.
 This can also be done manually, and the files should be put in this folder:
@@ -293,9 +309,9 @@ If that fails, the user will have to download the required grids and put them in
 
 
 ### CityJSON Extensions
-If [CityJSON Extensions](https://www.cityjson.org/extensions/) were present in the imported file, they can be found listed in the `extensions` column in the `import_meta` table.
+If [CityJSON Extensions](https://www.cityjson.org/extensions/) are present in the imported files, they can be found listed in the `extensions` column in the `import_meta` table.
 
-The [CityJSON specifications](https://www.cityjson.org/specs/1.1.2/#extensions) mention 3 different extendable features, and the `cjdb` importer deals with them as follows:
+The [CityJSON specifications](https://www.cityjson.org/specs/#extensions) mention 3 different extendable features, and the `cjdb` importer deals with them as follows:
 
 1. Complex attributes
 
