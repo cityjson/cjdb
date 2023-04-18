@@ -138,7 +138,7 @@ Sample CityJSON data can be downloaded from [3DBAG download service](https://3db
 1. Convert CityJSON to CityJSONL
 
 ```bash
-cjio --suppress_msg tile_901.json export jsonl stdout > tile_901.jsonl 
+cjio --suppress_msg tile_901.json export jsonl tile_901.jsonl 
 ```
 
 2. Import CityJSONL to the database
