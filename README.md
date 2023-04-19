@@ -229,15 +229,22 @@ To build the wheel run:
 poetry build
 ```
 
-Then install the .whl file with pip:
+To install in the venv and still be able to develop:
 ```bash
-pip3 install dist/*.whl --force-reinstall
+pip install --editable '.[develop]'
+```
+
+Or install the .whl file with pip:
+```bash
+pip install dist/*.whl --force-reinstall
 ```
 
 Then you can run the CLI command:
 ```bash
 cjdb --help
 ```
+
+
 ### Testing
 In onder to run the tests you need to have [PostgreSQL](https://www.postgresql.org/download/) installed. Then you can run:
 
