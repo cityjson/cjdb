@@ -75,6 +75,7 @@ class Importer:
                              CASCADE"""))
             conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
                                   {self.args.db_schema}"""))
+            conn.execute(text(f"""CREATE EXTENSION postgis"""))
             conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
