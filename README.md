@@ -268,30 +268,29 @@ The second option uses a partial index with a `not null` condition on the attrib
 This is often the case with CityJSON, because in a single dataset there can be different object types, with different attributes.
 
 
-### What is a City Model?
-The definition and scope of the City Model are for the user to decide. 
-It is recommended to group together semantically coherent objects, by importing them to the same database schema.
+### Structuring the database and its schemas
 
-While the static table structure (columns don't change) does support loading any type of CityJSON objects together, the data becomes harder to manage for the user. 
+It is recommended to group together semantically coherent objects, by importing them to the same database schema.
+One database can have different schemas.
+
+While the current data model supports the import of any type of CityJSON objects together (`Building` and `SolitaryVegetationObject`), the data becomes harder to manage for the user. 
 Example of this would be having different attributes for the same CityObject type (which should be consistent for data coming from the same source).
 
 
-### Types of input
-The importer works only on [*CityJSONL* files](https://www.cityjson.org/specs/#text-sequences-and-streaming-with-cityjsonfeature), that is where a CityJSON file is decomposed into its *features*.
+### Input == CityJSONFeature
+The importer works only on [*CityJSONL* files](https://www.cityjson.org/specs/#text-sequences-and-streaming-with-cityjsonfeature), that is where a CityJSON file is decomposed into its *features* (`CityJSONFeature`).
 
-The easiest way to obtain these is with [cjio](https://github.com/cityjson/cjio), and to follow [those instructions](https://github.com/cityjson/cjio#stdin-and-stdout).
+The easiest way to create these from a CityJSON file is with [cjio](https://github.com/cityjson/cjio), and to follow [those instructions](https://github.com/cityjson/cjio#stdin-and-stdout).
 
 The importer supports 3 kinds of input:
   1. a single CityJSONL file (only those as the output of cjio currently work)
   1. a directory of CityJSONL files (all files with *jsonl* extensions are located and imported)
-  1. STDIN using the pipe operator:
+  1. STDIN using the pipe operator: `cat file.jsonl | cjdb ...`
 
-```
-cat file.jsonl | cjdb ...
-```
+
 
 ### Coordinate Reference Systems
-The `cjdb` importer does not allow inconsistent CRSs (coordinate reference systems) within the same database schema. For storing data in separate CRSs, you have to use different databases.
+The `cjdb` importer does not allow inconsistent CRSs (coordinate reference systems) within the same database schema. For storing data in separate CRSs, you have to use different schemas.
 
 The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. 
 Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
