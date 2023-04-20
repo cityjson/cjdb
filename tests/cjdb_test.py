@@ -3,7 +3,7 @@ from argparse import Namespace
 
 import pytest
 from pytest_postgresql.janitor import DatabaseJanitor
-from sqlalchemy import MetaData, Table, create_engine, select
+from sqlalchemy import MetaData, Table, create_engine, select, inspect
 from sqlalchemy.orm import Session
 
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
@@ -44,13 +44,18 @@ def test_single_import(engine_postgresql, monkeypatch):
     with Importer(engine=engine_postgresql, args=args) as imp:
         imp.run_import()
 
-    metadata = MetaData()
+    insp = inspect(engine_postgresql)
+    assert insp.has_schema("cjdb")
+    assert insp.has_table("cj_object", schema="cjdb")
+    assert insp.has_table("import_meta", schema="cjdb")
+    assert insp.has_table("family", schema="cjdb")
+
     cj_object = Table(
-        "cj_object", metadata, schema="cjdb", autoload_with=engine_postgresql
+        "cj_object", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     import_meta = Table(
-        "import_meta", metadata, schema="cjdb", autoload_with=engine_postgresql
+        "import_meta", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     query_cj_object = select(cj_object).where(
