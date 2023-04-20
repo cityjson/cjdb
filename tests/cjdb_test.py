@@ -3,7 +3,7 @@ from argparse import Namespace
 
 import pytest
 from pytest_postgresql.janitor import DatabaseJanitor
-from sqlalchemy import create_engine, select, text, Table, MetaData
+from sqlalchemy import MetaData, Table, create_engine, select
 from sqlalchemy.orm import Session
 
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
@@ -46,18 +46,40 @@ def test_single_import(engine_postgresql, monkeypatch):
 
     metadata = MetaData()
     cj_object = Table(
-        'cj_object',
-        metadata,
-        schema='cjdb',
-        autoload_with=engine_postgresql
+        "cj_object", metadata, schema="cjdb", autoload_with=engine_postgresql
     )
-    query = select(cj_object).where(cj_object.c.object_id == 'UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6')
+
+    import_meta = Table(
+        "import_meta", metadata, schema="cjdb", autoload_with=engine_postgresql
+    )
+
+    query_cj_object = select(cj_object).where(
+        cj_object.c.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
+    )
+    query_import_meta = select(import_meta)
+
+    print(query_import_meta)
 
     with Session(engine_postgresql) as session:
-        row = session.execute(query).first()
-        assert row.object_id == 'UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6'
-        assert row.attributes["roofType"] == 'FLACHDACH'
-        assert row.type == 'BuildingPart'
+        row = session.execute(query_cj_object).first()
+        assert row.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
+        assert row.attributes["roofType"] == "FLACHDACH"
+        assert row.type == "BuildingPart"
+
+        row = session.execute(query_import_meta).first()
+        print(row)
+        assert row.source_file == "vienna.jsonl"
+        assert row.version == "1.1"
+        assert row.transform["scale"] == [0.001, 0.001, 0.001]
+        assert row.transform["translate"] == [983.16, 340433.878, 27.861]
+        assert row.metadata["geographicalExtent"] == [
+            983.16,
+            340433.878,
+            27.861,
+            1510.432,
+            341048.5,
+            84.987,
+        ]
 
 
 def test_single_import_with_extensions(engine_postgresql, monkeypatch):
@@ -75,7 +97,7 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
         imp.run_import()
-    
+
 
 def test_single_import_without_srid(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
