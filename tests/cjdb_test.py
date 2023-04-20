@@ -3,7 +3,8 @@ from argparse import Namespace
 
 import pytest
 from pytest_postgresql.janitor import DatabaseJanitor
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select, text, Table, MetaData
+from sqlalchemy.orm import Session
 
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
                                      InvalidMetadataException)
@@ -43,8 +44,23 @@ def test_single_import(engine_postgresql, monkeypatch):
     with Importer(engine=engine_postgresql, args=args) as imp:
         imp.run_import()
 
+    metadata = MetaData()
+    cj_object = Table(
+        'cj_object',
+        metadata,
+        schema='cjdb',
+        autoload_with=engine_postgresql
+    )
+    query = select(cj_object).where(cj_object.c.object_id == 'UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6')
 
-def test_single_import_with_extentions(engine_postgresql, monkeypatch):
+    with Session(engine_postgresql) as session:
+        row = session.execute(query).first()
+        assert row.object_id == 'UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6'
+        assert row.attributes["roofType"] == 'FLACHDACH'
+        assert row.type == 'BuildingPart'
+
+
+def test_single_import_with_extensions(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     args = Namespace(
         filepath="./tests/files/extension2.jsonl",
@@ -59,7 +75,7 @@ def test_single_import_with_extentions(engine_postgresql, monkeypatch):
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
         imp.run_import()
-
+    
 
 def test_single_import_without_srid(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
