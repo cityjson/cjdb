@@ -8,9 +8,6 @@ from sqlalchemy import create_engine
 
 from cjdb.modules.importer import Importer
 
-postgresql_proc = factories.postgresql_proc(load=["tests/sql/schema.sql"])
-
-
 @pytest.fixture(scope="session")
 def engine_postgresql(postgresql_proc):
     with DatabaseJanitor(
