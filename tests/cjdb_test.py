@@ -5,8 +5,9 @@ import pytest
 from pytest_postgresql.janitor import DatabaseJanitor
 from sqlalchemy import create_engine
 
+from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
+                                     InvalidMetadataException)
 from cjdb.modules.importer import Importer
-from cjdb.modules.exceptions import InvalidMetadataException, InvalidCityJSONObjectException
 
 
 @pytest.fixture(scope="session")

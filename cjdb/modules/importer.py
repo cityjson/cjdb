@@ -13,6 +13,8 @@ from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
                                           FamilyModel, ImportMetaModel)
 from cjdb.modules.checks import (check_object_type, check_reprojection,
                                  check_root_properties)
+from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
+                                     InvalidMetadataException)
 from cjdb.modules.extensions import ExtensionHandler
 from cjdb.modules.geometric import (get_ground_geometry, get_srid,
                                     reproject_vertex_list,
@@ -21,7 +23,6 @@ from cjdb.modules.geometric import (get_ground_geometry, get_srid,
 from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
                                 is_cityjson_object, to_dict)
 
-from cjdb.modules.exceptions import InvalidMetadataException, InvalidCityJSONObjectException
 
 # class to store variables per file import - for clarity
 class SingleFileImport:
