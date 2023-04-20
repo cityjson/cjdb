@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 
 from cjdb.modules.importer import Importer
 
+
 @pytest.fixture(scope="session")
 def engine_postgresql(postgresql_proc):
     with DatabaseJanitor(
@@ -94,8 +95,8 @@ def test_single_import_with_target_srid(engine_postgresql, monkeypatch):
         update_existing=False,
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
-        sucess_code = imp.run_import()
-        assert sucess_code == 0
+        success_code = imp.run_import()
+        assert success_code == 0
 
 
 def test_single_import_without_metadata(engine_postgresql, monkeypatch):
