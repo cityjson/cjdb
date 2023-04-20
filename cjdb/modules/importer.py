@@ -2,7 +2,9 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional, Tuple
 
+from shapely.geometry.base import BaseGeometry
 from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -53,7 +55,7 @@ class Importer:
     def __exit__(self, exc_type, exc_value, traceback):
         self.session.close()
 
-    def run_import(self):
+    def run_import(self) -> None:
         # create model if in create mode, else append data
         if not self.args.append_mode:
             self.prepare_database()
@@ -65,11 +67,10 @@ class Importer:
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
         print(f"Imported from {self.args.filepath} successfully")
-        return 0
 
-    def prepare_database(self):
-        """ Adds the postgis extension and creates
-          the schema and the tables."""
+    def prepare_database(self) -> None:
+        """Adds the postgis extension and creates
+        the schema and the tables."""
         with self.engine.connect() as conn:
             conn.execute(text("""CREATE EXTENSION IF NOT EXISTS postgis"""))
             if self.args.overwrite:
@@ -83,7 +84,8 @@ class Importer:
         for table in BaseModel.metadata.tables.values():
             table.create(self.engine, checkfirst=True)
 
-    def parse_cityjson(self):
+    def parse_cityjson(self) -> None:
+        """Parses the input path."""
         source_path = self.args.filepath
 
         if os.path.isfile(source_path) or source_path.lower() == "stdin":
@@ -95,7 +97,7 @@ class Importer:
         else:
             raise Exception(f"Path: '{source_path}' not found")
 
-    def post_import(self):
+    def post_import(self) -> None:
         # post import operations like clustering, indexing...
 
         cur_path = Path(__file__).parent
@@ -155,7 +157,9 @@ class Importer:
             )
 
         # store extensions data - extra root properties, extra city objects
-        self.current.extension_handler = ExtensionHandler(line_json.get("extensions")) # noqa
+        self.current.extension_handler = ExtensionHandler(
+            line_json.get("extensions")
+        )
 
         # prepare extra properties coming from extensions
         # they will be placed in the extra_properties jsonb column
@@ -198,7 +202,7 @@ class Importer:
         self.session.add(import_meta)
         self.session.commit()
 
-    def process_line(self, line_json):
+    def process_line(self, line_json) -> None:
         # unpack vertices for the cityobjects based on
         # the CityJSON transform
         # this is done once for the CityJSONFeature
@@ -299,7 +303,8 @@ class Importer:
             self.current.families.append({"parent_id": parent_id,
                                           "child_id": child_id})
 
-    def process_file(self, filepath):
+    def process_file(self, filepath) -> None:
+        """Process a single cityJSON file"""
         self.current = SingleFileImport(filepath)
         print("Running import for file: ", filepath)
 
@@ -337,7 +342,8 @@ class Importer:
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
 
-    def process_directory(self, dir_path):
+    def process_directory(self, dir_path) -> None:
+        """Process all files in a directory."""
         print("Running import for directory: ", dir_path)
         ext = ".jsonl"
         for f in os.scandir(dir_path):
@@ -402,7 +408,9 @@ class Importer:
                     f"Specified attribute to be indexed: '{attr_name}' does not exist"  # noqa
                 )
 
-    def get_geometries(self, obj_id, cityobj, vertices, source_target_srid):
+    def get_geometries(
+        self, obj_id, cityobj, vertices, source_target_srid
+    ) -> Tuple[Optional[BaseGeometry], Optional[BaseGeometry]]:
         if "geometry" not in cityobj:
             return None, None
 

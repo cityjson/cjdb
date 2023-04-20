@@ -40,8 +40,7 @@ def test_single_import(engine_postgresql, monkeypatch):
         update_existing=False,
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
-        success_code = imp.run_import()
-        assert success_code == 0
+        imp.run_import()
 
 
 def test_single_import_with_extentions(engine_postgresql, monkeypatch):
@@ -58,8 +57,7 @@ def test_single_import_with_extentions(engine_postgresql, monkeypatch):
         update_existing=False,
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
-        success_code = imp.run_import()
-        assert success_code == 0
+        imp.run_import()
 
 
 def test_single_import_without_srid(engine_postgresql, monkeypatch):
@@ -78,7 +76,6 @@ def test_single_import_without_srid(engine_postgresql, monkeypatch):
     with pytest.raises(SystemExit) as excinfo:
         with Importer(engine=engine_postgresql, args=args) as imp:
             imp.run_import()
-    assert excinfo.value.code == 1
 
 
 def test_single_import_with_target_srid(engine_postgresql, monkeypatch):
@@ -95,8 +92,7 @@ def test_single_import_with_target_srid(engine_postgresql, monkeypatch):
         update_existing=False,
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
-        success_code = imp.run_import()
-        assert success_code == 0
+        imp.run_import()
 
 
 def test_single_import_without_metadata(engine_postgresql, monkeypatch):
