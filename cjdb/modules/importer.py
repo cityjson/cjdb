@@ -21,6 +21,7 @@ from cjdb.modules.geometric import (get_ground_geometry, get_srid,
 from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
                                 is_cityjson_object, to_dict)
 
+from cjdb.modules.exceptions import InvalidMetadataException, InvalidCityJSONObjectException
 
 # class to store variables per file import - for clarity
 class SingleFileImport:
@@ -111,8 +112,9 @@ class Importer:
 
     def extract_import_metadata(self, line_json):
         if "metadata" not in line_json:
-            print("No metadata available!")
-            sys.exit(1)
+            raise InvalidMetadataException("""The file should contain a member
+                                           'metadata', in the first object""")
+
         extra_root_properties = find_extra_properties(line_json)
         self.current.source_srid = get_srid(
             line_json["metadata"].get("referenceSystem")
@@ -193,8 +195,7 @@ class Importer:
             self.session, self.args.ignore_repeated_file
         )
         if not result_ok:
-            print("Import metadata not valid")
-            sys.exit(1)
+            raise InvalidMetadataException()
 
         # add metadata to the database
         import_meta.__table__.schema = self.args.db_schema
@@ -316,9 +317,7 @@ class Importer:
         first_line = f.readline()
         first_line_json = json.loads(first_line.rstrip("\n"))
         if not is_cityjson_object(first_line_json):
-            print("""First line should be CityJSON object containing
-                a 'metadata' property. Aborting.""")
-            sys.exit(1)
+            raise InvalidCityJSONObjectException()
         self.extract_import_metadata(first_line_json)
         for line in f.readlines():
             line_json = json.loads(line.rstrip("\n"))

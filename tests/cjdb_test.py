@@ -2,11 +2,11 @@ import io
 from argparse import Namespace
 
 import pytest
-from pytest_postgresql import factories
 from pytest_postgresql.janitor import DatabaseJanitor
 from sqlalchemy import create_engine
 
 from cjdb.modules.importer import Importer
+from cjdb.modules.exceptions import InvalidMetadataException, InvalidCityJSONObjectException
 
 
 @pytest.fixture(scope="session")
@@ -73,7 +73,7 @@ def test_single_import_without_srid(engine_postgresql, monkeypatch):
         overwrite=False,
         update_existing=False,
     )
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(InvalidMetadataException) as excinfo:
         with Importer(engine=engine_postgresql, args=args) as imp:
             imp.run_import()
 
@@ -108,10 +108,9 @@ def test_single_import_without_metadata(engine_postgresql, monkeypatch):
         overwrite=False,
         update_existing=False,
     )
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(InvalidMetadataException) as excinfo:
         with Importer(engine=engine_postgresql, args=args) as imp:
             imp.run_import()
-    assert excinfo.value.code == 1
 
 
 def test_single_import_without_cityjson_obj_in_first_line(
@@ -129,7 +128,6 @@ def test_single_import_without_cityjson_obj_in_first_line(
         overwrite=False,
         update_existing=False,
     )
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(InvalidCityJSONObjectException) as excinfo:
         with Importer(engine=engine_postgresql, args=args) as imp:
             imp.run_import()
-    assert excinfo.value.code == 1
