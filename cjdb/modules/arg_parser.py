@@ -51,7 +51,7 @@ def Parser():
         "-s",
         "--schema",
         type=str,
-        default="public",
+        default="cjdb",
         help=s.schema_help,
         dest="db_schema",
     )
