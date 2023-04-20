@@ -141,10 +141,9 @@ Sample CityJSON data can be downloaded from [3DBAG download service](https://3db
 cjio --suppress_msg tile_901.json export jsonl tile_901.jsonl 
 ```
 
-2. Create a new database and load the PostGIS extension (mandatory)
+2. Create a new database
 
   - [how to create a new database](https://postgis.net/workshops/postgis-intro/creating_db.html)
-  - `CREATE EXTENSION postgis;` to load PostGIS
 
 3. Import CityJSONL to the database
 ```bash
