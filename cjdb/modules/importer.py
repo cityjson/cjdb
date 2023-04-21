@@ -245,7 +245,6 @@ class Importer:
                 )
 
                 if existing:
-                    # TODO: proper logging
                     logger.warning(f"CityObject (id:{obj_id}) already exists. Updating.")  # noqa
                     obj_to_update = existing
 
