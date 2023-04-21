@@ -2,6 +2,7 @@ import argparse
 import os
 from getpass import getpass
 
+from cjdb import __version__
 from cjdb.resources import strings as s
 
 
@@ -23,7 +24,7 @@ def Parser():
     parser.add_argument(
         "--version",
         action="version",
-        version="1.2.0",
+        version='%(prog)s ' + __version__,
         help=s.version_help,
     )
 
