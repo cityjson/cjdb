@@ -45,6 +45,23 @@ def test_single_import(engine_postgresql, monkeypatch):
         imp.run_import()
 
 
+def test_directory_import(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    args = Namespace(
+        filepath="./tests/files/cjfiles",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with Importer(engine=engine_postgresql, args=args) as imp:
+        imp.run_import()
+
+
 def test_db_model(engine_postgresql):
     insp = inspect(engine_postgresql)
     assert insp.has_schema("cjdb")
@@ -53,11 +70,17 @@ def test_db_model(engine_postgresql):
     assert insp.has_table("family", schema="cjdb")
 
     cj_object = Table(
-        "cj_object", MetaData(), schema="cjdb", autoload_with=engine_postgresql
+        "cj_object",
+        MetaData(),
+        schema="cjdb",
+        autoload_with=engine_postgresql
     )
 
     import_meta = Table(
-        "import_meta", MetaData(), schema="cjdb", autoload_with=engine_postgresql
+        "import_meta",
+        MetaData(),
+        schema="cjdb",
+        autoload_with=engine_postgresql
     )
 
     query_cj_object = select(cj_object).where(
@@ -89,7 +112,7 @@ def test_db_model(engine_postgresql):
 def test_single_import_with_extensions(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     args = Namespace(
-        filepath="./tests/files/extension2.jsonl",
+        filepath="./tests/files/extension.city.jsonl",
         db_schema="cjdb",
         target_srid=None,
         indexed_attributes=[],
@@ -103,13 +126,15 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
         imp.run_import()
 
     import_meta = Table(
-        "import_meta", MetaData(), schema="cjdb", autoload_with=engine_postgresql
+        "import_meta", MetaData(),
+        schema="cjdb",
+        autoload_with=engine_postgresql
     )
 
     query_import_meta = (
         select(import_meta)
         .where(import_meta.c.extensions.isnot(None))
-        .where(import_meta.c.source_file == "extension2.jsonl")
+        .where(import_meta.c.source_file == "extension.city.jsonl")
     )
 
     with Session(engine_postgresql) as session:
@@ -138,7 +163,9 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
         imp.run_import()
 
     import_meta = Table(
-        "import_meta", MetaData(), schema="cjdb", autoload_with=engine_postgresql
+        "import_meta", MetaData(),
+        schema="cjdb",
+        autoload_with=engine_postgresql
     )
 
     query_import_meta = (
