@@ -28,7 +28,55 @@ def engine_postgresql(postgresql_proc):
         )
 
 
-def test_single_import(engine_postgresql, monkeypatch):
+def test_single_import(engine_postgresql):
+    args = Namespace(
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with Importer(engine=engine_postgresql, args=args) as imp:
+        imp.run_import()
+
+
+def test_repeated_file_with_overwrite(engine_postgresql):
+    args = Namespace(
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=True,
+        update_existing=False,
+    )
+    with Importer(engine=engine_postgresql, args=args) as imp:
+        imp.run_import()
+
+
+def test_repeated_file_with_update_existing(engine_postgresql):
+    args = Namespace(
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=True,
+    )
+    with Importer(engine=engine_postgresql, args=args) as imp:
+        imp.run_import()
+
+
+def test_repeated_file_with_prompt_to_skip(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     args = Namespace(
         filepath="./tests/files/vienna.jsonl",
@@ -43,6 +91,24 @@ def test_single_import(engine_postgresql, monkeypatch):
     )
     with Importer(engine=engine_postgresql, args=args) as imp:
         imp.run_import()
+
+
+def test_repeated_file_with_prompt_to_exit(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("n"))
+    args = Namespace(
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with pytest.raises(SystemExit):
+        with Importer(engine=engine_postgresql, args=args) as imp:
+            imp.run_import()
 
 
 def test_directory_import(engine_postgresql, monkeypatch):
@@ -86,7 +152,8 @@ def test_db_model(engine_postgresql):
     query_cj_object = select(cj_object).where(
         cj_object.c.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
     )
-    query_import_meta = select(import_meta)
+    query_import_meta = select(import_meta).where(
+        import_meta.c.source_file == "vienna.jsonl")
 
     with Session(engine_postgresql) as session:
         row = session.execute(query_cj_object).first()
