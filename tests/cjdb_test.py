@@ -53,15 +53,11 @@ def test_db_model(engine_postgresql):
     assert insp.has_table("family", schema="cjdb")
 
     cj_object = Table(
-        "cj_object", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
+        "cj_object", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     import_meta = Table(
-        "import_meta", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
+        "import_meta", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     query_cj_object = select(cj_object).where(
@@ -107,9 +103,7 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
         imp.run_import()
 
     import_meta = Table(
-        "import_meta", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
+        "import_meta", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     query_import_meta = (
@@ -144,9 +138,7 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
         imp.run_import()
 
     import_meta = Table(
-        "import_meta", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
+        "import_meta", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     query_import_meta = (
@@ -158,19 +150,19 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
     with Session(engine_postgresql) as session:
         row = session.execute(query_import_meta).first()
 
-        assert (
-            row.geometry_templates["templates"][0]["lod"] == "1"
-        )
+        assert row.geometry_templates["templates"][0]["lod"] == "1"
         assert row.geometry_templates["templates"][0]["type"] == "MultiSurface"
 
-        assert row.geometry_templates["vertices-templates"] == [[0, 0, 5],
-                                                                [10, 0, 5],
-                                                                [10, 10, 5],
-                                                                [0, 10, 5],
-                                                                [0, 0, 15],
-                                                                [10, 0, 15],
-                                                                [10, 10, 15],
-                                                                [0, 10, 15]]
+        assert row.geometry_templates["vertices-templates"] == [
+            [0, 0, 5],
+            [10, 0, 5],
+            [10, 10, 5],
+            [0, 10, 5],
+            [0, 0, 15],
+            [10, 0, 15],
+            [10, 10, 15],
+            [0, 10, 15],
+        ]
 
 
 def test_single_import_without_srid(engine_postgresql, monkeypatch):
