@@ -76,6 +76,22 @@ def test_repeated_file_with_update_existing(engine_postgresql):
         imp.run_import()
 
 
+def test_repeated_file_with_ignore_repeated_file(engine_postgresql):
+    args = Namespace(
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=True,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with Importer(engine=engine_postgresql, args=args) as imp:
+        imp.run_import()
+
+
 def test_repeated_file_with_prompt_to_skip(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     args = Namespace(
