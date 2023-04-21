@@ -9,6 +9,7 @@ from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from cjdb.logger import logger
 from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
                                           FamilyModel, ImportMetaModel)
 from cjdb.modules.checks import (check_object_type, check_reprojection,
@@ -22,8 +23,6 @@ from cjdb.modules.geometric import (get_ground_geometry, get_srid,
                                     transform_vertex)
 from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
                                 is_cityjson_object, to_dict)
-
-from cjdb.logger import logger
 
 
 # class to store variables per file import - for clarity
@@ -123,8 +122,8 @@ class Importer:
             line_json["metadata"].get("referenceSystem")
         )
         if not self.current.source_srid:
-            logger.warning("""Warning: No Coordinate Reference System
-                  specified for the dataset.""")
+            logger.warning("No Coordinate Reference System"
+                           " specified for the dataset.")
 
         # use specified target SRID for all the geometries
         # If not specified use same as source.
