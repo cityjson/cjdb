@@ -23,9 +23,13 @@ Version 1.2.0
 `Added`
 - cjio
 - tests independent of postgres 
+- logger
+- '--version' flag
+- some exceptions
 
 `Changed`
 - merged README
+- default schema to 'cjdb'
 
 ## [1.1.0] - 2023-04-06
 Version 1.1.0

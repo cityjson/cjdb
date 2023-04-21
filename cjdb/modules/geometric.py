@@ -1,11 +1,11 @@
 import copy
-from collections import OrderedDict
 
 import numpy as np
 from pyproj import CRS, Transformer
-from pyproj.transformer import TransformerGroup
-from shapely.geometry import MultiPolygon, Point, Polygon, box
-from shapely.validation import explain_validity, make_valid
+from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.validation import explain_validity
+
+from cjdb.logger import logger
 
 
 # get srid from a CRS string definition
@@ -40,7 +40,9 @@ def reproject_vertex_list(vertices, srid_from, srid_to):
     target_proj = CRS.from_epsg(srid_to)
 
     # prepare transformer from crs to crs
-    transformer = Transformer.from_crs(source_proj, target_proj, always_xy=True)
+    transformer = Transformer.from_crs(source_proj,
+                                       target_proj,
+                                       always_xy=True)
 
     # transform all the coordinates
     reprojected_xyz = transformer.transform(*zip(*vertices))
@@ -74,7 +76,10 @@ def resolve(lod_level, vertices, inplace=True):
     return resolvable
 
 
-def resolve_template(lod_level, vertices, geometry_templates, source_target_srid):
+def resolve_template(lod_level,
+                     vertices,
+                     geometry_templates,
+                     source_target_srid):
     # get anchor point
     vertex_id = lod_level["boundaries"][0]
     anchor = vertices[vertex_id]
@@ -98,7 +103,8 @@ def resolve_template(lod_level, vertices, geometry_templates, source_target_srid
     template_id = lod_level["template"]
     template = geometry_templates["templates"][template_id]
 
-    # inplace=False, because the template can be resolved differently for some other cityobject
+    # inplace=False, because the template can be resolved differently
+    # for some other cityobject
     resolved_template = resolve(template, template_vertices, inplace=False)
     return resolved_template
 
@@ -106,7 +112,8 @@ def resolve_template(lod_level, vertices, geometry_templates, source_target_srid
 def resolve_geometry_vertices(
     geometry, vertices, geometry_templates, source_target_srid
 ):
-    # use ready vertices to resolve coordinate values for the geometry (or geometry template)
+    # use ready vertices to resolve coordinate values
+    # for the geometry (or geometry template)
     for i, lod_level in enumerate(geometry):
         if lod_level["type"] == "GeometryInstance":
             resolved_template = resolve_template(
@@ -123,8 +130,10 @@ def resolve_geometry_vertices(
 def get_ground_geometry(geometry, obj_id):
     # returns a shapely multipolygon (see shapely.geometry.MultiPolygon)
     # the MultiPolygon should be a 2D geometry (Z coordinate is omitted)
-    # this geometry should be obtained by parsing the "geometry" object from cityjson -> the argument of this function
-    # the geometry is a multipolygon of all the ground surfaces in the lowest available LOD
+    # this geometry should be obtained by parsing the "geometry" object
+    # from cityjson -> the argument of this function
+    # the geometry is a multipolygon of all the ground
+    # surfaces in the lowest available LOD
 
     planes = dict()
     z_min = 0
@@ -167,7 +176,6 @@ def get_ground_geometry(geometry, obj_id):
 
     for key in planes:
         if abs(float(key) - z_min) < 0.3:
-            poly = Polygon([[p.x, p.y] for p in planes[key]])
             for p in planes[key]:
                 str_p = str(p.x) + " " + str(p.y)
                 if (str_p in ground_points_dic.keys()) is False:
@@ -182,16 +190,16 @@ def get_ground_geometry(geometry, obj_id):
     if len(ground_points) >= 3:
         ground_polygon = Polygon([[p.x, p.y] for p in ground_points])
     else:
-        print(
-            f"Warning: Ground geometry for object ID=({obj_id}) could not be"
+        logger.warning(
+            f"Ground geometry for object ID=({obj_id}) could not be"
             " calculated."
         )
         return None
 
-    if ground_polygon.is_valid == False:
+    if ground_polygon.is_valid is False:
         ground_polygon = ground_polygon.buffer(0)
-        if ground_polygon.is_valid == False:
-            print(explain_validity(ground_polygon))
+        if ground_polygon.is_valid is False:
+            logger.info(explain_validity(ground_polygon))
 
     if type(ground_polygon) is Polygon:
         ground_polygon = MultiPolygon([ground_polygon])

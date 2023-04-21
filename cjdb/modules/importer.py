@@ -2,15 +2,20 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional, Tuple
 
+from shapely.geometry.base import BaseGeometry
 from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from cjdb.logger import logger
 from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
                                           FamilyModel, ImportMetaModel)
 from cjdb.modules.checks import (check_object_type, check_reprojection,
                                  check_root_properties)
+from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
+                                     InvalidMetadataException)
 from cjdb.modules.extensions import ExtensionHandler
 from cjdb.modules.geometric import (get_ground_geometry, get_srid,
                                     reproject_vertex_list,
@@ -53,7 +58,7 @@ class Importer:
     def __exit__(self, exc_type, exc_value, traceback):
         self.session.close()
 
-    def run_import(self):
+    def run_import(self) -> None:
         # create model if in create mode, else append data
         if not self.args.append_mode:
             self.prepare_database()
@@ -64,24 +69,26 @@ class Importer:
             self.post_import()
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
-        print(f"Imported from {self.args.filepath} successfully")
-        return 0
+        logger.info(f"Imported from {self.args.filepath} successfully")
 
-    def prepare_database(self):
+    def prepare_database(self) -> None:
+        """Adds the postgis extension and creates
+        the schema and the tables."""
         with self.engine.connect() as conn:
+            conn.execute(text("""CREATE EXTENSION IF NOT EXISTS postgis"""))
             if self.args.overwrite:
                 conn.execute(text(f"""DROP SCHEMA
                              IF EXISTS {self.args.db_schema}
                              CASCADE"""))
             conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
                                   {self.args.db_schema}"""))
-            conn.execute(text(f"""CREATE EXTENSION postgis"""))
             conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
             table.create(self.engine, checkfirst=True)
 
-    def parse_cityjson(self):
+    def parse_cityjson(self) -> None:
+        """Parses the input path."""
         source_path = self.args.filepath
 
         if os.path.isfile(source_path) or source_path.lower() == "stdin":
@@ -93,8 +100,9 @@ class Importer:
         else:
             raise Exception(f"Path: '{source_path}' not found")
 
-    def post_import(self):
-        # post import operations like clustering, indexing...
+    def post_import(self) -> None:
+        """Perform post import operation on the schema,
+           like clustering and indexing"""
 
         cur_path = Path(__file__).parent
         sql_path = os.path.join(cur_path.parent, "resources/post_import.sql")
@@ -107,15 +115,16 @@ class Importer:
 
     def extract_import_metadata(self, line_json):
         if "metadata" not in line_json:
-            print("No metadata available!")
-            sys.exit(1)
+            raise InvalidMetadataException("The file should contain a member"
+                                           "'metadata', in the first object")
+
         extra_root_properties = find_extra_properties(line_json)
         self.current.source_srid = get_srid(
             line_json["metadata"].get("referenceSystem")
         )
         if not self.current.source_srid:
-            print("""Warning: No Coordinate Reference System
-                  specified for the dataset.""")
+            logger.warning("No Coordinate Reference System"
+                           " specified for the dataset.")
 
         # use specified target SRID for all the geometries
         # If not specified use same as source.
@@ -153,7 +162,9 @@ class Importer:
             )
 
         # store extensions data - extra root properties, extra city objects
-        self.current.extension_handler = ExtensionHandler(line_json.get("extensions")) # noqa
+        self.current.extension_handler = ExtensionHandler(
+            line_json.get("extensions")
+        )
 
         # prepare extra properties coming from extensions
         # they will be placed in the extra_properties jsonb column
@@ -184,11 +195,12 @@ class Importer:
         # compare to existing import metas
         # for example to detect inconsistent CRS from different files
         result_ok = import_meta.compare_existing(
-            self.session, self.args.ignore_repeated_file
+            self.session,
+            self.args.ignore_repeated_file,
+            self.args.update_existing
         )
         if not result_ok:
-            print("Import metadata not valid")
-            sys.exit(1)
+            raise InvalidMetadataException()
 
         # add metadata to the database
         import_meta.__table__.schema = self.args.db_schema
@@ -196,7 +208,7 @@ class Importer:
         self.session.add(import_meta)
         self.session.commit()
 
-    def process_line(self, line_json):
+    def process_line(self, line_json) -> None:
         # unpack vertices for the cityobjects based on
         # the CityJSON transform
         # this is done once for the CityJSONFeature
@@ -236,8 +248,7 @@ class Importer:
                 )
 
                 if existing:
-                    # TODO: proper logging
-                    print(f"CityObject (id:{obj_id}) already exists. Updating.")  # noqa
+                    logger.warning(f"CityObject (id:{obj_id}) already exists. Updating.")  # noqa
                     obj_to_update = existing
 
             # get 3D geom, ground geom and bbox
@@ -253,7 +264,7 @@ class Importer:
                 self.current.extension_handler.extra_city_objects,
             )
             if not check_result:
-                print(message)
+                logger.info(message)
 
             # update or insert the object
             # 'or None' is added to change empty json "{}" to database null
@@ -297,9 +308,10 @@ class Importer:
             self.current.families.append({"parent_id": parent_id,
                                           "child_id": child_id})
 
-    def process_file(self, filepath):
+    def process_file(self, filepath) -> None:
+        """Process a single cityJSON file"""
         self.current = SingleFileImport(filepath)
-        print("Running import for file: ", filepath)
+        logger.info("Running import for file: %s", filepath)
 
         if filepath.lower() == "stdin":
             f = sys.stdin
@@ -309,9 +321,7 @@ class Importer:
         first_line = f.readline()
         first_line_json = json.loads(first_line.rstrip("\n"))
         if not is_cityjson_object(first_line_json):
-            print("""First line should be CityJSON object containing
-                a 'metadata' property. Aborting.""")
-            sys.exit(1)
+            raise InvalidCityJSONObjectException()
         self.extract_import_metadata(first_line_json)
         for line in f.readlines():
             line_json = json.loads(line.rstrip("\n"))
@@ -335,8 +345,9 @@ class Importer:
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
 
-    def process_directory(self, dir_path):
-        print("Running import for directory: ", dir_path)
+    def process_directory(self, dir_path) -> None:
+        """Process all files in a directory."""
+        logger.info("Running import for directory: %s", dir_path)
         ext = ".jsonl"
         for f in os.scandir(dir_path):
             if f.path.endswith(ext):
@@ -373,7 +384,7 @@ class Importer:
             msg = f"Indexing CityObject attribute: '{attr_name}'"
             if is_partial:
                 msg += " with partial index"
-            print(msg)
+            logger.info(msg)
 
             # get proper postgres type
             if attr_name in type_mapping:
@@ -396,11 +407,13 @@ class Importer:
                     conn.execute(text(cmd))
 
             else:
-                print(
+                logger.warning(
                     f"Specified attribute to be indexed: '{attr_name}' does not exist"  # noqa
                 )
 
-    def get_geometries(self, obj_id, cityobj, vertices, source_target_srid):
+    def get_geometries(
+        self, obj_id, cityobj, vertices, source_target_srid
+    ) -> Tuple[Optional[BaseGeometry], Optional[BaseGeometry]]:
         if "geometry" not in cityobj:
             return None, None
 

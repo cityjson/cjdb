@@ -2,6 +2,8 @@ import json
 
 import requests
 
+from cjdb.logger import logger
+
 
 class ExtensionHandler:
     def __init__(self, extensions):
@@ -27,9 +29,9 @@ class ExtensionHandler:
                         ext_definition = json.loads(resp.text)
                         self.full_definitions[ext_name] = ext_definition
                     except ValueError as e:
-                        print(
-                            f"Extension url: {url} did not provide a correct json"
-                            " schema"
+                        logger.error(
+                            "Extension url: %s did not provide a correct json"
+                            " schema", url
                         )
                         # raise
                         # throw this exception or ignore it?

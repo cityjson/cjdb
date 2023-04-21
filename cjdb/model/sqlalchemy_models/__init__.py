@@ -1,8 +1,12 @@
+import sys
+
 from geoalchemy2 import Geometry
 from sqlalchemy import (Column, ForeignKey, Integer, String, UniqueConstraint,
                         func)
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import declarative_base, relationship
+
+from cjdb.logger import logger
 
 Base = declarative_base()
 
@@ -31,11 +35,13 @@ class ImportMetaModel(BaseModel):
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry("Polygon"))
 
-    def compare_existing(self, session, ignore_repeated_file):
+    def compare_existing(self, session, ignore_repeated_file, update_existing):
         result_ok = True
 
         # check if the file was already imported
-        if self.source_file.lower() != "stdin" and not ignore_repeated_file:
+        if self.source_file.lower() != "stdin" and \
+           not ignore_repeated_file and \
+           not update_existing:
             same_source_import = (
                 session.query(ImportMetaModel)
                 .filter_by(source_file=self.source_file)
@@ -44,20 +50,22 @@ class ImportMetaModel(BaseModel):
                 .first()
             )
             if same_source_import:
-                print(
-                    f"\nFile '{self.source_file}' was previously"
-                    + " imported at {same_source_import.finished_at}.\n"
-                    "Use the -g flag to suppress this warning"
+                logger.warning(
+                    "File %s was previously imported at %s. "
+                    "Use the -g flag to suppress this warning.",
+                    self.source_file,  same_source_import.finished_at
                 )
+
                 user_answer = input(
                     "Should the import continue? "
-                    + "Already imported City Objects will "
-                    + "be skipped. If you want to update "
-                    + "use the flag --update-existing. \n"
-                    + " [y / n]\n"
+                    "Already imported City Objects will be skipped. "
+                    "If you want to update them instead "
+                    "use the flag --update-existing. \n"
+                    " [y / n]\n"
                 )
                 if user_answer.lower() != "y":
-                    return False
+                    logger.info("Import process terminated by user.")
+                    sys.exit(1)
 
         # check if the CRS is consistent with other imports
         different_srid_meta = (
@@ -69,13 +77,13 @@ class ImportMetaModel(BaseModel):
         )
 
         if different_srid_meta:
-            print("Inconsistent Coordinate Reference Systems detected")
-            print(f"Currently imported SRID: {self.srid}")
-            print(f"Recently imported SRID: {different_srid_meta.srid}")
-            print(
-                "Use the '-I/--srid' flag to reproject everything to",
-                " a single specified CRS or modify source data.",
-            )
+            logger.error("Inconsistent Coordinate Reference Systems detected."
+                         "\nCurrently imported SRID: %s \n"
+                         "Recently imported SRID: %s "
+                         "\nUse the '-I/--srid' flag to reproject everything "
+                         "to a single specified CRS or modify source data.",
+                         self.srid, different_srid_meta.srid
+                         )
             return False
 
         return result_ok
@@ -124,7 +132,11 @@ class FamilyModel(BaseModel):
     parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
     child_id = Column(String, ForeignKey(CjObjectModel.object_id))
 
-    parent = relationship(CjObjectModel, foreign_keys=[parent_id], post_update=True)
-    child = relationship(CjObjectModel, foreign_keys=[child_id], post_update=True)
+    parent = relationship(CjObjectModel,
+                          foreign_keys=[parent_id],
+                          post_update=True)
+    child = relationship(CjObjectModel,
+                         foreign_keys=[child_id],
+                         post_update=True)
 
     parent_child_unique = UniqueConstraint(parent_id, child_id)
