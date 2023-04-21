@@ -127,6 +127,52 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
         assert row.extensions["Noise"]["version"] == "1.1.0"
 
 
+def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    args = Namespace(
+        filepath="./tests/files/geomtemplate.city.jsonl",
+        db_schema="cjdb",
+        target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        overwrite=False,
+        update_existing=False,
+    )
+    with Importer(engine=engine_postgresql, args=args) as imp:
+        imp.run_import()
+
+    import_meta = Table(
+        "import_meta", MetaData(),
+        schema="cjdb",
+        autoload_with=engine_postgresql
+    )
+
+    query_import_meta = (
+        select(import_meta)
+        .where(import_meta.c.geometry_templates.isnot(None))
+        .where(import_meta.c.source_file == "geomtemplate.city.jsonl")
+    )
+
+    with Session(engine_postgresql) as session:
+        row = session.execute(query_import_meta).first()
+
+        assert (
+            row.geometry_templates["templates"][0]["lod"] == "1"
+        )
+        assert row.geometry_templates["templates"][0]["type"] == "MultiSurface"
+
+        assert row.geometry_templates["vertices-templates"] == [[0, 0, 5],
+                                                                [10, 0, 5],
+                                                                [10, 10, 5],
+                                                                [0, 10, 5],
+                                                                [0, 0, 15],
+                                                                [10, 0, 15],
+                                                                [10, 10, 15],
+                                                                [0, 10, 15]]
+
+
 def test_single_import_without_srid(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     args = Namespace(
