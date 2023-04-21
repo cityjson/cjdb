@@ -40,12 +40,12 @@ The import_meta table stores information from imported files, e.g. name or metad
 <**id**: import_meta record's index within the database.<br/>
 **source_file**: name of the source file.<br/>
 **version**: cityJSON version used.<br/>
-**metadata**: [cityJSON metadata object](https://www.cityjson.org/specs/1.1.2/#metadata), a JSON object describing the creator, dataset extent or coordinate reference system used, etc.<br/>
-**transform**:[cityJSON transform object](https://www.cityjson.org/specs/1.1.2/#transform-object), a JSON object describing how to decompress the integer coordinates of the geometries to obtain real-world coordinates.<br/>
-**geometry_templates**: [cityJSON geometry-templates object](https://www.cityjson.org/specs/1.1.2/#geometry-templates), a JSON object containing the templates that can be reused by different City Objects (usually for trees).<br/>
+**metadata**: [cityJSON metadata object](https://www.cityjson.org/specs/#metadata), a JSON object describing the creator, dataset extent or coordinate reference system used, etc.<br/>
+**transform**:[cityJSON transform object](https://www.cityjson.org/specs/#transform-object), a JSON object describing how to decompress the integer coordinates of the geometries to obtain real-world coordinates.<br/>
+**geometry_templates**: [cityJSON geometry-templates object](https://www.cityjson.org/specs/#geometry-templates), a JSON object containing the templates that can be reused by different City Objects (usually for trees).<br/>
 **srid**: Coordinate reference system (CRS) of the imported city objects in the database. If not specified when importing, the CRS will be the same with the source file's CRS. If specified when importing, the CRS will be the specified CRS.<br/>
-**extensions**: [cityJSON Extensions](https://www.cityjson.org/specs/1.1.2/#extensions), a JSON file that documents how the core data model of CityJSON is extended.<br/>
-**extra_properties**: [extraRootProperties](https://www.cityjson.org/specs/1.1.2/#case-2-adding-new-properties-at-the-root-of-a-document), a JSON object with added new properties at the root of the imported document.<br/>
+**extensions**: [cityJSON Extensions](https://www.cityjson.org/specs/#extensions), a JSON file that documents how the core data model of CityJSON is extended.<br/>
+**extra_properties**: [extraRootProperties](https://www.cityjson.org/specs/#case-2-adding-new-properties-at-the-root-of-a-document), a JSON object with added new properties at the root of the imported document.<br/>
 **started_at**: importing start time.<br/>
 **finished_at**: importing finish time. `null` if not finished.<br/>
 **Bounding box**: bounding box is taken from the `geographicExtent` object from the `metadata` section
@@ -58,8 +58,8 @@ The cj_object model stores individual city objects, for instance buildings, road
 **import_meta_id**: the source file id of the city object, foriegn key to the id column of import_meta table.<br/>
 **object_id**: the identification string of the city object (e.g. NL.IMBAG.Pand.0503100000000033-0).<br/>
 **type**: type of the city object (e.g. building, buildingparts, etc.).<br/>
-**attributes**:[cityJSON attributes](https://www.cityjson.org/specs/1.1.2/#attributes-for-all-city-objects), a JSON object that describes attributes of the city object (e.g. roof type, area, etc.).<br/>
-**geometry**: [cityJSON geometry](https://www.cityjson.org/specs/1.1.2/#geometry-objects), a JSON object that describes the geometry of the city object.<br/>
+**attributes**:[cityJSON attributes](https://www.cityjson.org/specs/#attributes-for-all-city-objects), a JSON object that describes attributes of the city object (e.g. roof type, area, etc.).<br/>
+**geometry**: [cityJSON geometry](https://www.cityjson.org/specs/#geometry-objects), a JSON object that describes the geometry of the city object.<br/>
 **ground_geometry**: ground geometry of the city object, in geometry type.<br/>
 
 ### 3. Family <a name="family"></a>

@@ -2,6 +2,8 @@ import json
 
 import requests
 
+from cjdb.logger import logger
+
 
 class ExtensionHandler:
     def __init__(self, extensions):
@@ -9,7 +11,7 @@ class ExtensionHandler:
         self.extra_root_properties = []
         self.extra_attributes = {}
         self.extra_city_objects = []
-        
+
         if extensions:
             self.get_extensions(extensions)
 
@@ -27,7 +29,10 @@ class ExtensionHandler:
                         ext_definition = json.loads(resp.text)
                         self.full_definitions[ext_name] = ext_definition
                     except ValueError as e:
-                        print(f"Extension url: {url} did not provide a correct json schema")
+                        logger.error(
+                            "Extension url: %s did not provide a correct json"
+                            " schema", url
+                        )
                         # raise
                         # throw this exception or ignore it?
                         return
@@ -35,7 +40,9 @@ class ExtensionHandler:
                     for prop_name in ext_definition["extraRootProperties"]:
                         self.extra_root_properties.append(prop_name)
 
-                    for obj_type, extra_attributes in ext_definition["extraAttributes"].items():
+                    for obj_type, extra_attributes in ext_definition[
+                        "extraAttributes"
+                    ].items():
                         if obj_type not in self.extra_attributes:
                             self.extra_attributes[obj_type] = []
                         for attr_name in extra_attributes:
@@ -47,7 +54,3 @@ class ExtensionHandler:
                     msg = f"Extension url: {url} did not return a correct response"
                     # raise Exception(msg)
                     return
-
-    
-
-

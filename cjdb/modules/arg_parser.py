@@ -2,6 +2,7 @@ import argparse
 import os
 from getpass import getpass
 
+from cjdb import __version__
 from cjdb.resources import strings as s
 
 
@@ -20,6 +21,13 @@ def Parser():
         help=s.filepath_help,
     )
 
+    parser.add_argument(
+        "--version",
+        action="version",
+        version='%(prog)s ' + __version__,
+        help=s.version_help,
+    )
+
     db = parser.add_argument_group(title="Database connection arguments")
 
     db.add_argument(
@@ -30,6 +38,7 @@ def Parser():
         help=s.host_help,
         dest="db_host"
     )
+
     db.add_argument(
         "-p",
         "--port",
@@ -38,6 +47,7 @@ def Parser():
         help=s.port_help,
         dest="db_port"
     )
+
     db.add_argument(
         "-U",
         "--user",
@@ -46,6 +56,7 @@ def Parser():
         help=s.user_help,
         dest="db_user"
     )
+
     db.add_argument(
         "-W",
         "--password",
@@ -54,6 +65,7 @@ def Parser():
         help=s.password_help,
         dest="db_password",
     )
+
     db.add_argument(
         "-d",
         "--database",
@@ -62,14 +74,16 @@ def Parser():
         help=s.database_help,
         dest="db_name",
     )
+
     db.add_argument(
         "-s",
         "--schema",
         type=str,
-        default="public",
+        default="cjdb",
         help=s.schema_help,
         dest="db_schema",
     )
+
     parser.add_argument(
         "-I",
         "--srid",
@@ -78,6 +92,7 @@ def Parser():
         help=s.srid_help,
         dest="target_srid"
     )
+
     parser.add_argument(
         "-x",
         "--attr-index",
@@ -87,6 +102,7 @@ def Parser():
         help=s.index_help,
         dest="indexed_attributes",
     )
+
     parser.add_argument(
         "-px",
         "--partial-attr-index",
@@ -108,6 +124,7 @@ def Parser():
     )
 
     mode = parser.add_mutually_exclusive_group()
+
     mode.add_argument(
         "-a",
         "--append",
@@ -117,6 +134,7 @@ def Parser():
         help=s.append_help,
         dest="append_mode",
     )
+
     mode.add_argument(
         "-o",
         "--overwrite",
@@ -145,6 +163,8 @@ def validate_args(args):
     result = True
     msg = ""
     if not args.db_password:
-        args.db_password = getpass(prompt=f'Password for user "{args.db_user}": ') # noqa
+        args.db_password = getpass(
+            prompt=f'Password for user "{args.db_user}": '
+        )  # noqa
 
     return result, msg

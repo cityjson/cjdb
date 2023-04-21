@@ -1,5 +1,4 @@
-import os
-from pathlib import Path
+from typing import Any, Dict
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -9,8 +8,10 @@ from cjdb.resources import object_types
 
 
 def get_db_engine(args, echo=False):
-    conn_string = f"postgresql://{args.db_user}:{args.db_password}"\
+    conn_string = (
+        f"postgresql://{args.db_user}:{args.db_password}"
         f"@{args.db_host}:{args.db_port}/{args.db_name}"
+    )
 
     engine = create_engine(conn_string, echo=echo)
 
@@ -18,12 +19,14 @@ def get_db_engine(args, echo=False):
 
 
 def open_connection(args):
-    conn = psycopg2.connect(database=args.db_name,
-                            host=args.db_host,
-                            user=args.db_user,
-                            port=args.db_port,
-                            cursor_factory=RealDictCursor)
-    
+    conn = psycopg2.connect(
+        database=args.db_name,
+        host=args.db_host,
+        user=args.db_user,
+        port=args.db_port,
+        cursor_factory=RealDictCursor,
+    )
+
     return conn
 
 
@@ -41,6 +44,18 @@ def get_cj_object_types():
     return sorted(type_list)
 
 
+def is_cityjson_object(json: Dict[str, Any]) -> bool:
+    """Check if the json is a cityjson object"""
+    if (
+        "version" in json
+        and "transform" in json
+        and "type" in json
+        and json["type"] == "CityJSON"
+    ):
+        return True
+    return False
+
+
 # find extended properties
 def find_extra_properties(json_obj):
     property_names = []
@@ -50,8 +65,9 @@ def find_extra_properties(json_obj):
 
     return property_names
 
+
 # Sqlalchemy model as dict
 def to_dict(model):
     d = dict(model.__dict__)
-    d.pop('_sa_instance_state', None)
+    d.pop("_sa_instance_state", None)
     return d
