@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cjdb"
-version = "1.1.1"
+version = "1.2.0"
 description = "CJDB is a tool that enables CityJSON integration with a PostgreSQL database"
 authors = ["Cynthia Cai", "Lan Yan", "Yitong Xia", "Chris Poon", "Siebren Meines", "Leon Powalka"]
 maintainers = ["Gina Stavropoulou <g.stavropoulou@tudelft.nl>"]
