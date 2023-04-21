@@ -4,6 +4,8 @@ filepath_help = (
     + "If specifying a directory, all the *.jsonl files inside of it will be imported."
 )
 
+version_help = "Get the current version"
+
 host_help = "PostgreSQL database host"
 
 port_help = "PostgreSQL database port"
