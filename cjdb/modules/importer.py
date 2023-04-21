@@ -101,7 +101,8 @@ class Importer:
             raise Exception(f"Path: '{source_path}' not found")
 
     def post_import(self) -> None:
-        # post import operations like clustering, indexing...
+        """Perform post import operation on the schema,
+           like clustering and indexing"""
 
         cur_path = Path(__file__).parent
         sql_path = os.path.join(cur_path.parent, "resources/post_import.sql")
@@ -114,8 +115,8 @@ class Importer:
 
     def extract_import_metadata(self, line_json):
         if "metadata" not in line_json:
-            raise InvalidMetadataException("""The file should contain a member
-                                           'metadata', in the first object""")
+            raise InvalidMetadataException("The file should contain a member"
+                                           "'metadata', in the first object")
 
         extra_root_properties = find_extra_properties(line_json)
         self.current.source_srid = get_srid(
