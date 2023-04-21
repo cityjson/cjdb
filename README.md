@@ -218,7 +218,7 @@ WHERE geometry::jsonb @> '[{"lod": 1.2}]'::jsonb
 ## 4. Local development
 
 ### Install and Build
-Make sure [poetry](https://python-poetry.org/docs/) is installed and the [creation of virtual environments within the projects is activated](
+Make sure [poetry](https://python-poetry.org/docs/) is installed and the [creation of virtual environments within the project is allowed](
 https://python-poetry.org/docs/configuration/#virtualenvsin-project):
 
 ```
@@ -240,7 +240,7 @@ Then you can run the CLI command:
 cjdb --help
 ```
 
-Every time you make a new addition to the code you can run `poetry install` again to install the changes to your package
+Every time you make some changed to the package you can run `poetry install` to reinstall.
 
 
 ### Testing
