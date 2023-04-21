@@ -218,30 +218,29 @@ WHERE geometry::jsonb @> '[{"lod": 1.2}]'::jsonb
 ## 4. Local development
 
 ### Install and Build
-Make sure [poetry](https://python-poetry.org/docs/) is installed. Then, to create a local environment with all the necessary dependencies, run from the repository root:
+Make sure [poetry](https://python-poetry.org/docs/) is installed and the [creation of virtual environments within the projects is activated](
+https://python-poetry.org/docs/configuration/#virtualenvsin-project):
+
+```
+poetry config virtualenvs.in-project true
+```
+
+Then, to create a local environment with all the necessary dependencies, run from the repository root:
 ```bash
 poetry install
 ```
 
-To build the wheel run:
+To activate the env:
 ```bash
-poetry build
-```
-
-To install in the venv and still be able to develop:
-```bash
-pip install --editable '.[develop]'
-```
-
-Or install the .whl file with pip:
-```bash
-pip install dist/*.whl --force-reinstall
+source .venv/bin/activate 
 ```
 
 Then you can run the CLI command:
 ```bash
 cjdb --help
 ```
+
+Every time you make a new addition to the code you can run `poetry install` again to install the changes to your package
 
 
 ### Testing
