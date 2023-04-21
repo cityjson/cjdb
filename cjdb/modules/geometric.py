@@ -4,6 +4,7 @@ import numpy as np
 from pyproj import CRS, Transformer
 from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.validation import explain_validity
+from cjdb.logger import logger
 
 
 # get srid from a CRS string definition
@@ -101,7 +102,7 @@ def resolve_template(lod_level,
     template_id = lod_level["template"]
     template = geometry_templates["templates"][template_id]
 
-    # inplace=False, because the template can be resolved differently 
+    # inplace=False, because the template can be resolved differently
     # for some other cityobject
     resolved_template = resolve(template, template_vertices, inplace=False)
     return resolved_template
@@ -188,8 +189,8 @@ def get_ground_geometry(geometry, obj_id):
     if len(ground_points) >= 3:
         ground_polygon = Polygon([[p.x, p.y] for p in ground_points])
     else:
-        print(
-            f"Warning: Ground geometry for object ID=({obj_id}) could not be"
+        logger.warning(
+            f"Ground geometry for object ID=({obj_id}) could not be"
             " calculated."
         )
         return None
@@ -197,7 +198,7 @@ def get_ground_geometry(geometry, obj_id):
     if ground_polygon.is_valid is False:
         ground_polygon = ground_polygon.buffer(0)
         if ground_polygon.is_valid is False:
-            print(explain_validity(ground_polygon))
+            logger.info(explain_validity(ground_polygon))
 
     if type(ground_polygon) is Polygon:
         ground_polygon = MultiPolygon([ground_polygon])

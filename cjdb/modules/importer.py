@@ -23,6 +23,8 @@ from cjdb.modules.geometric import (get_ground_geometry, get_srid,
 from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
                                 is_cityjson_object, to_dict)
 
+from cjdb.logger import logger
+
 
 # class to store variables per file import - for clarity
 class SingleFileImport:
@@ -68,7 +70,7 @@ class Importer:
             self.post_import()
         self.current.import_meta.finished_at = func.now()
         self.session.commit()
-        print(f"Imported from {self.args.filepath} successfully")
+        logger.info(f"Imported from {self.args.filepath} successfully")
 
     def prepare_database(self) -> None:
         """Adds the postgis extension and creates
@@ -121,7 +123,7 @@ class Importer:
             line_json["metadata"].get("referenceSystem")
         )
         if not self.current.source_srid:
-            print("""Warning: No Coordinate Reference System
+            logger.warning("""Warning: No Coordinate Reference System
                   specified for the dataset.""")
 
         # use specified target SRID for all the geometries
@@ -245,7 +247,7 @@ class Importer:
 
                 if existing:
                     # TODO: proper logging
-                    print(f"CityObject (id:{obj_id}) already exists. Updating.")  # noqa
+                    logger.warning(f"CityObject (id:{obj_id}) already exists. Updating.")  # noqa
                     obj_to_update = existing
 
             # get 3D geom, ground geom and bbox
@@ -261,7 +263,7 @@ class Importer:
                 self.current.extension_handler.extra_city_objects,
             )
             if not check_result:
-                print(message)
+                logger.info(message)
 
             # update or insert the object
             # 'or None' is added to change empty json "{}" to database null
@@ -308,7 +310,7 @@ class Importer:
     def process_file(self, filepath) -> None:
         """Process a single cityJSON file"""
         self.current = SingleFileImport(filepath)
-        print("Running import for file: ", filepath)
+        logger.info("Running import for file: %s", filepath)
 
         if filepath.lower() == "stdin":
             f = sys.stdin
@@ -344,7 +346,7 @@ class Importer:
 
     def process_directory(self, dir_path) -> None:
         """Process all files in a directory."""
-        print("Running import for directory: ", dir_path)
+        logger.info("Running import for directory: %s", dir_path)
         ext = ".jsonl"
         for f in os.scandir(dir_path):
             if f.path.endswith(ext):
@@ -381,7 +383,7 @@ class Importer:
             msg = f"Indexing CityObject attribute: '{attr_name}'"
             if is_partial:
                 msg += " with partial index"
-            print(msg)
+            logger.info(msg)
 
             # get proper postgres type
             if attr_name in type_mapping:
@@ -404,7 +406,7 @@ class Importer:
                     conn.execute(text(cmd))
 
             else:
-                print(
+                logger.warning(
                     f"Specified attribute to be indexed: '{attr_name}' does not exist"  # noqa
                 )
 

@@ -4,6 +4,8 @@ from sqlalchemy import (Column, ForeignKey, Integer, String, UniqueConstraint,
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import declarative_base, relationship
 
+from cjdb.logger import logger
+
 Base = declarative_base()
 
 
@@ -44,10 +46,12 @@ class ImportMetaModel(BaseModel):
                 .first()
             )
             if same_source_import:
-                print(
-                    f"\nFile '{self.source_file}' was previously"
-                    + " imported at {same_source_import.finished_at}.\n"
-                    "Use the -g flag to suppress this warning"
+                logger.warning(
+                    "File %s was previously"
+                    " imported at %s.\n"
+                    "Use the -g flag to suppress this warning",
+                    self.source_file,  same_source_import.finished_at
+
                 )
                 user_answer = input(
                     "Should the import continue? "
@@ -69,13 +73,13 @@ class ImportMetaModel(BaseModel):
         )
 
         if different_srid_meta:
-            print("Inconsistent Coordinate Reference Systems detected")
-            print(f"Currently imported SRID: {self.srid}")
-            print(f"Recently imported SRID: {different_srid_meta.srid}")
-            print(
-                "Use the '-I/--srid' flag to reproject everything to",
-                " a single specified CRS or modify source data.",
-            )
+            logger.error("Inconsistent Coordinate Reference Systems detected."
+                         "\nCurrently imported SRID: %s \n"
+                         "Recently imported SRID: %s "
+                         "\nUse the '-I/--srid' flag to reproject everything "
+                         "to a single specified CRS or modify source data.",
+                         self.srid, different_srid_meta.srid
+                         )
             return False
 
         return result_ok
@@ -124,7 +128,11 @@ class FamilyModel(BaseModel):
     parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
     child_id = Column(String, ForeignKey(CjObjectModel.object_id))
 
-    parent = relationship(CjObjectModel, foreign_keys=[parent_id], post_update=True)
-    child = relationship(CjObjectModel, foreign_keys=[child_id], post_update=True)
+    parent = relationship(CjObjectModel,
+                          foreign_keys=[parent_id],
+                          post_update=True)
+    child = relationship(CjObjectModel,
+                         foreign_keys=[child_id],
+                         post_update=True)
 
     parent_child_unique = UniqueConstraint(parent_id, child_id)
