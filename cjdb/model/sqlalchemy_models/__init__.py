@@ -1,3 +1,5 @@
+import sys
+
 from geoalchemy2 import Geometry
 from sqlalchemy import (Column, ForeignKey, Integer, String, UniqueConstraint,
                         func)
@@ -33,11 +35,13 @@ class ImportMetaModel(BaseModel):
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry("Polygon"))
 
-    def compare_existing(self, session, ignore_repeated_file):
+    def compare_existing(self, session, ignore_repeated_file, update_existing):
         result_ok = True
 
         # check if the file was already imported
-        if self.source_file.lower() != "stdin" and not ignore_repeated_file:
+        if self.source_file.lower() != "stdin" and \
+           not ignore_repeated_file and \
+           not update_existing:
             same_source_import = (
                 session.query(ImportMetaModel)
                 .filter_by(source_file=self.source_file)
@@ -60,7 +64,8 @@ class ImportMetaModel(BaseModel):
                     " [y / n]\n"
                 )
                 if user_answer.lower() != "y":
-                    return False
+                    logger.info("Import process terminated by user.")
+                    sys.exit(1)
 
         # check if the CRS is consistent with other imports
         different_srid_meta = (

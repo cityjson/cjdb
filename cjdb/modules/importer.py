@@ -195,7 +195,9 @@ class Importer:
         # compare to existing import metas
         # for example to detect inconsistent CRS from different files
         result_ok = import_meta.compare_existing(
-            self.session, self.args.ignore_repeated_file
+            self.session,
+            self.args.ignore_repeated_file,
+            self.args.update_existing
         )
         if not result_ok:
             raise InvalidMetadataException()
