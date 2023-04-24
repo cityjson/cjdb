@@ -147,37 +147,37 @@ def test_directory_import(engine_postgresql, monkeypatch):
 def test_db_model(engine_postgresql):
     insp = inspect(engine_postgresql)
     assert insp.has_schema("cjdb")
-    assert insp.has_table("cj_object", schema="cjdb")
-    assert insp.has_table("import_meta", schema="cjdb")
-    assert insp.has_table("family", schema="cjdb")
+    assert insp.has_table("city_object", schema="cjdb")
+    assert insp.has_table("cj_metadata", schema="cjdb")
+    assert insp.has_table("city_object_relationship", schema="cjdb")
 
-    cj_object = Table(
-        "cj_object",
+    city_object = Table(
+        "city_object",
         MetaData(),
         schema="cjdb",
         autoload_with=engine_postgresql
     )
 
-    import_meta = Table(
-        "import_meta",
+    cj_metadata = Table(
+        "cj_metadata",
         MetaData(),
         schema="cjdb",
         autoload_with=engine_postgresql
     )
 
-    query_cj_object = select(cj_object).where(
-        cj_object.c.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
+    query_city_object = select(city_object).where(
+        city_object.c.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
     )
-    query_import_meta = select(import_meta).where(
-        import_meta.c.source_file == "vienna.jsonl")
+    query_cj_metadata = select(cj_metadata).where(
+        cj_metadata.c.source_file == "vienna.jsonl")
 
     with Session(engine_postgresql) as session:
-        row = session.execute(query_cj_object).first()
+        row = session.execute(query_city_object).first()
         assert row.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
         assert row.attributes["roofType"] == "FLACHDACH"
         assert row.type == "BuildingPart"
 
-        row = session.execute(query_import_meta).first()
+        row = session.execute(query_cj_metadata).first()
         assert row.source_file == "vienna.jsonl"
         assert row.version == "1.1"
         assert row.transform["scale"] == [0.001, 0.001, 0.001]
@@ -208,20 +208,20 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
     with Importer(engine=engine_postgresql, args=args) as imp:
         imp.run_import()
 
-    import_meta = Table(
-        "import_meta", MetaData(),
+    cj_metadata = Table(
+        "cj_metadata", MetaData(),
         schema="cjdb",
         autoload_with=engine_postgresql
     )
 
-    query_import_meta = (
-        select(import_meta)
-        .where(import_meta.c.extensions.isnot(None))
-        .where(import_meta.c.source_file == "extension.city.jsonl")
+    query_cj_metadata = (
+        select(cj_metadata)
+        .where(cj_metadata.c.extensions.isnot(None))
+        .where(cj_metadata.c.source_file == "extension.city.jsonl")
     )
 
     with Session(engine_postgresql) as session:
-        row = session.execute(query_import_meta).first()
+        row = session.execute(query_cj_metadata).first()
         assert (
             row.extensions["Noise"]["url"]
             == "https://www.cityjson.org/tutorials/files/noise.ext.json"
@@ -245,20 +245,20 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
     with Importer(engine=engine_postgresql, args=args) as imp:
         imp.run_import()
 
-    import_meta = Table(
-        "import_meta", MetaData(),
+    cj_metadata = Table(
+        "cj_metadata", MetaData(),
         schema="cjdb",
         autoload_with=engine_postgresql
     )
 
-    query_import_meta = (
-        select(import_meta)
-        .where(import_meta.c.geometry_templates.isnot(None))
-        .where(import_meta.c.source_file == "geomtemplate.city.jsonl")
+    query_cj_metadata = (
+        select(cj_metadata)
+        .where(cj_metadata.c.geometry_templates.isnot(None))
+        .where(cj_metadata.c.source_file == "geomtemplate.city.jsonl")
     )
 
     with Session(engine_postgresql) as session:
-        row = session.execute(query_import_meta).first()
+        row = session.execute(query_cj_metadata).first()
 
         assert row.geometry_templates["templates"][0]["lod"] == "1"
         assert row.geometry_templates["templates"][0]["type"] == "MultiSurface"

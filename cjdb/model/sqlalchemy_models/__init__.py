@@ -20,8 +20,8 @@ def NullableJSONB():
     return JSONB(none_as_null=True)
 
 
-class ImportMetaModel(BaseModel):
-    __tablename__ = "import_meta"
+class CjMetadataModel(BaseModel):
+    __tablename__ = "cj_metadata"
     __table_args__ = {"schema": "cjdb"}
     source_file = Column(String)
     version = Column(String(10), nullable=False)
@@ -43,10 +43,10 @@ class ImportMetaModel(BaseModel):
            not ignore_repeated_file and \
            not update_existing:
             same_source_import = (
-                session.query(ImportMetaModel)
+                session.query(CjMetadataModel)
                 .filter_by(source_file=self.source_file)
-                .filter(ImportMetaModel.finished_at.isnot(None))
-                .order_by(ImportMetaModel.finished_at.desc())
+                .filter(CjMetadataModel.finished_at.isnot(None))
+                .order_by(CjMetadataModel.finished_at.desc())
                 .first()
             )
             if same_source_import:
@@ -69,10 +69,10 @@ class ImportMetaModel(BaseModel):
 
         # check if the CRS is consistent with other imports
         different_srid_meta = (
-            session.query(ImportMetaModel)
-            .filter(ImportMetaModel.srid != self.srid)
-            .filter(ImportMetaModel.finished_at.isnot(None))
-            .order_by(ImportMetaModel.finished_at.desc())
+            session.query(CjMetadataModel)
+            .filter(CjMetadataModel.srid != self.srid)
+            .filter(CjMetadataModel.finished_at.isnot(None))
+            .order_by(CjMetadataModel.finished_at.desc())
             .first()
         )
 
@@ -90,15 +90,15 @@ class ImportMetaModel(BaseModel):
 
 
 class CjObjectModel(BaseModel):
-    __tablename__ = "cj_object"
+    __tablename__ = "city_object"
     __table_args__ = {"schema": "cjdb"}
-    import_meta_id = Column(Integer, ForeignKey(ImportMetaModel.id))
+    cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id))
     object_id = Column(String, nullable=False, unique=True)
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
     ground_geometry = Column(Geometry("MultiPolygon"))
-    import_meta = relationship(ImportMetaModel)
+    cj_metadata = relationship(CjMetadataModel)
 
     @classmethod
     def get_attributes_and_types(cls, session):
@@ -126,8 +126,8 @@ class CjObjectModel(BaseModel):
         return type_mapping
 
 
-class FamilyModel(BaseModel):
-    __tablename__ = "family"
+class CityObjectRelationshipModel(BaseModel):
+    __tablename__ = "city_object_relationship"
     __table_args__ = {"schema": "cjdb"}
     parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
     child_id = Column(String, ForeignKey(CjObjectModel.object_id))

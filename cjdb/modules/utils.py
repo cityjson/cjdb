@@ -31,7 +31,7 @@ def open_connection(args):
 
 
 # todo - this should take available object types from the official spec
-def get_cj_object_types():
+def get_city_object_types():
     types = object_types.types
 
     type_list = []

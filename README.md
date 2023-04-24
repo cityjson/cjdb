@@ -166,20 +166,20 @@ Password can be specified in the `PGPASSWORD` environment variable. If not speci
 
 - Query an object with a specific id:
 ```SQL
-SELECT * FROM cjdb.cj_object
+SELECT * FROM cjdb.city_object
 WHERE object_id = 'NL.IMBAG.Pand.0503100000000334';
 ```
 
 - Query a building with a specific child
 ```SQL
-SELECT o.* FROM cjdb.family f
-INNER JOIN cjdb.cj_object o ON o.object_id = f.parent_id
+SELECT o.* FROM cjdb.city_object_relationship f
+INNER JOIN cjdb.city_object o ON o.object_id = f.parent_id
 WHERE f.child_id = 'NL.IMBAG.Pand.0503100000000334-0'
 ```
 
 - Query all buildings within a bounding box
 ```SQL
-SELECT * FROM cjdb.cj_object
+SELECT * FROM cjdb.city_object
 WHERE type = 'Building'
 AND ST_Contains(ST_MakeEnvelope(81900.00, 446850.00, 81930.00, 446900.00, 7415), ground_geometry)
 ORDER BY id ASC;
@@ -187,7 +187,7 @@ ORDER BY id ASC;
 
 - Query the building intersecting with a point
 ```SQL
-SELECT * FROM cjdb.cj_object
+SELECT * FROM cjdb.city_object
 WHERE ground_geometry && ST_MakePoint(81915.00, 446850.00)
 AND type = 'Building'
 ORDER BY object_id ASC;
@@ -195,14 +195,14 @@ ORDER BY object_id ASC;
 
 - Query all objects with a slanted roof
 ```SQL
-SELECT * FROM cjdb.cj_object
+SELECT * FROM cjdb.city_object
 WHERE (attributes->'dak_type')::varchar = '"slanted"'
 ORDER BY id ASC;
 ```
 
 - Query all the buildings made after 2000:
 ```SQL
-SELECT * FROM cjdb.cj_object
+SELECT * FROM cjdb.city_object
 WHERE (attributes->'oorspronkelijkbouwjaar')::int > 2000
 AND type = 'Building'
 ORDER BY id ASC;
@@ -211,7 +211,7 @@ ORDER BY id ASC;
 - Query all objects with LOD 1.2
 
 ```SQL
-SELECT * FROM cjdb.cj_object
+SELECT * FROM cjdb.city_object
 WHERE geometry::jsonb @> '[{"lod": 1.2}]'::jsonb
 ```
 
@@ -313,7 +313,7 @@ If that fails, the user will have to download the required grids and put them in
 
 
 ### CityJSON Extensions
-If [CityJSON Extensions](https://www.cityjson.org/extensions/) are present in the imported files, they can be found listed in the `extensions` column in the `import_meta` table.
+If [CityJSON Extensions](https://www.cityjson.org/extensions/) are present in the imported files, they can be found listed in the `extensions` column in the `cj_metadata` table.
 
 The [CityJSON specifications](https://www.cityjson.org/specs/#extensions) mention 3 different extendable features, and the `cjdb` importer deals with them as follows:
 
@@ -323,7 +323,7 @@ No action is taken. These attributes end up in the `attributes` JSONB column.
 
 2. Additional root properties
 
-Additional root properties are placed in the `extra properties` JSONB column in the `import_meta` table.
+Additional root properties are placed in the `extra properties` JSONB column in the `cj_metadata` table.
 
 3. Additional CityObject type
 

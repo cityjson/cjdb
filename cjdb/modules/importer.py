@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from cjdb.logger import logger
 from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
-                                          FamilyModel, ImportMetaModel)
+                                          CityObjectRelationshipModel, CjMetadataModel)
 from cjdb.modules.checks import (check_object_type, check_reprojection,
                                  check_root_properties)
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
@@ -21,7 +21,7 @@ from cjdb.modules.geometric import (get_ground_geometry, get_srid,
                                     reproject_vertex_list,
                                     resolve_geometry_vertices,
                                     transform_vertex)
-from cjdb.modules.utils import (find_extra_properties, get_cj_object_types,
+from cjdb.modules.utils import (find_extra_properties, get_city_object_types,
                                 is_cityjson_object, to_dict)
 
 
@@ -30,12 +30,12 @@ class SingleFileImport:
     def __init__(self, file="stdin"):
         self.file = file
         self.target_srid = None
-        self.import_meta = None  # meta read from the file
+        self.cj_metadata = None  # meta read from the file
         self.source_srid = None
         self.extension_handler = (
             None  # data about extensions - extra properties, root attributes
         )
-        self.cj_objects = []
+        self.city_objects = []
         self.families = []
 
 
@@ -45,7 +45,7 @@ class Importer:
         self.engine = engine
         self.args = args
         # get allowed types for validation
-        self.cj_object_types = get_cj_object_types()
+        self.city_object_types = get_city_object_types()
         self.current = SingleFileImport()
 
         for table in BaseModel.metadata.tables.values():
@@ -67,7 +67,7 @@ class Importer:
         # post import operations like clustering, indexing...
         if not self.args.append_mode:
             self.post_import()
-        self.current.import_meta.finished_at = func.now()
+        self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
         logger.info(f"Imported from {self.args.filepath} successfully")
 
@@ -113,7 +113,7 @@ class Importer:
             conn.execute(text(cmd))
         self.index_attributes()
 
-    def extract_import_metadata(self, line_json):
+    def extract_cj_metadatadata(self, line_json):
         if "metadata" not in line_json:
             raise InvalidMetadataException("The file should contain a member"
                                            "'metadata', in the first object")
@@ -180,7 +180,7 @@ class Importer:
         )
 
         # "or None" is added to change empty json "{}" to database null
-        import_meta = ImportMetaModel(
+        cj_metadata = CjMetadataModel(
             source_file=os.path.basename(self.current.file),
             version=line_json["version"],
             meta=line_json.get("metadata") or None,
@@ -194,7 +194,7 @@ class Importer:
 
         # compare to existing import metas
         # for example to detect inconsistent CRS from different files
-        result_ok = import_meta.compare_existing(
+        result_ok = cj_metadata.compare_existing(
             self.session,
             self.args.ignore_repeated_file,
             self.args.update_existing
@@ -203,9 +203,9 @@ class Importer:
             raise InvalidMetadataException()
 
         # add metadata to the database
-        import_meta.__table__.schema = self.args.db_schema
-        self.current.import_meta = import_meta
-        self.session.add(import_meta)
+        cj_metadata.__table__.schema = self.args.db_schema
+        self.current.cj_metadata = cj_metadata
+        self.session.add(cj_metadata)
         self.session.commit()
 
     def process_line(self, line_json) -> None:
@@ -213,7 +213,7 @@ class Importer:
         # the CityJSON transform
         # this is done once for the CityJSONFeature
         vertices = [
-            transform_vertex(v, self.current.import_meta.transform)
+            transform_vertex(v, self.current.cj_metadata.transform)
             for v in line_json["vertices"]
         ]
 
@@ -230,7 +230,7 @@ class Importer:
             vertices = reproject_vertex_list(vertices, *source_target_srid)
 
         # list of relationships for the CityJSONFeature
-        family_ties = []
+        city_object_relationship_ties = []
         # objects for the CityJSONFeature
         cj_feature_objects = {}
 
@@ -260,7 +260,7 @@ class Importer:
             # spec or extension
             check_result, message = check_object_type(
                 cityobj.get("type"),
-                self.cj_object_types,
+                self.city_object_types,
                 self.current.extension_handler.extra_city_objects,
             )
             if not check_result:
@@ -269,14 +269,14 @@ class Importer:
             # update or insert the object
             # 'or None' is added to change empty json "{}" to database null
             if obj_to_update:
-                cj_object = obj_to_update
-                cj_object.type = cityobj.get("type")
-                cj_object.attributes = cityobj.get("attributes") or None
-                cj_object.geometry = geometry
-                cj_object.ground_geometry = ground_geometry
-                cj_object.import_meta = self.current.import_meta
+                city_object = obj_to_update
+                city_object.type = cityobj.get("type")
+                city_object.attributes = cityobj.get("attributes") or None
+                city_object.geometry = geometry
+                city_object.ground_geometry = ground_geometry
+                city_object.cj_metadata = self.current.cj_metadata
             else:
-                cj_object = CjObjectModel(
+                city_object = CjObjectModel(
                     object_id=obj_id,
                     type=cityobj.get("type"),
                     attributes=cityobj.get("attributes") or None,
@@ -285,26 +285,26 @@ class Importer:
                 )
 
                 # add CityJson object to the database
-                cj_object.__table__.schema = self.args.db_schema
-                cj_object.import_meta_id = self.current.import_meta.id
-                self.current.cj_objects.append(to_dict(cj_object))
+                city_object.__table__.schema = self.args.db_schema
+                city_object.cj_metadata_id = self.current.cj_metadata.id
+                self.current.city_objects.append(to_dict(city_object))
 
-            cj_feature_objects[obj_id] = cj_object
+            cj_feature_objects[obj_id] = city_object
 
             # save children-parent links
             for child_id in cityobj.get("children", []):
-                family_ties.append((obj_id, child_id))
+                city_object_relationship_ties.append((obj_id, child_id))
 
                 # delete previous ties if updating object
                 if obj_to_update:
-                    children = self.session.query(FamilyModel).filter_by(
+                    children = self.session.query(CityObjectRelationshipModel).filter_by(
                         child_id=child_id
                     )
                     children.delete()
 
         # create children-parent links after all objects
         # from the CityJSONFeature already exist
-        for parent_id, child_id in family_ties:
+        for parent_id, child_id in city_object_relationship_ties:
             self.current.families.append({"parent_id": parent_id,
                                           "child_id": child_id})
 
@@ -322,27 +322,27 @@ class Importer:
         first_line_json = json.loads(first_line.rstrip("\n"))
         if not is_cityjson_object(first_line_json):
             raise InvalidCityJSONObjectException()
-        self.extract_import_metadata(first_line_json)
+        self.extract_cj_metadatadata(first_line_json)
         for line in f.readlines():
             line_json = json.loads(line.rstrip("\n"))
             self.process_line(line_json)
 
-        if self.current.cj_objects:
+        if self.current.city_objects:
             obj_insert = (
                 insert(CjObjectModel)
-                .values(self.current.cj_objects)
+                .values(self.current.city_objects)
                 .on_conflict_do_nothing()
             )
             self.session.execute(obj_insert)
 
         if self.current.families:
-            family_insert = (
-                insert(FamilyModel)
+            city_object_relationship_insert = (
+                insert(CityObjectRelationshipModel)
                 .values(self.current.families)
                 .on_conflict_do_nothing()
             )  # noqa
-            self.session.execute(family_insert)
-        self.current.import_meta.finished_at = func.now()
+            self.session.execute(city_object_relationship_insert)
+        self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
 
     def process_directory(self, dir_path) -> None:
@@ -421,7 +421,7 @@ class Importer:
         geometry = resolve_geometry_vertices(
             cityobj["geometry"],
             vertices,
-            self.current.import_meta.geometry_templates,
+            self.current.cj_metadata.geometry_templates,
             source_target_srid,
         )
 
