@@ -230,7 +230,7 @@ class Importer:
             vertices = reproject_vertex_list(vertices, *source_target_srid)
 
         # list of relationships for the CityJSONFeature
-        city_object_relationship_ties = []
+        city_object_relationships_ties = []
         # objects for the CityJSONFeature
         cj_feature_objects = {}
 
@@ -293,7 +293,7 @@ class Importer:
 
             # save children-parent links
             for child_id in cityobj.get("children", []):
-                city_object_relationship_ties.append((obj_id, child_id))
+                city_object_relationships_ties.append((obj_id, child_id))
 
                 # delete previous ties if updating object
                 if obj_to_update:
@@ -304,7 +304,7 @@ class Importer:
 
         # create children-parent links after all objects
         # from the CityJSONFeature already exist
-        for parent_id, child_id in city_object_relationship_ties:
+        for parent_id, child_id in city_object_relationships_ties:
             self.current.families.append({"parent_id": parent_id,
                                           "child_id": child_id})
 
@@ -336,12 +336,12 @@ class Importer:
             self.session.execute(obj_insert)
 
         if self.current.families:
-            city_object_relationship_insert = (
+            city_object_relationships_insert = (
                 insert(CityObjectRelationshipModel)
                 .values(self.current.families)
                 .on_conflict_do_nothing()
             )  # noqa
-            self.session.execute(city_object_relationship_insert)
+            self.session.execute(city_object_relationships_insert)
         self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
 

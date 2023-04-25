@@ -127,7 +127,7 @@ class CjObjectModel(BaseModel):
 
 
 class CityObjectRelationshipModel(BaseModel):
-    __tablename__ = "city_object_relationship"
+    __tablename__ = "city_object_relationships"
     __table_args__ = {"schema": "cjdb"}
     parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
     child_id = Column(String, ForeignKey(CjObjectModel.object_id))

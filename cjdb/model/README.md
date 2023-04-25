@@ -7,7 +7,7 @@ cjdb data model is designed to store CityJSONL files in a Postgres database.
 ### [2. Table Structure](#table_structure)
  - [metadata](#metadata)
  - [city_object](#city_object)
- - [city_object_relationship](#city_object_relationship)
+ - [city_object_relationships](#city_object_relationships)
 
 ### [3. Indexing](#Indexing)
 
@@ -27,7 +27,7 @@ The conceptual data model contains two main tables. The **cj_metadata** table fo
 ![UML drawio](https://user-images.githubusercontent.com/92783160/200633172-e33fc6ae-26b4-4b16-a2a7-968cc9a34d5e.png)
 
 
-The physical data model adds one more table on the conceptual data model: the **city_object_relationship** table to store relations between city objects, e.g the parent-children relationship. This table is added to achieve higher querying speed when selecting objects by their parent/child relationship. Example of this would be: "give me all the objects which are children of X". 
+The physical data model adds one more table on the conceptual data model: the **city_object_relationships** table to store relations between city objects, e.g the parent-children relationship. This table is added to achieve higher querying speed when selecting objects by their parent/child relationship. Example of this would be: "give me all the objects which are children of X". 
 
 
 ![Physical Model drawio (3)](https://user-images.githubusercontent.com/92783160/200633220-92f95184-edce-44b9-bfa9-7db5fccbfc0e.png)
@@ -62,10 +62,10 @@ The city_object model stores individual city objects, for instance buildings, ro
 **geometry**: [cityJSON geometry](https://www.cityjson.org/specs/#geometry-objects), a JSON object that describes the geometry of the city object.<br/>
 **ground_geometry**: ground geometry of the city object, in geometry type.<br/>
 
-### 3. city_object_relationship <a name="city_object_relationship"></a>
-The city_object_relationship model stores the relations between city objects.
+### 3. city_object_relationships <a name="city_object_relationships"></a>
+The city_object_relationships model stores the relations between city objects.
 
-**id**: city_object_relationship object's index within the database.<br/>
+**id**: city_object_relationships object's index within the database.<br/>
 **parent_id**: the identification id of the parent object.<br/>
 **child_id**: the identification id of the child object.<br/>
 

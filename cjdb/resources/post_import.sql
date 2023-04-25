@@ -10,10 +10,10 @@ CREATE INDEX IF NOT EXISTS city_object_ground_gix ON {schema}.city_object USING 
 
 CREATE INDEX lod ON {schema}.city_object USING gin (geometry);
 
--- city_object_relationship indexes
-CREATE INDEX IF NOT EXISTS city_object_relationship_parent_idx ON {schema}.city_object_relationship USING btree(parent_id);
+-- city_object_relationships indexes
+CREATE INDEX IF NOT EXISTS city_object_relationships_parent_idx ON {schema}.city_object_relationships USING btree(parent_id);
 
-CREATE INDEX IF NOT EXISTS city_object_relationship_child_idx ON {schema}.city_object_relationship USING btree(child_id);
+CREATE INDEX IF NOT EXISTS city_object_relationships_child_idx ON {schema}.city_object_relationships USING btree(child_id);
 
 -- clustering
 cluster {schema}.cj_metadata USING cj_metadata_gix;

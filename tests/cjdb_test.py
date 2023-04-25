@@ -149,7 +149,7 @@ def test_db_model(engine_postgresql):
     assert insp.has_schema("cjdb")
     assert insp.has_table("city_object", schema="cjdb")
     assert insp.has_table("cj_metadata", schema="cjdb")
-    assert insp.has_table("city_object_relationship", schema="cjdb")
+    assert insp.has_table("city_object_relationships", schema="cjdb")
 
     city_object = Table(
         "city_object",
