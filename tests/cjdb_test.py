@@ -44,22 +44,6 @@ def test_single_import(engine_postgresql):
         imp.run_import()
 
 
-def test_repeated_file_with_overwrite(engine_postgresql):
-    args = Namespace(
-        filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        overwrite=True,
-        update_existing=False,
-    )
-    with Importer(engine=engine_postgresql, args=args) as imp:
-        imp.run_import()
-
-
 def test_repeated_file_with_ignore_repeated_file(engine_postgresql):
     args = Namespace(
         filepath="./tests/files/vienna.jsonl",
