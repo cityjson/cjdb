@@ -76,10 +76,6 @@ class Importer:
         the schema and the tables."""
         with self.engine.connect() as conn:
             conn.execute(text("""CREATE EXTENSION IF NOT EXISTS postgis"""))
-            if self.args.overwrite:
-                conn.execute(text(f"""DROP SCHEMA
-                             IF EXISTS {self.args.db_schema}
-                             CASCADE"""))
             conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
                                   {self.args.db_schema}"""))
             conn.commit()
