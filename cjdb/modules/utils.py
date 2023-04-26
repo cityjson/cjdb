@@ -1,7 +1,5 @@
 from typing import Any, Dict
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
 from sqlalchemy import create_engine
 
 from cjdb.resources import object_types
@@ -22,18 +20,6 @@ def get_db_engine(db_user, db_password, db_host, db_port, db_name, echo=False):
     engine = create_engine(conn_string, echo=echo)
 
     return engine
-
-
-def open_connection(db_user, db_host, db_port, db_name):
-    conn = psycopg2.connect(
-        database=db_name,
-        host=db_host,
-        user=db_user,
-        port=db_port,
-        cursor_factory=RealDictCursor,
-    )
-
-    return conn
 
 
 # todo - this should take available object types from the official spec
