@@ -96,10 +96,6 @@ Run in append mode (as opposed to default create mode). This assumes the databas
 
 Default: False
 
-`-o, --overwrite`
-Overwrite the data that is currently in the database schema. Warning: this causes the loss of what was imported before to the database schema.
-
-Default: False
 
 `-u, --update-existing`
 Check if the object with given ID exists before inserting, and update it if it does. The old object will be updated with the new object’s properties.

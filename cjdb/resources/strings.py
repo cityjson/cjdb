@@ -41,11 +41,6 @@ append_help = (
     "new data is to be appended."
 )
 
-overwrite_help = (
-    "Overwrite the data that is currently in the database schema. "
-    "Warning: this causes the loss of what was imported before "
-    "to the database schema."
-)
 
 ignore_file_help = (
     "Ignore repeated file names warning when importing. "
