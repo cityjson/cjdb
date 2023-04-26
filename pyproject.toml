@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["CityJSON", "PostgreSQL"]
 
 [tool.poetry.scripts]
-cjdb = "cjdb.main:main"
+cjdb = "cjdb.cli:cjdb"
 
 [tool.poetry.dependencies]
 python = "^3.11"

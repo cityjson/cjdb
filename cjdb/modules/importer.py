@@ -41,15 +41,25 @@ class SingleFileImport:
 
 # importer class called once per whole import
 class Importer:
-    def __init__(self, engine, args):
+    def __init__(self, engine, filepath, append_mode, db_schema, target_srid,
+                 indexed_attributes, partial_indexed_attributes,
+                 ignore_repeated_file, update_existing):
         self.engine = engine
-        self.args = args
+        self.filepath = filepath
+        self.append_mode = append_mode
+        self.db_schema = db_schema
+        self.target_srid = target_srid
+        self.indexed_attributes = indexed_attributes
+        self.partial_indexed_attributes = partial_indexed_attributes
+        self.ignore_repeated_file = ignore_repeated_file
+        self.update_existing = update_existing
+
         # get allowed types for validation
         self.city_object_types = get_city_object_types()
         self.current = SingleFileImport()
 
         for table in BaseModel.metadata.tables.values():
-            table.schema = self.args.db_schema
+            table.schema = self.db_schema
 
     def __enter__(self):
         self.session = Session(self.engine)
@@ -60,16 +70,16 @@ class Importer:
 
     def run_import(self) -> None:
         # create model if in create mode, else append data
-        if not self.args.append_mode:
+        if not self.append_mode:
             self.prepare_database()
         self.parse_cityjson()
         self.session.commit()
         # post import operations like clustering, indexing...
-        if not self.args.append_mode:
+        if not self.append_mode:
             self.post_import()
         self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
-        logger.info(f"Imported from {self.args.filepath} successfully")
+        logger.info(f"Imported from {self.filepath} successfully")
 
     def prepare_database(self) -> None:
         """Adds the postgis extension and creates
@@ -77,7 +87,7 @@ class Importer:
         with self.engine.connect() as conn:
             conn.execute(text("""CREATE EXTENSION IF NOT EXISTS postgis"""))
             conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
-                                  {self.args.db_schema}"""))
+                                  {self.db_schema}"""))
             conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
@@ -85,7 +95,7 @@ class Importer:
 
     def parse_cityjson(self) -> None:
         """Parses the input path."""
-        source_path = self.args.filepath
+        source_path = self.filepath
 
         if os.path.isfile(source_path) or source_path.lower() == "stdin":
             self.process_file(source_path)
@@ -104,7 +114,7 @@ class Importer:
         sql_path = os.path.join(cur_path.parent, "resources/post_import.sql")
 
         with open(sql_path) as f:
-            cmd = f.read().format(schema=self.args.db_schema)
+            cmd = f.read().format(schema=self.db_schema)
         with self.engine.connect() as conn:
             conn.execute(text(cmd))
         self.index_attributes()
@@ -124,12 +134,12 @@ class Importer:
 
         # use specified target SRID for all the geometries
         # If not specified use same as source.
-        if self.args.target_srid and self.current.source_srid:
-            self.current.target_srid = self.args.target_srid
+        if self.target_srid and self.current.source_srid:
+            self.current.target_srid = self.target_srid
             check_reprojection(self.current.source_srid,
                                self.current.target_srid)
-        elif self.args.target_srid:
-            self.current.target_srid = self.args.target_srid
+        elif self.target_srid:
+            self.current.target_srid = self.target_srid
         else:
             self.current.target_srid = self.current.source_srid
 
@@ -192,14 +202,14 @@ class Importer:
         # for example to detect inconsistent CRS from different files
         result_ok = cj_metadata.compare_existing(
             self.session,
-            self.args.ignore_repeated_file,
-            self.args.update_existing
+            self.ignore_repeated_file,
+            self.update_existing
         )
         if not result_ok:
             raise InvalidMetadataException()
 
         # add metadata to the database
-        cj_metadata.__table__.schema = self.args.db_schema
+        cj_metadata.__table__.schema = self.db_schema
         self.current.cj_metadata = cj_metadata
         self.session.add(cj_metadata)
         self.session.commit()
@@ -236,7 +246,7 @@ class Importer:
 
             # optionally check if the object exists -
             # to skip it or update it
-            if self.args.update_existing:
+            if self.update_existing:
                 existing = (
                     self.session.query(CjObjectModel)
                     .filter_by(object_id=obj_id)
@@ -281,7 +291,7 @@ class Importer:
                 )
 
                 # add CityJson object to the database
-                city_object.__table__.schema = self.args.db_schema
+                city_object.__table__.schema = self.db_schema
                 city_object.cj_metadata_id = self.current.cj_metadata.id
                 self.current.city_objects.append(to_dict(city_object))
 
@@ -370,9 +380,9 @@ class Importer:
 
         # prepare partial and non partial indexes in one list
         attributes = [
-            (a, True) for a in self.args.partial_indexed_attributes
+            (a, True) for a in self.partial_indexed_attributes
         ] + [  # noqa
-            (a, False) for a in self.args.indexed_attributes
+            (a, False) for a in self.indexed_attributes
         ]
 
         # for each attribute to be indexed
