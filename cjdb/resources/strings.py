@@ -61,3 +61,7 @@ update_existing = (
     "update it if it does. "
     "The old object will be updated with the new object's properties."
 )
+
+output_help = (
+    "Name of the output file. Default name: 'cj_export.city.json' "
+)

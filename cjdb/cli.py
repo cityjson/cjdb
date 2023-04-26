@@ -103,16 +103,22 @@ def import_cj(
 
 
 @cjdb.command(name="export")
+@click.argument("query", type=str)
 @click.option("--host", "-H", type=str, default="localhost", help=s.host_help)
 @click.option("--port", "-p", type=int, default=5432, help=s.port_help)
 @click.option("--user", "-U", type=str, required=True, help=s.user_help)
-@click.password_option(help=s.password_help)
+@click.password_option(
+    help=s.password_help,
+    prompt="Password for database user",
+    confirmation_prompt=False
+)
 @click.option("--database", "-d",
               type=str,
               required=True,
               help=s.database_help)
 @click.option("--schema", "-s", type=str, default="cjdb", help=s.schema_help)
-def export_cj(host, port, user, password, database, schema):
+@click.option("--output", "-o", type=str, default="cj_export.city.json", help=s.output_help)
+def export_cj(query, host, port, user, password, database, schema, output):
     """Export CityJSONL files to a PostgreSQL database."""
     # TODO: add exporter
     raise NotImplementedError("WIP: Exporter under construction")
