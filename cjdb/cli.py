@@ -36,7 +36,7 @@ def cjdb(ctx):
               required=True,
               help=s.database_help)
 @click.option("--schema", "-s", type=str, default="cjdb", help=s.schema_help)
-@click.option("--append", "-a", type=bool, default=True, help=s.append_help)
+@click.option("--append", "-a", type=bool, default=False, help=s.append_help)
 @click.option("--srid", "-I", "target_srid",
               type=int,
               default=None,
@@ -44,7 +44,8 @@ def cjdb(ctx):
 @click.option(
     "--attr-index", "-x",
     "indexed_attributes",
-    type=str, default=[],
+    type=str,
+    multiple=True,
     help=s.index_help
 )
 @click.option(
@@ -52,7 +53,7 @@ def cjdb(ctx):
     "-px",
     "partial_indexed_attributes",
     type=str,
-    default=[],
+    multiple=True,
     help=s.partial_index_help,
 )
 @click.option(
@@ -117,7 +118,10 @@ def import_cj(
               required=True,
               help=s.database_help)
 @click.option("--schema", "-s", type=str, default="cjdb", help=s.schema_help)
-@click.option("--output", "-o", type=str, default="cj_export.city.json", help=s.output_help)
+@click.option("--output", "-o",
+              type=str,
+              default="cj_export.city.json",
+              help=s.output_help)
 def export_cj(query, host, port, user, password, database, schema, output):
     """Export CityJSONL files to a PostgreSQL database."""
     # TODO: add exporter
