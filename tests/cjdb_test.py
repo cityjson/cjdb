@@ -1,5 +1,4 @@
 import io
-from argparse import Namespace
 
 import pytest
 from pytest_postgresql.janitor import DatabaseJanitor

@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from cjdb.logger import logger
 from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
-                                          CityObjectRelationshipModel, CjMetadataModel)
+                                          CityObjectRelationshipModel,
+                                          CjMetadataModel)
 from cjdb.modules.checks import (check_object_type, check_reprojection,
                                  check_root_properties)
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
@@ -303,7 +304,8 @@ class Importer:
 
                 # delete previous ties if updating object
                 if obj_to_update:
-                    children = self.session.query(CityObjectRelationshipModel).filter_by(
+                    children = self.session.query(
+                        CityObjectRelationshipModel).filter_by(
                         child_id=child_id
                     )
                     children.delete()
