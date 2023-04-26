@@ -17,6 +17,15 @@ for soon-to-be removed features.
 
 `Security` in case of vulnerabilities.
 
+
+## [1.3.0] - 2023-04-26
+
+`Changed`
+- click instead of arg_parser
+
+`Removed`
+- overwrite
+
 ## [1.2.0] - 2023-04-12
 Version 1.2.0
 
