@@ -1,7 +1,7 @@
 # cjdb
 [![MIT badge](https://img.shields.io/pypi/l/cjdb)](LICENSE) &nbsp; [![PyPI](https://img.shields.io/pypi/v/cjdb)](https://pypi.org/project/cjdb)
 
-`cjdb` is a Python based importer of CityJSONL files to a PostgreSQL database. It requires the [PostGIS](https://postgis.net/) extension.
+`cjdb` is a Python based importer/exporter of CityJSONL files to and from a PostgreSQL database. It requires the [PostGIS](https://postgis.net/) extension.
 
 Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powalka
 
@@ -13,7 +13,8 @@ Maintainer: Gina Stavropoulou
 - [Using pip](#using-pip)
 - [Using Docker](#using-docker)
 ### [3.Usage](#3-usage)
-- [CLI](#cli)
+- [Importer](#importer)
+- [Exporter](#exporter)
 - [Quickstart](#quickstart)
 - [Basic Queries](#basic-queries)
 ### [4.Local development](#4-local-development)
@@ -54,14 +55,18 @@ docker run --rm -it cjdb cjdb --help
 
 To import some files, the `-v` option is needed to mount our local file directory in the container:
 ```bash
-docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
+docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb import -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
 ```
-## 3. Usage <a name="usage"></a>
-
-### CLI <a name="cli"></a>
+## 3. Usage
 
 ```bash
-cj2pgsql [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [-W DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-I TARGET_SRID][-x INDEXED_ATTRIBUTES] [-px PARTIAL_INDEXED_ATTRIBUTES] [-g] [-a | -o] [-e | -u] [file_or_directory]
+cjdb --help
+```
+
+### Importer
+
+```bash
+cjdb import [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-I TARGET_SRID][-x INDEXED_ATTRIBUTES] [-px PARTIAL_INDEXED_ATTRIBUTES] [-g] [-a] [file_or_directory]
 ```
 #### Positional Arguments
 file_or_directory
@@ -96,10 +101,6 @@ Run in append mode (as opposed to default create mode). This assumes the databas
 
 Default: False
 
-`-o, --overwrite`
-Overwrite the data that is currently in the database schema. Warning: this causes the loss of what was imported before to the database schema.
-
-Default: False
 
 `-u, --update-existing`
 Check if the object with given ID exists before inserting, and update it if it does. The old object will be updated with the new object’s properties.
@@ -129,7 +130,44 @@ PostgreSQL database name
 `-s, --schema`
 Target database schema
 
-Default: “public”
+Default: “cjdb”
+
+
+### Exporter
+
+```bash
+cjdb export [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [query]
+```
+#### Positional Arguments
+query
+
+
+#### Named Arguments
+
+#### Database connection arguments
+`-H, --host`
+PostgreSQL database host
+
+Default: “localhost”
+
+`-p, --port`
+PostgreSQL database port
+
+Default: 5432
+
+`-U, --user`
+PostgreSQL database user name
+
+`-W, --password`
+PostgreSQL database user password
+
+`-d, --database`
+PostgreSQL database name
+
+`-s, --schema`
+Target database schema
+
+Default: “cjdb”
 
 ### Quickstart
 
@@ -147,13 +185,18 @@ cjio --suppress_msg tile_901.json export jsonl tile_901.jsonl
 
 3. Import CityJSONL to the database
 ```bash
-PGPASSWORD=postgres cjdb -H localhost -U postgres -d postgres -s cjdb -o tile_901.jsonl   
+cjdb import -H localhost -U postgres -d postgres -s cjdb  tile_901.jsonl
 ```
 
-**Alternatively steps 1 and 2 in a single command:**
+4. Export CityJSONL from the database
+```bash
+cjdb export -H localhost -U postgres -d postgres -s cjdb  "..."
+```
+
+**Alternatively steps 1 and 3 in a single command:**
 
 ```bash
-cjio --suppress_msg tile_901.json export jsonl stdout | cjdb -H localhost -U postgres -d postgres -s cjdb -o
+cjio --suppress_msg tile_901.json export jsonl stdout | cjdb -H localhost -U postgres -d postgres -s cjdb
 ```
 
 The metadata and the objects can then be found in the tables in the specified schema (`cjdb` in this example).

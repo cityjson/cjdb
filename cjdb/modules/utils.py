@@ -7,10 +7,10 @@ from sqlalchemy import create_engine
 from cjdb.resources import object_types
 
 
-def get_db_engine(args, echo=False):
+def get_db_engine(db_user, db_password, db_host, db_port, db_name, echo=False):
     conn_string = (
-        f"postgresql://{args.db_user}:{args.db_password}"
-        f"@{args.db_host}:{args.db_port}/{args.db_name}"
+        f"postgresql://{db_user}:{db_password}"
+        f"@{db_host}:{db_port}/{db_name}"
     )
 
     engine = create_engine(conn_string, echo=echo)
@@ -18,12 +18,12 @@ def get_db_engine(args, echo=False):
     return engine
 
 
-def open_connection(args):
+def open_connection(db_user, db_host, db_port, db_name):
     conn = psycopg2.connect(
-        database=args.db_name,
-        host=args.db_host,
-        user=args.db_user,
-        port=args.db_port,
+        database=db_name,
+        host=db_host,
+        user=db_user,
+        port=db_port,
         cursor_factory=RealDictCursor,
     )
 
