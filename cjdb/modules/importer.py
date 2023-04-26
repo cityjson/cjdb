@@ -10,12 +10,13 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from cjdb.logger import logger
-from cjdb.model.sqlalchemy_models import (BaseModel, CjObjectModel,
+from cjdb.model.sqlalchemy_models import (BaseModel,
                                           CityObjectRelationshipModel,
-                                          CjMetadataModel)
+                                          CjMetadataModel, CjObjectModel)
 from cjdb.modules.checks import (check_object_type, check_reprojection,
                                  check_root_properties)
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
+                                     InvalidFileException,
                                      InvalidMetadataException)
 from cjdb.modules.extensions import ExtensionHandler
 from cjdb.modules.geometric import (get_ground_geometry, get_srid,
@@ -23,7 +24,7 @@ from cjdb.modules.geometric import (get_ground_geometry, get_srid,
                                     resolve_geometry_vertices,
                                     transform_vertex)
 from cjdb.modules.utils import (find_extra_properties, get_city_object_types,
-                                is_cityjson_object, to_dict)
+                                is_cityjson_object, is_valid_file, to_dict)
 
 
 # class to store variables per file import - for clarity
@@ -324,6 +325,8 @@ class Importer:
         if filepath.lower() == "stdin":
             f = sys.stdin
         else:
+            if not is_valid_file(filepath):
+                raise InvalidFileException()
             f = open(filepath, "rt")
 
         first_line = f.readline()

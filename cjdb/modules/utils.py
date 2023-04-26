@@ -7,6 +7,12 @@ from sqlalchemy import create_engine
 from cjdb.resources import object_types
 
 
+def is_valid_file(filepath: str) -> bool:
+    if filepath.endswith('.jsonl'):
+        return True
+    return False
+
+
 def get_db_engine(db_user, db_password, db_host, db_port, db_name, echo=False):
     conn_string = (
         f"postgresql://{db_user}:{db_password}"

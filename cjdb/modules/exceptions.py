@@ -26,3 +26,19 @@ class InvalidCityJSONObjectException(Exception):
         else:
             return """InvalidCityJSONObjectException: the first object of the
                       file should be a valid CityJSON object."""
+
+
+class InvalidFileException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"InvalidFileException: {self.msg}"
+        else:
+            return ("InvalidFileException: The file should be a "
+                    ".jsonl file. Use cjio to convert your city.json "
+                    "file to city.jsonl.")
