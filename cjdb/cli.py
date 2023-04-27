@@ -19,7 +19,7 @@ from cjdb.resources import strings as s
 )
 @click.pass_context
 def cjdb(ctx):
-    logger.info("CJDB Importer/Exporter!")
+    logger.info("cjdb importer/exporter!")
 
 
 @cjdb.command(name="import")
