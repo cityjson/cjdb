@@ -1,4 +1,5 @@
 import click
+import os
 from cjdb.logger import logger
 
 from cjdb import __version__
@@ -119,13 +120,24 @@ def import_cj(
               required=True,
               help=s.database_help)
 @click.option("--schema", "-s", type=str, default="cjdb", help=s.schema_help)
-def export_cj(query, host, port, user, password, database, schema):
-    """Export a CityJSONL stream to stdout."""
+@click.option("--output", "-o",
+              type=str,
+              default="cj_export.jsonl",
+              help=s.output_help)
+def export_cj(query, host, port, user, password, database, schema, output):
+    """Export a CityJSONL stream to a file."""
+    #-- where to save the file
+    base = os.path.basename(output)
+    dirname = os.path.abspath(os.path.dirname(output))
+    if not os.path.exists(dirname): # parent directory must exist
+        raise click.ClickException('Output path does not exist: "%s"' % (dirname))
+    output_abs = os.path.join(dirname, base)
     conn = get_db_psycopg_conn(user, password, host, port, database)
     with Exporter(
         conn,
         schema,
         query,
+        output_abs
     ) as exp:
         exp.run_export()
 

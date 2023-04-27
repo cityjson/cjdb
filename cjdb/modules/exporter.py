@@ -13,40 +13,41 @@ from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
 
 # exporter class
 class Exporter:
-    def __init__(self, connection, schema, sqlquery):
+    def __init__(self, connection, schema, sqlquery, output):
         self.connection = connection
         self.schema = schema
         self.sqlquery = sqlquery
+        self.fout = open(output, 'w')
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.connection.close()
+        self.fout.close()
 
     def run_export(self) -> None:
-        print("exporting...")
         cur = self.connection.cursor()
         #-- Fetch all the IDs (user-defined)
         # cur.execute("select cjo.id from cjdb.city_object cjo where cjo.type = 'TINRelief';")
         # cur.execute("select cjo.id from cjdb.city_object cjo where (attributes->'AbsoluteEavesHeight')::float > 20.1 order by id asc;")
+        # TODO: add the schema to the query? It's unclear for the user really...
         cur.execute(self.sqlquery)
         rows = cur.fetchall()
         query_ids = list(map(lambda x: x[0], rows))
         if len(query_ids) == 0:
-            sys.exit() # TODO: return better error here
+            logger.error(f"Query returns no city object IDs")
+            return
 
         cur.execute(
             sql.SQL("select cjo.* from {}.city_object cjo where id = any (%s)")
                      .format(sql.Identifier(self.schema)),
             (query_ids,)
         )
-        # cur.execute("select cjo.* from {%s}.city_object cjo where id = any (%s);", (self.schema, query_ids,))
         rows = cur.fetchall()
         bboxmin = self.find_min_bbox(rows)
 
         #-- first line of the CityJSONL stream
-        # cur.execute("select m.* from {%s}.cj_metadata m;", (self.schema,))
         cur.execute(
             sql.SQL("select m.* from {}.cj_metadata m")
                      .format(sql.Identifier(self.schema))
@@ -64,7 +65,7 @@ class Exporter:
         j["metadata"] = {}
         j["metadata"]["referenceSystem"] = meta1[2]["referenceSystem"]
         # TODO: what do we do with other metadata? Cannot merge really... so only CRS
-        sys.stdout.write(json.dumps(j, separators=(',', ':')) + '\n')
+        self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
 
         q = sql.SQL(
              "select cjo.object_id from {}.city_object cjo \
@@ -131,9 +132,9 @@ class Exporter:
                             j["CityObjects"][each]["geometry"] = g2
                 j["vertices"] = vertices
                 j = self.remove_duplicate_vertices(j)
-                sys.stdout.write(json.dumps(j, separators=(',', ':')) + '\n')
+                self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
+        logger.info(f"Exported succesfully (part of) the database to '{self.fout.name}'")
 
-        logger.info(f"Exported (part of) database successfully")
 
     def find_min_bbox(self, rows):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
@@ -157,6 +158,7 @@ class Exporter:
                                         if vertex[i] < bboxmin[i]:
                                             bboxmin[i] = vertex[i]
                     else:
+                        # TODO: implement for MultiSolid
                         print("GEOMETRY NOT SUPPORTED YET")
         return bboxmin
 
@@ -193,6 +195,7 @@ class Exporter:
         j["vertices"] = newv2
         return j
 
+
     def reference_vertices_in_cjf(self, gs, imp_digits, translate, offset=0):
         vertices = []
         if gs is None:
@@ -220,7 +223,8 @@ class Exporter:
                             v = [0., 0., 0.]
                             for r in range(3):
                                 v[r] = int((p % (vertex[r] - translate[r])).replace('.', ''))
-                            vertices.append(v)                            
+                            vertices.append(v)  
+            # TODO: MultiSolid                          
         return (gs2, vertices)
 
 
