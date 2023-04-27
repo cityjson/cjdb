@@ -68,10 +68,9 @@ class Exporter:
         # TODO: what do we do with other metadata? Cannot merge really... so only CRS
         self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
 
-        # TODO: if a feature has both parent and children then this fails, FIXME
         q = sql.SQL(
              "select cjo.object_id from {}.city_object cjo \
-             left join {}.city_object_relationship f \
+             left join {}.city_object_relationships f \
              on cjo.object_id = f.child_id  \
              where f.child_id is NULL;").format(
                 sql.Identifier(self.schema),
