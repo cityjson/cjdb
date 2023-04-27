@@ -116,7 +116,7 @@ class Exporter:
                         ls_parents_children.append( (row[0], each) )
                 while len(ls_parents_children) > 0:
                     pc = ls_parents_children.pop()
-                    j, vertices, new_pc = self.add_child_to_cjf(j, pc[0], pc[1], vertices)
+                    j, vertices, new_pc = self.add_child_to_cjf(j, pc[0], pc[1], vertices, bboxmin)
                     ls_parents_children.extend(new_pc)
                 j["vertices"] = vertices
                 j = self.remove_duplicate_vertices(j)
@@ -124,7 +124,7 @@ class Exporter:
         logger.info(f"Exported succesfully (part of) the database to '{self.fout.name}'")
 
 
-    def add_child_to_cjf(self, j, parent_id, child_id, vertices):
+    def add_child_to_cjf(self, j, parent_id, child_id, vertices, bboxmin):
         if "children" not in j["CityObjects"][parent_id]:
             j["CityObjects"][parent_id]["children"] = []
         self.cur.execute(
