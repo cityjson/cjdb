@@ -15,6 +15,7 @@ from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
 class Exporter:
     def __init__(self, connection, schema, sqlquery, output):
         self.connection = connection
+        self.cur = None
         self.schema = schema
         self.sqlquery = sqlquery
         self.fout = open(output, 'w')
@@ -27,32 +28,32 @@ class Exporter:
         self.fout.close()
 
     def run_export(self) -> None:
-        cur = self.connection.cursor()
+        self.cur = self.connection.cursor()
         #-- Fetch all the IDs (user-defined)
         # cur.execute("select cjo.id from cjdb.city_object cjo where cjo.type = 'TINRelief';")
         # cur.execute("select cjo.id from cjdb.city_object cjo where (attributes->'AbsoluteEavesHeight')::float > 20.1 order by id asc;")
         # TODO: add the schema to the query? It's unclear for the user really...
-        cur.execute(self.sqlquery)
-        rows = cur.fetchall()
+        self.cur.execute(self.sqlquery)
+        rows = self.cur.fetchall()
         query_ids = list(map(lambda x: x[0], rows))
         if len(query_ids) == 0:
             logger.error(f"Query returns no city object IDs")
             return
 
-        cur.execute(
+        self.cur.execute(
             sql.SQL("select cjo.* from {}.city_object cjo where id = any (%s)")
                      .format(sql.Identifier(self.schema)),
             (query_ids,)
         )
-        rows = cur.fetchall()
+        rows = self.cur.fetchall()
         bboxmin = self.find_min_bbox(rows)
 
         #-- first line of the CityJSONL stream
-        cur.execute(
+        self.cur.execute(
             sql.SQL("select m.* from {}.cj_metadata m")
                      .format(sql.Identifier(self.schema))
         )
-        meta1 = cur.fetchone()
+        meta1 = self.cur.fetchone()
         j = {}
         j["type"] = "CityJSON"
         j["version"] = meta1[1]
@@ -67,6 +68,7 @@ class Exporter:
         # TODO: what do we do with other metadata? Cannot merge really... so only CRS
         self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
 
+        # TODO: if a feature has both parent and children then this fails, FIXME
         q = sql.SQL(
              "select cjo.object_id from {}.city_object cjo \
              left join {}.city_object_relationship f \
@@ -75,9 +77,9 @@ class Exporter:
                 sql.Identifier(self.schema),
                 sql.Identifier(self.schema)
             )
-        cur.execute(q)
+        self.cur.execute(q)
         ids_not_a_child = set()
-        for i in cur.fetchall():
+        for i in self.cur.fetchall():
             ids_not_a_child.add(i[0])
 
         q = sql.SQL(
@@ -90,8 +92,8 @@ class Exporter:
                 sql.Identifier(self.schema),
                 sql.Identifier(self.schema)
             )            
-        cur.execute(q, (query_ids,))
-        rows = cur.fetchall()
+        self.cur.execute(q, (query_ids,))
+        rows = self.cur.fetchall()
         for row in rows:
             if row[0] in ids_not_a_child:
                 j = {}
@@ -107,33 +109,53 @@ class Exporter:
                 g2, vs = self.reference_vertices_in_cjf(row[3], 3, bboxmin, len(vertices))
                 vertices.extend(vs)
                 if g2 is not None:      
-                    j["CityObjects"][row[0]]["geometry"] = g2    
-                #-- are there children?
-                # TODO: add children of children
-                if row[4][0] is not None:
-                    j["CityObjects"][row[0]]["children"] = []
-                    for each in row[4]:
-                        # cur.execute("select cjo.* from cjdb.city_object cjo where cjo.object_id = %s;", (each,))
-                        cur.execute(
-                            sql.SQL("select cjo.* from {}.city_object cjo where cjo.object_id = %s")
-                                     .format(sql.Identifier(self.schema)),
-                                     (each,)
-                        )
-                        r = cur.fetchone()
-                        j["CityObjects"][row[0]]["children"].append(each)
-                        j["CityObjects"][each] = {}
-                        j["CityObjects"][each]["type"] = r[2]
-                        if r[3] is not None:
-                            j["CityObjects"][each]["attributes"] = r[3]
-                        j["CityObjects"][each]["parents"] = [row[0]]
-                        g2, vs = self.reference_vertices_in_cjf(r[4], 3, bboxmin, len(vertices))
-                        vertices.extend(vs)
-                        if g2 is not None:
-                            j["CityObjects"][each]["geometry"] = g2
+                    j["CityObjects"][row[0]]["geometry"] = g2
+
+                ls_parents_children = []
+                for each in row[4]:
+                    if each is not None:
+                        ls_parents_children.append( (row[0], each) )
+                while len(ls_parents_children) > 0:
+                    pc = ls_parents_children.pop()
+                    j, vertices, new_pc = self.add_child_to_cjf(j, pc[0], pc[1], vertices)
+                    ls_parents_children.extend(new_pc)
                 j["vertices"] = vertices
                 j = self.remove_duplicate_vertices(j)
                 self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
         logger.info(f"Exported succesfully (part of) the database to '{self.fout.name}'")
+
+
+    def add_child_to_cjf(self, j, parent_id, child_id, vertices):
+        if "children" not in j["CityObjects"][parent_id]:
+            j["CityObjects"][parent_id]["children"] = []
+        self.cur.execute(
+            sql.SQL("select cjo.* from {}.city_object cjo where cjo.object_id = %s")
+                     .format(sql.Identifier(self.schema)),
+                     (child_id,)
+        )
+        r = self.cur.fetchone()
+        j["CityObjects"][parent_id]["children"].append(child_id)
+        j["CityObjects"][child_id] = {}
+        j["CityObjects"][child_id]["type"] = r[2]
+        if r[3] is not None:
+            j["CityObjects"][child_id]["attributes"] = r[3]
+        j["CityObjects"][child_id]["parents"] = [parent_id]
+        g2, vs = self.reference_vertices_in_cjf(r[4], 3, bboxmin, len(vertices))
+        vertices.extend(vs)
+        if g2 is not None:
+            j["CityObjects"][child_id]["geometry"] = g2 
+        #-- does the child has children?
+        ls_parents_children = []
+        # (row[0], each)
+        self.cur.execute(
+            sql.SQL("select f.child_id from {}.city_object_relationship f \
+                where f.parent_id = %s")
+                     .format(sql.Identifier(self.schema)),
+                     (child_id,)
+        )
+        for c in self.cur.fetchall():
+            ls_parents_children.append( (child_id, c[0]))
+        return (j, vertices, ls_parents_children)
 
 
     def find_min_bbox(self, rows):
