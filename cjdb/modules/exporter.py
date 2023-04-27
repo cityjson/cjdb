@@ -84,7 +84,7 @@ class Exporter:
         q = sql.SQL(
              "select cjo.object_id as coid, cjo.type, cjo.attributes, cjo.geometry, array_agg(f.child_id) as children \
              from (select object_id, type, attributes, geometry from {}.city_object where id = any(%s)) cjo \
-             left join {}.city_object_relationship  f \
+             left join {}.city_object_relationships  f \
              on cjo.object_id  = f.parent_id \
              group by cjo.object_id, cjo.type, cjo.attributes, cjo.geometry \
              order by cjo.object_id;").format(
@@ -147,7 +147,7 @@ class Exporter:
         ls_parents_children = []
         # (row[0], each)
         self.cur.execute(
-            sql.SQL("select f.child_id from {}.city_object_relationship f \
+            sql.SQL("select f.child_id from {}.city_object_relationships f \
                 where f.parent_id = %s")
                      .format(sql.Identifier(self.schema)),
                      (child_id,)
