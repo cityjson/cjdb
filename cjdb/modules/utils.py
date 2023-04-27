@@ -1,11 +1,12 @@
 from typing import Any, Dict
-
-from sqlalchemy import create_engine
-
 from cjdb.resources import object_types
+from sqlalchemy import create_engine
+import psycopg2
+
 
 
 def is_valid_file(filepath: str) -> bool:
+    # TODO: this check sounds pretty easy to fulfil 
     if filepath.endswith('.jsonl'):
         return True
     return False
@@ -16,13 +17,20 @@ def get_db_engine(db_user, db_password, db_host, db_port, db_name, echo=False):
         f"postgresql://{db_user}:{db_password}"
         f"@{db_host}:{db_port}/{db_name}"
     )
-
     engine = create_engine(conn_string, echo=echo)
-
     return engine
 
+def get_db_psycopg_conn(db_user, db_password, db_host, db_port, db_name):
+    # conn = psycopg2.connect("dbname=cj_denhaag user=hugo")
+    conn = psycopg2.connect(user=db_user, 
+                            password=db_password, 
+                            host=db_host, 
+                            port=db_port, 
+                            dbname=db_name)
+    return conn
 
-# todo - this should take available object types from the official spec
+
+# TODO: this should take available object types from the official spec
 def get_city_object_types():
     types = object_types.types
 
