@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
                                      InvalidMetadataException)
 from cjdb.modules.importer import Importer
+from cjdb.modules.exporter import Exporter
 
 
 @pytest.fixture(scope="session")
@@ -317,3 +318,16 @@ def test_single_import_without_cityjson_obj_in_first_line(
     ) as importer:
         with pytest.raises(InvalidCityJSONObjectException):
             importer.run_import()
+
+
+def test_export(
+    engine_postgresql
+):
+    conn = engine_postgresql.raw_connection()
+    with Exporter(
+        connection=conn,
+        schema="cjdb",
+        sqlquery="SELECT 3 AS id",
+        output="./tests/files/ex.jsonl",
+    ) as exporter:
+        exporter.run_export()
