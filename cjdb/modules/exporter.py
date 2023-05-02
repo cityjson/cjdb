@@ -1,21 +1,17 @@
-import json
-import os
-import sys
 import copy
+import json
+import sys
 
 from psycopg2 import sql
-
+from psycopg2.extras import DictCursor
 
 from cjdb.logger import logger
-from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
-                                     InvalidFileException,
-                                     InvalidMetadataException)
+
 
 # exporter class
 class Exporter:
     def __init__(self, connection, schema, sqlquery, output):
         self.connection = connection
-        self.cur = None
         self.schema = schema
         self.sqlquery = sqlquery
         self.fout = open(output, 'w')
@@ -28,111 +24,98 @@ class Exporter:
         self.fout.close()
 
     def run_export(self) -> None:
-        self.cur = self.connection.cursor()
-        #-- Fetch all the IDs (user-defined)
-        # cur.execute("select cjo.id from cjdb.city_object cjo where cjo.type = 'TINRelief';")
-        # cur.execute("select cjo.id from cjdb.city_object cjo where (attributes->'AbsoluteEavesHeight')::float > 20.1 order by id asc;")
-        # TODO: add the schema to the query? It's unclear for the user really...
-        self.cur.execute(self.sqlquery)
-        rows = self.cur.fetchall()
-        query_ids = list(map(lambda x: x[0], rows))
-        if len(query_ids) == 0:
-            logger.error(f"Query returns no city object IDs")
-            return
+        sql_query = f"""
 
-        self.cur.execute(
-            sql.SQL("select cjo.* from {}.city_object cjo where id = any (%s)")
-                     .format(sql.Identifier(self.schema)),
-            (query_ids,)
-        )
-        rows = self.cur.fetchall()
+            WITH only_parents AS (SELECT cjo.id, cjo.object_id
+                                  FROM {self.schema}.city_object cjo
+						          LEFT JOIN {self.schema}.city_object_relationships f
+						          ON cjo.object_id = f.child_id
+						          WHERE f.child_id IS NULL)
+                    SELECT
+                        cjo.id, cjo.object_id, cjo.type, cjo.attributes,
+                        cjo.geometry, cjm.version, cjm.metadata,
+                        cjm."transform", array_agg(f.child_id) as children
+                    FROM
+                        {self.schema}.city_object cjo
+                    JOIN
+                        {self.schema}.cj_metadata cjm
+                    ON cjo.cj_metadata_id  = cjm.id
+                    LEFT JOIN
+                        {self.schema}.city_object_relationships  f
+                    ON cjo.object_id  = f.parent_id
+                    JOIN
+                        only_parents op
+                    ON cjo.id = op.id
+                    WHERE cjo."id" IN ({self.sqlquery})
+                    GROUP BY
+                        cjo.id, cjo.object_id,
+                        cjo.type, cjo.attributes,
+                        cjo.geometry, cjm.version,
+                        cjm.metadata, cjm."transform" ;
+                  """
+
+        cursor = self.connection.cursor(cursor_factory=DictCursor)
+        cursor.execute(sql_query)
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            logger.warning("No data from the input ids.")
+            sys.exit(1)
+
         bboxmin = self.find_min_bbox(rows)
 
-        #-- first line of the CityJSONL stream
-        self.cur.execute(
-            sql.SQL("select m.* from {}.cj_metadata m")
-                     .format(sql.Identifier(self.schema))
-        )
-        meta1 = self.cur.fetchone()
-        j = {}
-        j["type"] = "CityJSON"
-        j["version"] = meta1[1]
-        j["CityObjects"] = {}
-        j["vertices"] = []
-        j["transform"] = {}
-        imp_digits = 3 #-- defined by users
-        j["transform"]["scale"] = [1.0/pow(10, imp_digits), 1.0/pow(10, imp_digits), 1.0/pow(10, imp_digits)]
-        j["transform"]["translate"] = bboxmin
-        j["metadata"] = {}
-        j["metadata"]["referenceSystem"] = meta1[2]["referenceSystem"]
-        # TODO: what do we do with other metadata? Cannot merge really... so only CRS
-        self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
+        # TODO: verify that all queried buildings have the same metadata.
+        # For now we take the first.
 
-        q = sql.SQL(
-             "select cjo.object_id from {}.city_object cjo \
-             left join {}.city_object_relationships f \
-             on cjo.object_id = f.child_id  \
-             where f.child_id is NULL;").format(
-                sql.Identifier(self.schema),
-                sql.Identifier(self.schema)
-            )
-        self.cur.execute(q)
-        ids_not_a_child = set()
-        for i in self.cur.fetchall():
-            ids_not_a_child.add(i[0])
+        cjson = {}
+        cjson["type"] = "CityJSON"
+        cjson["version"] = rows[0]['version']
+        cjson["CityObjects"] = {}
+        cjson["vertices"] = []
+        cjson["transform"] = rows[0]["transform"]
+        cjson["metadata"] = rows[0]["metadata"]
 
-        q = sql.SQL(
-             "select cjo.object_id as coid, cjo.type, cjo.attributes, cjo.geometry, array_agg(f.child_id) as children \
-             from (select object_id, type, attributes, geometry from {}.city_object where id = any(%s)) cjo \
-             left join {}.city_object_relationships  f \
-             on cjo.object_id  = f.parent_id \
-             group by cjo.object_id, cjo.type, cjo.attributes, cjo.geometry \
-             order by cjo.object_id;").format(
-                sql.Identifier(self.schema),
-                sql.Identifier(self.schema)
-            )            
-        self.cur.execute(q, (query_ids,))
-        rows = self.cur.fetchall()
+        self.fout.write(json.dumps(cjson, separators=(',', ':')) + '\n')
+
+
         for row in rows:
-            if row[0] in ids_not_a_child:
-                j = {}
-                j["type"] = "CityJSONFeature"
-                j["id"] = row[0]
-                j["CityObjects"] = {}
-                j["CityObjects"][row[0]] = {}
-                j["CityObjects"][row[0]]["type"] = row[1]
-                if row[2] is not None:
-                    j["CityObjects"][row[0]]["attributes"] = row[2]
-                #-- parent first
-                vertices = []
-                g2, vs = self.reference_vertices_in_cjf(row[3], 3, bboxmin, len(vertices))
-                vertices.extend(vs)
-                if g2 is not None:      
-                    j["CityObjects"][row[0]]["geometry"] = g2
+            j = {}
+            j["type"] = "CityJSONFeature"
+            j["id"] = row['id']
+            j["CityObjects"] = {}
+            j["CityObjects"][row['id']] = {}
+            j["CityObjects"][row['id']]["type"] = row['type']
+            if row['attributes'] is not None:
+                j["CityObjects"][row[0]]["attributes"] = row['attributes']
+            #-- parent first
+            vertices = []
+            g2, vs = self.reference_vertices_in_cjf(row['geometry'], 3, bboxmin, len(vertices))
+            vertices.extend(vs)
+            if g2 is not None:      
+                j["CityObjects"][row['id']]["geometry"] = g2
 
-                ls_parents_children = []
-                for each in row[4]:
-                    if each is not None:
-                        ls_parents_children.append( (row[0], each) )
-                while len(ls_parents_children) > 0:
-                    pc = ls_parents_children.pop()
-                    j, vertices, new_pc = self.add_child_to_cjf(j, pc[0], pc[1], vertices, bboxmin)
-                    ls_parents_children.extend(new_pc)
-                j["vertices"] = vertices
-                j = self.remove_duplicate_vertices(j)
-                self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
-        logger.info(f"Exported succesfully (part of) the database to '{self.fout.name}'")
-
+            ls_parents_children = []
+            for each in row['children']:
+                if each is not None:
+                    ls_parents_children.append((row['id'], each))
+            while len(ls_parents_children) > 0:
+                pc = ls_parents_children.pop()
+                j, vertices, new_pc = self.add_child_to_cjf(j, pc[0], pc[1], vertices, bboxmin)
+                ls_parents_children.extend(new_pc)
+            j["vertices"] = vertices
+            j = self.remove_duplicate_vertices(j)
+            self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
+        logger.info(f"Exported succesfully to '{self.fout.name}'")
 
     def add_child_to_cjf(self, j, parent_id, child_id, vertices, bboxmin):
         if "children" not in j["CityObjects"][parent_id]:
             j["CityObjects"][parent_id]["children"] = []
-        self.cur.execute(
+        cursor = self.connection.cursor(cursor_factory=DictCursor)
+        cursor.execute(
             sql.SQL("select cjo.* from {}.city_object cjo where cjo.object_id = %s")
                      .format(sql.Identifier(self.schema)),
                      (child_id,)
         )
-        r = self.cur.fetchone()
+        r = cursor.fetchone()
         j["CityObjects"][parent_id]["children"].append(child_id)
         j["CityObjects"][child_id] = {}
         j["CityObjects"][child_id]["type"] = r[2]
@@ -142,32 +125,30 @@ class Exporter:
         g2, vs = self.reference_vertices_in_cjf(r[4], 3, bboxmin, len(vertices))
         vertices.extend(vs)
         if g2 is not None:
-            j["CityObjects"][child_id]["geometry"] = g2 
+            j["CityObjects"][child_id]["geometry"] = g2
         #-- does the child has children?
         ls_parents_children = []
         # (row[0], each)
-        self.cur.execute(
+        cursor.execute(
             sql.SQL("select f.child_id from {}.city_object_relationships f \
                 where f.parent_id = %s")
                      .format(sql.Identifier(self.schema)),
                      (child_id,)
         )
-        for c in self.cur.fetchall():
+        for c in cursor.fetchall():
             ls_parents_children.append( (child_id, c[0]))
         return (j, vertices, ls_parents_children)
-
 
     def find_min_bbox(self, rows):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
         for row in rows:
-            if row[4] is not None:
-                for g in row[4]:
+            if row['geometry'] is not None:
+                for g in row['geometry']:
                     if g["type"] == "Solid":
                         for shell in g["boundaries"]:
                             for surface in shell:
                                 for ring in surface:
                                     for vertex in ring:
-                                        # print(vertex)
                                         for i in range(3):
                                             if vertex[i] < bboxmin[i]:
                                                 bboxmin[i] = vertex[i]
@@ -180,7 +161,7 @@ class Exporter:
                                             bboxmin[i] = vertex[i]
                     else:
                         # TODO: implement for MultiSolid
-                        print("GEOMETRY NOT SUPPORTED YET")
+                        logger.warning("GEOMETRY NOT SUPPORTED YET")
         return bboxmin
 
     def remove_duplicate_vertices(self, j):
@@ -216,13 +197,12 @@ class Exporter:
         j["vertices"] = newv2
         return j
 
-
     def reference_vertices_in_cjf(self, gs, imp_digits, translate, offset=0):
         vertices = []
         if gs is None:
             return (gs, vertices)
         gs2 = copy.deepcopy(gs)
-        p = '%.' + str(imp_digits) + 'f' 
+        p = '%.' + str(imp_digits) + 'f'
         for (h, g) in enumerate(gs):
             if g["type"] == "Solid":
                 for (i, shell) in enumerate(g["boundaries"]):
