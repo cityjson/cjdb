@@ -7,30 +7,7 @@ Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powa
 
 Maintainer: Gina Stavropoulou
 
-## Table of Contents  
-### [1.Data model](#1-data-model)
-### [2.Installation](#2-installation)
-- [Using pip](#using-pip)
-- [Using Docker](#using-docker)
-### [3.Usage](#3-usage)
-- [Importer](#importer)
-- [Exporter](#exporter)
-- [Quickstart](#quickstart)
-- [Basic Queries](#basic-queries)
-### [4.Local development](#4-local-development)
-- [Install and Build](#install-and-build)
-- [Testing](#testing)
-### [5.Explanation](#5-explanation)
- - [Model assumptions](#model-assumptions)
- - [What is a City Model?](#what-is-a-city-model)
- - [Types of input](#types-of-input)
- - [Coordinate Reference Systems](#coordinate-reference-systems)
- - [3D reprojections](#3d-reprojections)
- - [CityJSON Extensions](#cityjson-extensions)
- - [CityJSON GeometryTemplate](#cityjson-geometrytemplate)
- - [Data validation](#data-validation)
- - [Repeated object IDs](#repeated-object-ids)
----
+
 ## 1. Data model
 For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
 
