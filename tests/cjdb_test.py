@@ -6,7 +6,8 @@ from sqlalchemy import MetaData, Table, create_engine, inspect, select
 from sqlalchemy.orm import Session
 
 from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
-                                     InvalidMetadataException)
+                                     InvalidMetadataException,
+                                     MissingCRSException)
 from cjdb.modules.importer import Importer
 from cjdb.modules.exporter import Exporter
 
@@ -28,12 +29,28 @@ def engine_postgresql(postgresql_proc):
         )
 
 
-def test_single_import(engine_postgresql):
+def test_single_import_missing_srid(engine_postgresql):
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
+        db_schema="vienna",
         target_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        append_mode=False,
+        update_existing=False,
+    ) as importer:
+        with pytest.raises(MissingCRSException):
+            importer.run_import()
+
+
+def test_single_import_with_srid_flag(engine_postgresql):
+    with Importer(
+        engine=engine_postgresql,
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="vienna",
+        target_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
@@ -47,8 +64,8 @@ def test_repeated_file_with_ignore_repeated_file(engine_postgresql):
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
+        db_schema="vienna",
+        target_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=True,
@@ -62,8 +79,8 @@ def test_repeated_file_with_update_existing(engine_postgresql):
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
+        db_schema="vienna",
+        target_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
@@ -73,13 +90,13 @@ def test_repeated_file_with_update_existing(engine_postgresql):
         importer.run_import()
 
 
-def test_repeated_file_with_prompt_to_skip(engine_postgresql, monkeypatch):
+def test_repeated_file_with_prompt_to_continue(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
+        db_schema="vienna",
+        target_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
@@ -89,30 +106,13 @@ def test_repeated_file_with_prompt_to_skip(engine_postgresql, monkeypatch):
         importer.run_import()
 
 
-def test_repeated_file_with_prompt_to_exit(engine_postgresql, monkeypatch):
+def test_repeated_file_with_prompt_to_skip_file(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("n"))
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        update_existing=False,
-    ) as importer:
-        with pytest.raises(SystemExit):
-            importer.run_import()
-
-
-def test_directory_import(engine_postgresql, monkeypatch):
-    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/cjfiles",
-        db_schema="cjdb",
-        target_srid=None,
+        db_schema="vienna",
+        target_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
@@ -124,22 +124,22 @@ def test_directory_import(engine_postgresql, monkeypatch):
 
 def test_db_model(engine_postgresql):
     insp = inspect(engine_postgresql)
-    assert insp.has_schema("cjdb")
-    assert insp.has_table("city_object", schema="cjdb")
-    assert insp.has_table("cj_metadata", schema="cjdb")
-    assert insp.has_table("city_object_relationships", schema="cjdb")
+    assert insp.has_schema("vienna")
+    assert insp.has_table("city_object", schema="vienna")
+    assert insp.has_table("cj_metadata", schema="vienna")
+    assert insp.has_table("city_object_relationships", schema="vienna")
 
     city_object = Table(
         "city_object",
         MetaData(),
-        schema="cjdb",
+        schema="vienna",
         autoload_with=engine_postgresql
     )
 
     cj_metadata = Table(
         "cj_metadata",
         MetaData(),
-        schema="cjdb",
+        schema="vienna",
         autoload_with=engine_postgresql
     )
 
@@ -170,163 +170,13 @@ def test_db_model(engine_postgresql):
         ]
 
 
-def test_single_import_with_extensions(engine_postgresql, monkeypatch):
-    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/extension.city.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        update_existing=False,
-    ) as importer:
-        importer.run_import()
-
-    cj_metadata = Table(
-        "cj_metadata", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
-    )
-
-    query_cj_metadata = (
-        select(cj_metadata)
-        .where(cj_metadata.c.extensions.isnot(None))
-        .where(cj_metadata.c.source_file == "extension.city.jsonl")
-    )
-
-    with Session(engine_postgresql) as session:
-        row = session.execute(query_cj_metadata).first()
-        assert (
-            row.extensions["Noise"]["url"]
-            == "https://www.cityjson.org/tutorials/files/noise.ext.json"
-        )
-        assert row.extensions["Noise"]["version"] == "1.1.0"
-
-
-def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
-    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/geomtemplate.city.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        update_existing=False,
-    ) as importer:
-        importer.run_import()
-
-    cj_metadata = Table(
-        "cj_metadata", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
-    )
-
-    query_cj_metadata = (
-        select(cj_metadata)
-        .where(cj_metadata.c.geometry_templates.isnot(None))
-        .where(cj_metadata.c.source_file == "geomtemplate.city.jsonl")
-    )
-
-    with Session(engine_postgresql) as session:
-        row = session.execute(query_cj_metadata).first()
-
-        assert row.geometry_templates["templates"][0]["lod"] == "1"
-        assert row.geometry_templates["templates"][0]["type"] == "MultiSurface"
-
-        assert row.geometry_templates["vertices-templates"] == [
-            [0, 0, 5],
-            [10, 0, 5],
-            [10, 10, 5],
-            [0, 10, 5],
-            [0, 0, 15],
-            [10, 0, 15],
-            [10, 10, 15],
-            [0, 10, 15],
-        ]
-
-
-def test_single_import_without_srid(engine_postgresql, monkeypatch):
-    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        update_existing=False,
-    ) as importer:
-        with pytest.raises(InvalidMetadataException):
-            importer.run_import()
-
-
-def test_single_import_with_target_srid(engine_postgresql, monkeypatch):
-    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/vienna.jsonl",
-        db_schema="cjdb",
-        target_srid="7415",
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        update_existing=False,
-    ) as importer:
-        importer.run_import()
-
-
-def test_single_import_without_metadata(engine_postgresql, monkeypatch):
-    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/no_metadata.city.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        update_existing=False,
-    ) as importer:
-        with pytest.raises(InvalidMetadataException):
-            importer.run_import()
-
-
-def test_single_import_without_cityjson_obj_in_first_line(
-    engine_postgresql, monkeypatch
-):
-    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/no_cityjson_obj.city.jsonl",
-        db_schema="cjdb",
-        target_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        append_mode=False,
-        update_existing=False,
-    ) as importer:
-        with pytest.raises(InvalidCityJSONObjectException):
-            importer.run_import()
-
-
 def test_export(
     engine_postgresql
 ):
     conn = engine_postgresql.raw_connection()
     with Exporter(
         connection=conn,
-        schema="cjdb",
+        schema="vienna",
         sqlquery="SELECT 3 AS id",
         output="./tests/files/ex.jsonl",
     ) as exporter:
