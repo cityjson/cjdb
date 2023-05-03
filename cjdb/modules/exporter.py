@@ -72,7 +72,8 @@ class Exporter:
         cjson["CityObjects"] = {}
         cjson["vertices"] = []
         cjson["transform"] = rows[0]["transform"]
-        cjson["metadata"] = rows[0]["metadata"]
+        cjson["metadata"] = {}
+        cjson["metadata"]["referenceSystem"] = rows[0]["metadata"]["referenceSystem"]
 
         self.fout.write(json.dumps(cjson, separators=(',', ':')) + '\n')
 
