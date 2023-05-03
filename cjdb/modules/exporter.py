@@ -14,7 +14,7 @@ class Exporter:
         self.connection = connection
         self.schema = schema
         self.sqlquery = sqlquery
-        self.fout = open(output, 'w')
+        self.fout = open(output, "w")
 
     def __enter__(self):
         return self
@@ -68,56 +68,54 @@ class Exporter:
 
         cjson = {}
         cjson["type"] = "CityJSON"
-        cjson["version"] = rows[0]['version']
+        cjson["version"] = rows[0]["version"]
         cjson["CityObjects"] = {}
         cjson["vertices"] = []
         cjson["transform"] = rows[0]["transform"]
         cjson["metadata"] = {}
         if "referenceSystem" in rows[0]["metadata"].keys():
-            cjson["metadata"]["referenceSystem"] =\
-                rows[0]["metadata"]["referenceSystem"]
+            cjson["metadata"]["referenceSystem"] = rows[0]["metadata"][
+                "referenceSystem"
+            ]
 
         # TODO: add geometry-template from all imported files or select only the ones relevant?
         #       We could iterate over the ids and fetch the ones having '+' but that's tricky
         #       Outputting an extension that is not used is not a huge issue though
         # TODO: add extra-properties? Tricky to know which ones to be honest, maybe a flag?
-        self.fout.write(json.dumps(cjson, separators=(',', ':')) + '\n')
+        self.fout.write(json.dumps(cjson, separators=(",", ":")) + "\n")
 
         for row in rows:
             j = {}
             j["type"] = "CityJSONFeature"
-            j["id"] = row['object_id']
+            j["id"] = row["object_id"]
             j["CityObjects"] = {}
-            j["CityObjects"][row['object_id']] = {}
-            j["CityObjects"][row['object_id']]["type"] = row['type']
-            if row['attributes'] is not None:
-                j["CityObjects"][row['object_id']]["attributes"] =\
-                    row['attributes']
+            j["CityObjects"][row["object_id"]] = {}
+            j["CityObjects"][row["object_id"]]["type"] = row["type"]
+            if row["attributes"] is not None:
+                j["CityObjects"][row["object_id"]]["attributes"] =\
+                    row["attributes"]
             # parent first
             vertices = []
-            g2, vs = self.reference_vertices_in_cjf(row['geometry'],
-                                                    3,
-                                                    bboxmin,
-                                                    len(vertices))
+            g2, vs = self.reference_vertices_in_cjf(
+                row["geometry"], 3, bboxmin, len(vertices)
+            )
             vertices.extend(vs)
             if g2 is not None:
-                j["CityObjects"][row['object_id']]["geometry"] = g2
+                j["CityObjects"][row["object_id"]]["geometry"] = g2
 
             ls_parents_children = []
-            for each in row['children']:
+            for each in row["children"]:
                 if each is not None:
-                    ls_parents_children.append((row['object_id'], each))
+                    ls_parents_children.append((row["object_id"], each))
             while len(ls_parents_children) > 0:
                 pc = ls_parents_children.pop()
-                j, vertices, new_pc = self.add_child_to_cjf(j,
-                                                            pc[0],
-                                                            pc[1],
-                                                            vertices,
-                                                            bboxmin)
+                j, vertices, new_pc = self.add_child_to_cjf(
+                    j, pc[0], pc[1], vertices, bboxmin
+                )
                 ls_parents_children.extend(new_pc)
             j["vertices"] = vertices
             j = self.remove_duplicate_vertices(j)
-            self.fout.write(json.dumps(j, separators=(',', ':')) + '\n')
+            self.fout.write(json.dumps(j, separators=(",", ":")) + "\n")
         logger.info(f"Exported succesfully to '{self.fout.name}'")
 
     def add_child_to_cjf(self, j, parent_id, child_id, vertices, bboxmin):
@@ -125,11 +123,12 @@ class Exporter:
             j["CityObjects"][parent_id]["children"] = []
         cursor = self.connection.cursor(cursor_factory=DictCursor)
         cursor.execute(
-            sql.SQL("""SELECT cjo.*
+            sql.SQL(
+                """SELECT cjo.*
                        FROM {}.city_object cjo
-                       WHERE cjo.object_id = %s""")
-            .format(sql.Identifier(self.schema)),
-            (child_id,)
+                       WHERE cjo.object_id = %s"""
+            ).format(sql.Identifier(self.schema)),
+            (child_id,),
         )
         r = cursor.fetchone()
         j["CityObjects"][parent_id]["children"].append(child_id)
@@ -138,10 +137,8 @@ class Exporter:
         if r[3] is not None:
             j["CityObjects"][child_id]["attributes"] = r[3]
         j["CityObjects"][child_id]["parents"] = [parent_id]
-        g2, vs = self.reference_vertices_in_cjf(r[4],
-                                                3,
-                                                bboxmin,
-                                                len(vertices))
+        g2, vs = \
+            self.reference_vertices_in_cjf(r[4], 3, bboxmin, len(vertices))
         vertices.extend(vs)
         if g2 is not None:
             j["CityObjects"][child_id]["geometry"] = g2
@@ -149,11 +146,12 @@ class Exporter:
         ls_parents_children = []
         # (row[0], each)
         cursor.execute(
-            sql.SQL("""SELECT f.child_id
+            sql.SQL(
+                """SELECT f.child_id
                     FROM {}.city_object_relationships f \
-                    WHERE f.parent_id = %s""")
-            .format(sql.Identifier(self.schema)),
-            (child_id,)
+                    WHERE f.parent_id = %s"""
+            ).format(sql.Identifier(self.schema)),
+            (child_id,),
         )
         for c in cursor.fetchall():
             ls_parents_children.append((child_id, c[0]))
@@ -162,8 +160,8 @@ class Exporter:
     def find_min_bbox(self, rows):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
         for row in rows:
-            if row['geometry'] is not None:
-                for g in row['geometry']:
+            if row["geometry"] is not None:
+                for g in row["geometry"]:
                     if g["type"] == "Solid":
                         for shell in g["boundaries"]:
                             for surface in shell:
@@ -192,6 +190,7 @@ class Exporter:
                     update_geom_indices(each, newids)
                 else:
                     a[i] = newids[each]
+
         h = {}
         newids = [-1] * len(j["vertices"])
         newvertices = []
@@ -206,8 +205,8 @@ class Exporter:
                 newids[i] = h[s]
         # update indices
         for theid in j["CityObjects"]:
-            if 'geometry' in j['CityObjects'][theid]:
-                for g in j['CityObjects'][theid]['geometry']:
+            if "geometry" in j["CityObjects"][theid]:
+                for g in j["CityObjects"][theid]["geometry"]:
                     update_geom_indices(g["boundaries"], newids)
         # replace the vertices, innit?
         newv2 = []
@@ -222,35 +221,37 @@ class Exporter:
         if gs is None:
             return (gs, vertices)
         gs2 = copy.deepcopy(gs)
-        p = '%.' + str(imp_digits) + 'f'
-        for (h, g) in enumerate(gs):
+        p = "%." + str(imp_digits) + "f"
+        for h, g in enumerate(gs):
             if g["type"] == "Solid":
-                for (i, shell) in enumerate(g["boundaries"]):
-                    for (j, surface) in enumerate(shell):
-                        for (k, ring) in enumerate(surface):
-                            for (l, vertex) in enumerate(ring):
+                for i, shell in enumerate(g["boundaries"]):
+                    for j, surface in enumerate(shell):
+                        for k, ring in enumerate(surface):
+                            for l, vertex in enumerate(ring):
                                 gs2[h]["boundaries"][i][j][k][l] = offset
                                 offset += 1
-                                v = [0., 0., 0.]
+                                v = [0.0, 0.0, 0.0]
                                 for r in range(3):
-                                    v[r] = int((p %
-                                                (vertex[r] -
-                                                 translate[r]))
-                                               .replace('.', ''))
+                                    v[r] = int(
+                                        (p % (vertex[r] - translate[r]))
+                                        .replace(
+                                            ".", ""
+                                        )
+                                    )
                                 vertices.append(v)
             elif g["type"] == "MultiSurface" \
                               or g["type"] == "CompositeSurface":
-                for (j, surface) in enumerate(g["boundaries"]):
-                    for (k, ring) in enumerate(surface):
-                        for (l, vertex) in enumerate(ring):
+                for j, surface in enumerate(g["boundaries"]):
+                    for k, ring in enumerate(surface):
+                        for l, vertex in enumerate(ring):
                             gs2[h]["boundaries"][j][k][l] = offset
                             offset += 1
-                            v = [0., 0., 0.]
+                            v = [0.0, 0.0, 0.0]
                             for r in range(3):
-                                v[r] = int((p %
-                                            (vertex[r] -
-                                             translate[r]))
-                                           .replace('.', ''))
+                                v[r] = int(
+                                    (p % (vertex[r] - translate[r]))
+                                    .replace(".", "")
+                                )
                             vertices.append(v)
             # TODO: MultiSolid
         return (gs2, vertices)

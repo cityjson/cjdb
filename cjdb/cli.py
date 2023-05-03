@@ -126,11 +126,14 @@ def import_cj(
               help=s.output_help)
 def export_cj(query, host, port, user, password, database, schema, output):
     """Export a CityJSONL stream to a file."""
-    #-- where to save the file
+    # where to save the file
     base = os.path.basename(output)
     dirname = os.path.abspath(os.path.dirname(output))
-    if not os.path.exists(dirname): # parent directory must exist
-        raise click.ClickException('Output path does not exist: "%s"' % (dirname))
+    # parent directory must exist
+    if not os.path.exists(dirname):
+        raise click.ClickException(
+            'Output path does not exist: "%s"' % (dirname)
+        )
     output_abs = os.path.join(dirname, base)
     conn = get_db_psycopg_conn(user, password, host, port, database)
     with Exporter(
