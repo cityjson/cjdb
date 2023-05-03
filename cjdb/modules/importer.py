@@ -76,7 +76,6 @@ class Importer:
         # create model if in create mode, else append data
         if not self.append_mode:
             self.prepare_database()
-            self.session.commit()
         self.parse_cityjson()
         self.session.commit()
         # post import operations like clustering, indexing...
