@@ -33,7 +33,7 @@ class Exporter:
                 WHERE f.child_id IS NULL)
             SELECT
                 cjo.id, cjo.object_id, cjo.type, cjo.attributes,
-                cjo.geometry, cjm.version, cjm.metadata,
+                cjo.geometry, cjm.version, cjm.metadata, cjm.srid,
                 cjm."transform", array_agg(f.child_id) as children
             FROM
                 {self.schema}.city_object cjo
@@ -51,7 +51,8 @@ class Exporter:
                 cjo.id, cjo.object_id,
                 cjo.type, cjo.attributes,
                 cjo.geometry, cjm.version,
-                cjm.metadata, cjm."transform";
+                cjm.srid, cjm.metadata,
+                cjm."transform";
             """
 
         cursor = self.connection.cursor(cursor_factory=DictCursor)
@@ -82,6 +83,8 @@ class Exporter:
             cjson["metadata"]["referenceSystem"] = rows[0]["metadata"][
                 "referenceSystem"
             ]
+        else:
+            cjson["metadata"]["referenceSystem"] = rows[0]["srid"]
 
         # TODO: add geometry-template from all imported files or select only the ones relevant?
         #       We could iterate over the ids and fetch the ones having '+' but that's tricky
