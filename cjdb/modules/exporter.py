@@ -25,35 +25,34 @@ class Exporter:
 
     def run_export(self) -> None:
         sql_query = f"""
-
             WITH only_parents AS (
-                            SELECT cjo.id, cjo.object_id
-                            FROM {self.schema}.city_object cjo
-                            LEFT JOIN {self.schema}.city_object_relationships f
-                            ON cjo.object_id = f.child_id
-                            WHERE f.child_id IS NULL)
-                    SELECT
-                        cjo.id, cjo.object_id, cjo.type, cjo.attributes,
-                        cjo.geometry, cjm.version, cjm.metadata,
-                        cjm."transform", array_agg(f.child_id) as children
-                    FROM
-                        {self.schema}.city_object cjo
-                    JOIN
-                        {self.schema}.cj_metadata cjm
-                    ON cjo.cj_metadata_id  = cjm.id
-                    LEFT JOIN
-                        {self.schema}.city_object_relationships  f
-                    ON cjo.object_id  = f.parent_id
-                    JOIN
-                        only_parents op
-                    ON cjo.id = op.id
-                    WHERE cjo."id" IN ({self.sqlquery})
-                    GROUP BY
-                        cjo.id, cjo.object_id,
-                        cjo.type, cjo.attributes,
-                        cjo.geometry, cjm.version,
-                        cjm.metadata, cjm."transform" ;
-                  """
+                SELECT cjo.id, cjo.object_id
+                FROM {self.schema}.city_object cjo
+                LEFT JOIN {self.schema}.city_object_relationships f
+                ON cjo.object_id = f.child_id
+                WHERE f.child_id IS NULL)
+            SELECT
+                cjo.id, cjo.object_id, cjo.type, cjo.attributes,
+                cjo.geometry, cjm.version, cjm.metadata,
+                cjm."transform", array_agg(f.child_id) as children
+            FROM
+                {self.schema}.city_object cjo
+            JOIN
+                {self.schema}.cj_metadata cjm
+            ON cjo.cj_metadata_id  = cjm.id
+            LEFT JOIN
+                {self.schema}.city_object_relationships  f
+            ON cjo.object_id  = f.parent_id
+            JOIN
+                only_parents op
+            ON cjo.id = op.id
+            WHERE cjo."id" IN ({self.sqlquery})
+            GROUP BY
+                cjo.id, cjo.object_id,
+                cjo.type, cjo.attributes,
+                cjo.geometry, cjm.version,
+                cjm.metadata, cjm."transform";
+            """
 
         cursor = self.connection.cursor(cursor_factory=DictCursor)
         cursor.execute(sql_query)
@@ -126,9 +125,11 @@ class Exporter:
             j["CityObjects"][parent_id]["children"] = []
         cursor = self.connection.cursor(cursor_factory=DictCursor)
         cursor.execute(
-            sql.SQL("select cjo.* from {}.city_object cjo where cjo.object_id = %s")
-                     .format(sql.Identifier(self.schema)),
-                     (child_id,)
+            sql.SQL("""SELECT cjo.*
+                       FROM {}.city_object cjo
+                       WHERE cjo.object_id = %s""")
+            .format(sql.Identifier(self.schema)),
+            (child_id,)
         )
         r = cursor.fetchone()
         j["CityObjects"][parent_id]["children"].append(child_id)
@@ -137,21 +138,25 @@ class Exporter:
         if r[3] is not None:
             j["CityObjects"][child_id]["attributes"] = r[3]
         j["CityObjects"][child_id]["parents"] = [parent_id]
-        g2, vs = self.reference_vertices_in_cjf(r[4], 3, bboxmin, len(vertices))
+        g2, vs = self.reference_vertices_in_cjf(r[4],
+                                                3,
+                                                bboxmin,
+                                                len(vertices))
         vertices.extend(vs)
         if g2 is not None:
             j["CityObjects"][child_id]["geometry"] = g2
-        #-- does the child has children?
+        #   does the child has children?
         ls_parents_children = []
         # (row[0], each)
         cursor.execute(
-            sql.SQL("select f.child_id from {}.city_object_relationships f \
-                where f.parent_id = %s")
-                     .format(sql.Identifier(self.schema)),
-                     (child_id,)
+            sql.SQL("""SELECT f.child_id
+                    FROM {}.city_object_relationships f \
+                    WHERE f.parent_id = %s""")
+            .format(sql.Identifier(self.schema)),
+            (child_id,)
         )
         for c in cursor.fetchall():
-            ls_parents_children.append( (child_id, c[0]))
+            ls_parents_children.append((child_id, c[0]))
         return (j, vertices, ls_parents_children)
 
     def find_min_bbox(self, rows):
@@ -167,7 +172,8 @@ class Exporter:
                                         for i in range(3):
                                             if vertex[i] < bboxmin[i]:
                                                 bboxmin[i] = vertex[i]
-                    elif g["type"] == "MultiSurface" or g["type"] == "CompositeSurface":
+                    elif g["type"] == "MultiSurface" \
+                                      or g["type"] == "CompositeSurface":
                         for surface in g["boundaries"]:
                             for ring in surface:
                                 for vertex in ring:
@@ -181,12 +187,11 @@ class Exporter:
 
     def remove_duplicate_vertices(self, j):
         def update_geom_indices(a, newids):
-          for i, each in enumerate(a):
-            if isinstance(each, list):
-                update_geom_indices(each, newids)
-            else:
-                a[i] = newids[each]
-        #--            
+            for i, each in enumerate(a):
+                if isinstance(each, list):
+                    update_geom_indices(each, newids)
+                else:
+                    a[i] = newids[each]
         h = {}
         newids = [-1] * len(j["vertices"])
         newvertices = []
@@ -199,12 +204,12 @@ class Exporter:
                 newvertices.append(s)
             else:
                 newids[i] = h[s]
-        #-- update indices
+        # update indices
         for theid in j["CityObjects"]:
             if 'geometry' in j['CityObjects'][theid]:
                 for g in j['CityObjects'][theid]['geometry']:
                     update_geom_indices(g["boundaries"], newids)
-        #-- replace the vertices, innit?
+        # replace the vertices, innit?
         newv2 = []
         for v in newvertices:
             a = list(map(int, v.split()))
@@ -225,23 +230,27 @@ class Exporter:
                         for (k, ring) in enumerate(surface):
                             for (l, vertex) in enumerate(ring):
                                 gs2[h]["boundaries"][i][j][k][l] = offset
-                                offset += 1                    
+                                offset += 1
                                 v = [0., 0., 0.]
                                 for r in range(3):
-                                    v[r] = int((p % (vertex[r] - translate[r])).replace('.', ''))
+                                    v[r] = int((p %
+                                                (vertex[r] -
+                                                 translate[r]))
+                                               .replace('.', ''))
                                 vertices.append(v)
-            elif g["type"] == "MultiSurface" or g["type"] == "CompositeSurface":
+            elif g["type"] == "MultiSurface" \
+                              or g["type"] == "CompositeSurface":
                 for (j, surface) in enumerate(g["boundaries"]):
                     for (k, ring) in enumerate(surface):
                         for (l, vertex) in enumerate(ring):
                             gs2[h]["boundaries"][j][k][l] = offset
-                            offset += 1                    
+                            offset += 1
                             v = [0., 0., 0.]
                             for r in range(3):
-                                v[r] = int((p % (vertex[r] - translate[r])).replace('.', ''))
-                            vertices.append(v)  
-            # TODO: MultiSolid                          
+                                v[r] = int((p %
+                                            (vertex[r] -
+                                             translate[r]))
+                                           .replace('.', ''))
+                            vertices.append(v)
+            # TODO: MultiSolid
         return (gs2, vertices)
-
-
-
