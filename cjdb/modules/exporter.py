@@ -75,6 +75,10 @@ class Exporter:
         cjson["metadata"] = {}
         cjson["metadata"]["referenceSystem"] = rows[0]["metadata"]["referenceSystem"]
 
+        # TODO: add geometry-template from all imported files or select only the ones relevant? 
+        #--     We could iterate over the ids and fetch the ones having '+' but that's tricky
+        #--     Outputting an extension that is not used is not a huge issue though
+        # TODO: add extra-properties? Tricky to know which ones to be honest, maybe a flag?
         self.fout.write(json.dumps(cjson, separators=(',', ':')) + '\n')
 
 
