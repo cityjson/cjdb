@@ -15,9 +15,11 @@ from cjdb.model.sqlalchemy_models import (BaseModel,
                                           CjMetadataModel, CjObjectModel)
 from cjdb.modules.checks import (check_object_type, check_reprojection,
                                  check_root_properties)
-from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
+from cjdb.modules.exceptions import (InconsistentCRSException,
+                                     InvalidCityJSONObjectException,
                                      InvalidFileException,
-                                     InvalidMetadataException)
+                                     InvalidMetadataException,
+                                     MissingCRSException)
 from cjdb.modules.extensions import ExtensionHandler
 from cjdb.modules.geometric import (get_ground_geometry, get_srid,
                                     reproject_vertex_list,
@@ -79,9 +81,7 @@ class Importer:
         # post import operations like clustering, indexing...
         if not self.append_mode:
             self.post_import()
-        self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
-        logger.info(f"Imported from {self.filepath} successfully")
 
     def prepare_database(self) -> None:
         """Adds the postgis extension and creates
@@ -130,13 +130,12 @@ class Importer:
         self.current.source_srid = get_srid(
             line_json["metadata"].get("referenceSystem")
         )
-        if not self.current.source_srid:
-            logger.warning("No Coordinate Reference System"
-                           " specified for the dataset.")
+        if not self.current.source_srid and not self.target_srid:
+            raise MissingCRSException()
 
         # use specified target SRID for all the geometries
         # If not specified use same as source.
-        if self.target_srid and self.current.source_srid:
+        elif self.target_srid and self.current.source_srid:
             self.current.target_srid = self.target_srid
             check_reprojection(self.current.source_srid,
                                self.current.target_srid)
@@ -201,20 +200,45 @@ class Importer:
         )
 
         # compare to existing import metas
-        # for example to detect inconsistent CRS from different files
-        result_ok = cj_metadata.compare_existing(
-            self.session,
-            self.ignore_repeated_file,
-            self.update_existing
+        file_imported = cj_metadata.file_already_imported(
+            self.session
         )
-        if not result_ok:
-            raise InvalidMetadataException()
+
+        if self.ignore_repeated_file and file_imported and not self.update_existing:
+            logger.warning("File already imported. Skipping...")
+            return False
+        elif file_imported and not self.update_existing:
+            logger.warning(
+                "A file with the same name (%s) was previously "
+                "imported on %s. Use the --ignore-repeated-file "
+                "to skip already imported files.",
+                cj_metadata.source_file, file_imported.finished_at
+            )
+            user_answer = input(
+                "Should the import continue? "
+                "Already imported city objects will be skipped. "
+                "If you want to update them instead "
+                "use the flag --update-existing. \n"
+                " [y / n]\n"
+            )
+            if user_answer.lower() != "y":
+                logger.warning(f"Import of file {cj_metadata.source_file} skipped by user.")
+                return False
+
+        different_srid = cj_metadata.different_srid_meta(self.session)
+        if different_srid:
+            logger.error("Not matching coordinate Reference Systems"
+                         "\nCurrently imported SRID: %s"
+                         "\nRecently imported SRID: %s",
+                         cj_metadata.srid, different_srid.srid)
+            raise InconsistentCRSException()
 
         # add metadata to the database
         cj_metadata.__table__.schema = self.db_schema
         self.current.cj_metadata = cj_metadata
         self.session.add(cj_metadata)
         self.session.commit()
+        return True
 
     def process_line(self, line_json) -> None:
         # unpack vertices for the cityobjects based on
@@ -317,7 +341,7 @@ class Importer:
             self.current.families.append({"parent_id": parent_id,
                                           "child_id": child_id})
 
-    def process_file(self, filepath) -> None:
+    def process_file(self, filepath) -> bool:
         """Process a single cityJSON file"""
         self.current = SingleFileImport(filepath)
         logger.info("Running import for file: %s", filepath)
@@ -333,7 +357,9 @@ class Importer:
         first_line_json = json.loads(first_line.rstrip("\n"))
         if not is_cityjson_object(first_line_json):
             raise InvalidCityJSONObjectException()
-        self.extract_cj_metadatadata(first_line_json)
+        metadata_ok = self.extract_cj_metadatadata(first_line_json)
+        if not metadata_ok:
+            return False
         for line in f.readlines():
             line_json = json.loads(line.rstrip("\n"))
             self.process_line(line_json)
@@ -355,6 +381,8 @@ class Importer:
             self.session.execute(city_object_relationships_insert)
         self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
+        logger.info(f"File {filepath} imported sucessfully.")
+        return True
 
     def process_directory(self, dir_path) -> None:
         """Process all files in a directory."""
@@ -379,8 +407,8 @@ class Importer:
         # sql index command
         cmd_base = (
             "create index if not exists {table}_{attr_name}_idx "
-            + "on {schema}.{table} using "
-            + "btree(((attributes->>'{attr_name}')::{attr_type}))"
+            "on {schema}.{table} using "
+            "btree(((attributes->>'{attr_name}')::{attr_type}))"
         )
 
         # prepare partial and non partial indexes in one list

@@ -6,7 +6,6 @@ from sqlalchemy import (Column, ForeignKey, Integer, String, UniqueConstraint,
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import declarative_base, relationship
 
-from cjdb.logger import logger
 
 Base = declarative_base()
 
@@ -35,13 +34,9 @@ class CjMetadataModel(BaseModel):
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry("Polygon"))
 
-    def compare_existing(self, session, ignore_repeated_file, update_existing):
-        result_ok = True
-
+    def file_already_imported(self, session):
         # check if the file was already imported
-        if self.source_file.lower() != "stdin" and \
-           not ignore_repeated_file and \
-           not update_existing:
+        if self.source_file.lower() != "stdin":
             same_source_import = (
                 session.query(CjMetadataModel)
                 .filter_by(source_file=self.source_file)
@@ -49,44 +44,19 @@ class CjMetadataModel(BaseModel):
                 .order_by(CjMetadataModel.finished_at.desc())
                 .first()
             )
-            if same_source_import:
-                logger.warning(
-                    "File %s was previously imported at %s. "
-                    "Use the -g flag to suppress this warning.",
-                    self.source_file,  same_source_import.finished_at
-                )
 
-                user_answer = input(
-                    "Should the import continue? "
-                    "Already imported City Objects will be skipped. "
-                    "If you want to update them instead "
-                    "use the flag --update-existing. \n"
-                    " [y / n]\n"
-                )
-                if user_answer.lower() != "y":
-                    logger.info("Import process terminated by user.")
-                    sys.exit(1)
+            return same_source_import
+        return False
 
-        # check if the CRS is consistent with other imports
-        different_srid_meta = (
+    def different_srid_meta(self, session):
+        """Check if the CRS is consistent with previous imports."""
+        return (
             session.query(CjMetadataModel)
             .filter(CjMetadataModel.srid != self.srid)
             .filter(CjMetadataModel.finished_at.isnot(None))
             .order_by(CjMetadataModel.finished_at.desc())
             .first()
         )
-
-        if different_srid_meta:
-            logger.error("Inconsistent Coordinate Reference Systems detected."
-                         "\nCurrently imported SRID: %s \n"
-                         "Recently imported SRID: %s "
-                         "\nUse the '-I/--srid' flag to reproject everything "
-                         "to a single specified CRS or modify source data.",
-                         self.srid, different_srid_meta.srid
-                         )
-            return False
-
-        return result_ok
 
 
 class CjObjectModel(BaseModel):
