@@ -26,11 +26,12 @@ class Exporter:
     def run_export(self) -> None:
         sql_query = f"""
 
-            WITH only_parents AS (SELECT cjo.id, cjo.object_id
-                                  FROM {self.schema}.city_object cjo
-						          LEFT JOIN {self.schema}.city_object_relationships f
-						          ON cjo.object_id = f.child_id
-						          WHERE f.child_id IS NULL)
+            WITH only_parents AS (
+                            SELECT cjo.id, cjo.object_id
+                            FROM {self.schema}.city_object cjo
+                            LEFT JOIN {self.schema}.city_object_relationships f
+                            ON cjo.object_id = f.child_id
+                            WHERE f.child_id IS NULL)
                     SELECT
                         cjo.id, cjo.object_id, cjo.type, cjo.attributes,
                         cjo.geometry, cjm.version, cjm.metadata,
@@ -73,14 +74,15 @@ class Exporter:
         cjson["vertices"] = []
         cjson["transform"] = rows[0]["transform"]
         cjson["metadata"] = {}
-        cjson["metadata"]["referenceSystem"] = rows[0]["metadata"]["referenceSystem"]
+        if "referenceSystem" in rows[0]["metadata"].keys():
+            cjson["metadata"]["referenceSystem"] =\
+                rows[0]["metadata"]["referenceSystem"]
 
-        # TODO: add geometry-template from all imported files or select only the ones relevant? 
-        #--     We could iterate over the ids and fetch the ones having '+' but that's tricky
-        #--     Outputting an extension that is not used is not a huge issue though
+        # TODO: add geometry-template from all imported files or select only the ones relevant?
+        #       We could iterate over the ids and fetch the ones having '+' but that's tricky
+        #       Outputting an extension that is not used is not a huge issue though
         # TODO: add extra-properties? Tricky to know which ones to be honest, maybe a flag?
         self.fout.write(json.dumps(cjson, separators=(',', ':')) + '\n')
-
 
         for row in rows:
             j = {}
@@ -90,12 +92,16 @@ class Exporter:
             j["CityObjects"][row['object_id']] = {}
             j["CityObjects"][row['object_id']]["type"] = row['type']
             if row['attributes'] is not None:
-                j["CityObjects"][row['object_id']]["attributes"] = row['attributes']
-            #-- parent first
+                j["CityObjects"][row['object_id']]["attributes"] =\
+                    row['attributes']
+            # parent first
             vertices = []
-            g2, vs = self.reference_vertices_in_cjf(row['geometry'], 3, bboxmin, len(vertices))
+            g2, vs = self.reference_vertices_in_cjf(row['geometry'],
+                                                    3,
+                                                    bboxmin,
+                                                    len(vertices))
             vertices.extend(vs)
-            if g2 is not None:      
+            if g2 is not None:
                 j["CityObjects"][row['object_id']]["geometry"] = g2
 
             ls_parents_children = []
@@ -104,7 +110,11 @@ class Exporter:
                     ls_parents_children.append((row['object_id'], each))
             while len(ls_parents_children) > 0:
                 pc = ls_parents_children.pop()
-                j, vertices, new_pc = self.add_child_to_cjf(j, pc[0], pc[1], vertices, bboxmin)
+                j, vertices, new_pc = self.add_child_to_cjf(j,
+                                                            pc[0],
+                                                            pc[1],
+                                                            vertices,
+                                                            bboxmin)
                 ls_parents_children.extend(new_pc)
             j["vertices"] = vertices
             j = self.remove_duplicate_vertices(j)
