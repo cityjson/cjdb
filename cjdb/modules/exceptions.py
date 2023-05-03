@@ -7,10 +7,9 @@ class InvalidMetadataException(Exception):
 
     def __str__(self):
         if self.msg:
-            return f"InvalidMetadataException: {self.msg}"
+            return f"{self.msg}"
         else:
-            return """InvalidMetadataException: the CityJSON object
-                      has invalid 'metadata'."""
+            return """The CityJSON object has invalid 'metadata'."""
 
 
 class InvalidCityJSONObjectException(Exception):
@@ -22,10 +21,10 @@ class InvalidCityJSONObjectException(Exception):
 
     def __str__(self):
         if self.msg:
-            return f"InvalidCityJSONObjectException: {self.msg}"
+            return f"{self.msg}"
         else:
-            return """InvalidCityJSONObjectException: the first object of the
-                      file should be a valid CityJSON object."""
+            return ("The first object of the file should be "
+                    "a valid CityJSON object.")
 
 
 class InvalidFileException(Exception):
@@ -37,8 +36,41 @@ class InvalidFileException(Exception):
 
     def __str__(self):
         if self.msg:
-            return f"InvalidFileException: {self.msg}"
+            return f"{self.msg}"
         else:
-            return ("InvalidFileException: The file should be a "
+            return ("The file should be a "
                     ".jsonl file. Use cjio to convert your city.json "
                     "file to city.jsonl.")
+        
+
+class MissingCRSException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"{self.msg}"
+        else:
+            return ("No Coordinate Reference System specified "
+                    "for the dataset. Use -I/--srid flag to "
+                    "define the SRID.")
+
+
+class InconsistentCRSException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"{self.msg}"
+        else:
+            return ("Inconsistent Coordinate Reference Systems detected. "
+                    "Use the '-I/--srid' flag to reproject everything "
+                    "to a single specified CRS or modify source data or "
+                    "create a new schema.")
