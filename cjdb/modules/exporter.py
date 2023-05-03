@@ -80,23 +80,23 @@ class Exporter:
         for row in rows:
             j = {}
             j["type"] = "CityJSONFeature"
-            j["id"] = row['id']
+            j["id"] = row['object_id']
             j["CityObjects"] = {}
-            j["CityObjects"][row['id']] = {}
-            j["CityObjects"][row['id']]["type"] = row['type']
+            j["CityObjects"][row['object_id']] = {}
+            j["CityObjects"][row['object_id']]["type"] = row['type']
             if row['attributes'] is not None:
-                j["CityObjects"][row[0]]["attributes"] = row['attributes']
+                j["CityObjects"][row['object_id']]["attributes"] = row['attributes']
             #-- parent first
             vertices = []
             g2, vs = self.reference_vertices_in_cjf(row['geometry'], 3, bboxmin, len(vertices))
             vertices.extend(vs)
             if g2 is not None:      
-                j["CityObjects"][row['id']]["geometry"] = g2
+                j["CityObjects"][row['object_id']]["geometry"] = g2
 
             ls_parents_children = []
             for each in row['children']:
                 if each is not None:
-                    ls_parents_children.append((row['id'], each))
+                    ls_parents_children.append((row['object_id'], each))
             while len(ls_parents_children) > 0:
                 pc = ls_parents_children.pop()
                 j, vertices, new_pc = self.add_child_to_cjf(j, pc[0], pc[1], vertices, bboxmin)
