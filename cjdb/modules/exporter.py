@@ -74,6 +74,11 @@ class Exporter:
         cjson["transform"] = rows[0]["transform"]
         cjson["metadata"] = {}
         if "referenceSystem" in rows[0]["metadata"].keys():
+            # TODO: Fetch the referenceSystem from the SRID
+            # Can be quried from the DB with
+            # "ST_SRID(cjo.ground_geometry) as epsg".
+            # Will be tricky because the buildings with parts
+            # do not have a ground_geometry.
             cjson["metadata"]["referenceSystem"] = rows[0]["metadata"][
                 "referenceSystem"
             ]
