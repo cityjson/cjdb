@@ -98,7 +98,7 @@ Default: 5432
 `-U, --user`
 PostgreSQL database user name
 
-`-W, --password`
+`--password`
 PostgreSQL database user password
 
 `-d, --database`
@@ -113,13 +113,16 @@ Default: “cjdb”
 ### Exporter
 
 ```bash
-cjdb export [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [query]
+cjdb export [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-o OUTPUT][query]
 ```
 #### Positional Arguments
 query
 
 
 #### Named Arguments
+`-o, --output`
+
+The name of the output file
 
 #### Database connection arguments
 `-H, --host`
@@ -135,7 +138,7 @@ Default: 5432
 `-U, --user`
 PostgreSQL database user name
 
-`-W, --password`
+`--password`
 PostgreSQL database user password
 
 `-d, --database`
