@@ -185,6 +185,7 @@ def test_export(
 
 def test_directory_import(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/cjfiles",
@@ -196,12 +197,12 @@ def test_directory_import(engine_postgresql, monkeypatch):
         append_mode=False,
         update_existing=False,
     ) as importer:
-        engine_postgresql.update_execution_options(schema_translate_map={None: 'cjdb'})
         importer.run_import()
 
 
 def test_single_import_with_extensions(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/extension.city.jsonl",
@@ -213,7 +214,6 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
         append_mode=False,
         update_existing=False,
     ) as importer:
-        engine_postgresql.update_execution_options(schema_translate_map={None: 'cjdb'})
         importer.run_import()
 
     cj_metadata = Table(
@@ -239,7 +239,7 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
 
 def test_single_import_without_metadata(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-
+    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/no_metadata.city.jsonl",
@@ -252,7 +252,6 @@ def test_single_import_without_metadata(engine_postgresql, monkeypatch):
         update_existing=False,
     ) as importer:
         with pytest.raises(InvalidMetadataException):
-            engine_postgresql.update_execution_options(schema_translate_map={None: 'cjdb'})
             importer.run_import()
 
 
@@ -260,6 +259,7 @@ def test_single_import_without_cityjson_obj_in_first_line(
     engine_postgresql, monkeypatch
 ):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/no_cityjson_obj.city.jsonl",
@@ -272,12 +272,11 @@ def test_single_import_without_cityjson_obj_in_first_line(
         update_existing=False,
     ) as importer:
         with pytest.raises(InvalidCityJSONObjectException):
-            engine_postgresql.update_execution_options(schema_translate_map={None: 'cjdb'})
             importer.run_import()
-
 
 def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/geomtemplate.city.jsonl",
@@ -289,19 +288,24 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
         append_mode=False,
         update_existing=False,
     ) as importer:
-        engine_postgresql.update_execution_options(schema_translate_map={None: 'cjdb'})
         importer.run_import()
 
-    cj_metadata = Table(
+    insp = inspect(engine_postgresql)
+    assert insp.has_schema("cjdb")
+    assert insp.has_table("city_object", schema="cjdb")
+    assert insp.has_table("cj_metadata", schema="cjdb")
+    assert insp.has_table("city_object_relationships", schema="cjdb")
+
+    cj_metadata1 = Table(
         "cj_metadata", MetaData(),
         schema="cjdb",
         autoload_with=engine_postgresql
     )
 
     query_cj_metadata = (
-        select(cj_metadata)
-        .where(cj_metadata.c.geometry_templates.isnot(None))
-        .where(cj_metadata.c.source_file == "geomtemplate.city.jsonl")
+        select(cj_metadata1)
+        .where(cj_metadata1.c.geometry_templates.isnot(None))
+        .where(cj_metadata1.c.source_file == "geomtemplate.city.jsonl")
     )
     with Session(engine_postgresql) as session:
         row = session.execute(query_cj_metadata).first()
@@ -319,4 +323,3 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
             [10, 10, 15],
             [0, 10, 15],
         ]
-
