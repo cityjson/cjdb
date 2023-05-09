@@ -190,6 +190,7 @@ def get_ground_geometry(geometry, obj_id):
     if len(ground_points) >= 3:
         ground_polygon = Polygon([[p.x, p.y] for p in ground_points])
     else:
+        # TODO: Fix this
         logger.warning(
             f"Ground geometry for object ID=({obj_id}) could not be"
             " calculated."
