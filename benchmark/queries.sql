@@ -1,50 +1,56 @@
 -- Compare schema sizes:
 SELECT
-    schema_name,
-    pg_size_pretty(sum(table_size) :: bigint) AS "disk space",
-    (
-        sum(table_size) / pg_database_size(current_database())
-    ) * 100 AS "percent"
+    schemaname,
+    pg_size_pretty(
+        sum(
+            pg_total_relation_size(
+                quote_ident(schemaname) || '.' || quote_ident(tablename)
+            )
+        ) :: bigint
+    ) AS total_size,
+    pg_size_pretty(
+        sum(
+            pg_relation_size(
+                quote_ident(schemaname) || '.' || quote_ident(tablename)
+            )
+        ) :: bigint
+    ) AS table_size,
+    pg_size_pretty(
+        sum(
+            pg_indexes_size(
+                quote_ident(schemaname) || '.' || quote_ident(tablename)
+            )
+        ) :: bigint
+    ) AS index_size,
+    pg_size_pretty(
+        sum(pg_total_relation_size(reltoastrelid)) :: bigint
+    ) AS toast_size
 FROM
-    (
-        SELECT
-            pg_catalog.pg_namespace.nspname AS schema_name,
-            pg_relation_size(pg_catalog.pg_class.oid) AS table_size
-        FROM
-            pg_catalog.pg_class
-            JOIN pg_catalog.pg_namespace ON relnamespace = pg_catalog.pg_namespace.oid
-    ) t
-GROUP BY
-    schema_name
-HAVING
-    schema_name IN (
-        'vienna_3dcitydb',
-        'vienna_cjdb',
+    pg_tables
+    JOIN pg_class c ON c.oid = (
+        quote_ident(schemaname) || '.' || quote_ident(tablename)
+    ) :: regclass :: oid
+WHERE
+    schemaname IN (
         'bag_3dcitydb',
-        'bag_cjdb'
+        'bag_cjdb',
+        'vienna_3dcitydb',
+        'vienna_cjdb'
     )
-ORDER BY
-    schema_name;
-
-----------------------------------------------------------------------------------------------------------------
---------------------------------------------1. Show the ids of all buildings made after the year 2000 ----------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------------------
--- 3DcityDB
+GROUP BY
+    schemaname ----------------------------------------------------------------------------------------------------------------
+    --------------------------------------------1. Show the ids of all buildings made after the year 2000 ----------------------------------------------------------------------------
+    ----------------------------------------------------------------------------------------------------------------
+    -- 3DcityDB
 EXPLAIN ANALYZE
 SELECT
     gmlid
 FROM
-    bag_3dcitydb.cityobject
+    bag_3dcitydb.cityobject co
+    JOIN bag_3dcitydb.cityobject_genericattrib coga ON co.id = coga.cityobject_id
 WHERE
-    cityobject.id IN (
-        SELECT
-            cityobject_genericattrib.cityobject_id
-        FROM
-            bag_3dcitydb.cityobject_genericattrib
-        WHERE
-            attrname = 'oorspronkelijkbouwjaar'
-            AND intval > 2000
-    );
+    coga.attrname = 'oorspronkelijkbouwjaar'
+    AND coga.intval > 2000;
 
 -- CJDB:
 EXPLAIN ANALYZE
@@ -173,29 +179,28 @@ GROUP BY
 --------------------------------------------5. Query all buildings LoD 1.1 ----------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------
 -- 3DcityDB :
-EXPLAIN ANALYZE
+EXPLAIN analyze
 SELECT
     co.gmlid,
-    sg.geometry,
-    *
-FROM
+    co.envelope
+ FROM
     bag_3dcitydb.cityobject co
     JOIN bag_3dcitydb.building b ON co.id = b.id
-    JOIN bag_3dcitydb.surface_geometry sg ON b.lod1_solid_id = sg.id
+    JOIN bag_3dcitydb.surface_geometry sg 
+    ON b.id = sg.cityobject_id 
 WHERE
     b.lod1_solid_id IS NOT NULL;
 
+      
 -- CJDB:
-EXPLAIN ANALYZE
+EXPLAIN analyze
 SELECT
     object_id,
     ground_geometry
 FROM
     bag_cjdb.city_object
 WHERE
-    geometry :: jsonb @ > '[{"lod": 1.2}]' :: jsonb
-ORDER BY
-    id ASC;
+    geometry::jsonb @> '[{"lod": 1.2}]'::jsonb;
 
 ----------------------------------------------------------------------------------------------------------------
 --------------------------------------------6. Example query of building roofs constructed after the year 2000 ----------------------------------------------------------------------------
