@@ -273,6 +273,7 @@ class Importer:
             # optionally check if the object exists -
             # to skip it or update it
             if self.update_existing:
+                # TODO: Filter also based on the metadata filename
                 existing = (
                     self.session.query(CjObjectModel)
                     .filter_by(object_id=obj_id)
@@ -329,11 +330,15 @@ class Importer:
 
                 # delete previous ties if updating object
                 if obj_to_update:
-                    children = self.session.query(
-                        CityObjectRelationshipModel).filter_by(
-                        child_id=child_id
-                    )
-                    children.delete()
+                    entry_id = CjObjectModel.get_id(
+                        self.session, child_id,
+                        self.current.cj_metadata.id)
+                    if entry_id:
+                        children = self.session.query(
+                            CityObjectRelationshipModel).filter_by(
+                            child_id=entry_id.id
+                        )
+                        children.delete()
 
         # create children-parent links after all objects
         # from the CityJSONFeature already exist
@@ -371,13 +376,21 @@ class Importer:
                 .on_conflict_do_nothing()
             )
             self.session.execute(obj_insert)
+        self.session.commit()
 
         if self.current.families:
+            for family in self.current.families:
+                family["parent_id"] =  CjObjectModel.get_id(
+                    self.session, family["parent_id"],
+                    self.current.cj_metadata.id).id
+                family["child_id"] = CjObjectModel.get_id(
+                    self.session, family["child_id"],
+                    self.current.cj_metadata.id).id
             city_object_relationships_insert = (
                 insert(CityObjectRelationshipModel)
                 .values(self.current.families)
                 .on_conflict_do_nothing()
-            )  # noqa
+            )
             self.session.execute(city_object_relationships_insert)
         self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
