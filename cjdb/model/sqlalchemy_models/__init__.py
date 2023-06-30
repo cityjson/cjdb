@@ -95,14 +95,12 @@ class CjObjectModel(BaseModel):
         return type_mapping
 
     @classmethod
-    def get_id(cls, session, object_id, cj_metadata_id):
-        row_id = (
-            session.query(cls)
-            .filter(cls.object_id == object_id)
-            .filter(cls.cj_metadata_id == cj_metadata_id)
-            .first()
-        )
-        return row_id
+    def get_max_id(cls, session) -> int:
+        max = session.query(func.max(cls.id)).scalar()
+        if max:
+            return max
+        else:
+            return 0
 
 
 class CityObjectRelationshipModel(BaseModel):

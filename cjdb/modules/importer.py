@@ -57,6 +57,8 @@ class Importer:
         self.partial_indexed_attributes = partial_indexed_attributes
         self.ignore_repeated_file = ignore_repeated_file
         self.update_existing = update_existing
+        self.max_id = 0
+        self.processed = dict()
 
         # get allowed types for validation
         self.city_object_types = get_city_object_types()
@@ -76,6 +78,7 @@ class Importer:
         # create model if in create mode, else append data
         if not self.append_mode:
             self.prepare_database()
+        self.max_id = CjObjectModel.get_max_id(self.session)
         self.parse_cityjson()
         self.session.commit()
         # post import operations like clustering, indexing...
@@ -303,13 +306,20 @@ class Importer:
             # 'or None' is added to change empty json "{}" to database null
             if obj_to_update:
                 city_object = obj_to_update
+                city_object_id = obj_to_update.id
                 city_object.type = cityobj.get("type")
                 city_object.attributes = cityobj.get("attributes") or None
                 city_object.geometry = geometry
                 city_object.ground_geometry = ground_geometry
                 city_object.cj_metadata = self.current.cj_metadata
             else:
+                city_object_id = self.processed.get(obj_id, None)
+                if not city_object_id:
+                    self.max_id = self.max_id + 1
+                    self.processed[obj_id] = self.max_id
+                    city_object_id = self.max_id
                 city_object = CjObjectModel(
+                    id=city_object_id,
                     object_id=obj_id,
                     type=cityobj.get("type"),
                     attributes=cityobj.get("attributes") or None,
@@ -326,19 +336,23 @@ class Importer:
 
             # save children-parent links
             for child_id in cityobj.get("children", []):
-                city_object_relationships_ties.append((obj_id, child_id))
+                child_unique_id = self.processed.get(child_id, None)
+                if child_unique_id:
+                    city_object_relationships_ties.append((city_object_id, child_unique_id))
+                else: 
+                    self.max_id = self.max_id + 1
+                    self.processed[child_id] = self.max_id
+                    city_object_relationships_ties.append((city_object_id, self.max_id))
+
 
                 # delete previous ties if updating object
                 if obj_to_update:
-                    entry_id = CjObjectModel.get_id(
-                        self.session, child_id,
-                        self.current.cj_metadata.id)
-                    if entry_id:
-                        children = self.session.query(
-                            CityObjectRelationshipModel).filter_by(
-                            child_id=entry_id.id
-                        )
-                        children.delete()
+
+                    children = self.session.query(
+                        CityObjectRelationshipModel).filter_by(
+                        parent_id=parent_id
+                    )
+                    children.delete()
 
         # create children-parent links after all objects
         # from the CityJSONFeature already exist
@@ -379,13 +393,6 @@ class Importer:
         self.session.commit()
 
         if self.current.families:
-            for family in self.current.families:
-                family["parent_id"] =  CjObjectModel.get_id(
-                    self.session, family["parent_id"],
-                    self.current.cj_metadata.id).id
-                family["child_id"] = CjObjectModel.get_id(
-                    self.session, family["child_id"],
-                    self.current.cj_metadata.id).id
             city_object_relationships_insert = (
                 insert(CityObjectRelationshipModel)
                 .values(self.current.families)
