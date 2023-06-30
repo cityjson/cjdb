@@ -68,11 +68,11 @@ def cjdb(ctx):
     help=s.ignore_file_help,
 )
 @click.option(
-    "--update-existing",
-    "update_existing",
+    "--overwrite",
+    "overwrite",
     is_flag=True,
     default=False,
-    help=s.update_existing,
+    help=s.overwrite,
 )
 def import_cj(
     filepath,
@@ -87,7 +87,7 @@ def import_cj(
     indexed_attributes,
     partial_indexed_attributes,
     ignore_repeated_file,
-    update_existing,
+    overwrite,
 ):
     """Import CityJSONL files to a PostgreSQL database."""
     engine = get_db_engine(user, password, host, port, database)
@@ -100,7 +100,7 @@ def import_cj(
         indexed_attributes,
         partial_indexed_attributes,
         ignore_repeated_file,
-        update_existing,
+        overwrite,
     ) as imp:
         imp.run_import()
 

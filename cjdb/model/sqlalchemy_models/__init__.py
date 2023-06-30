@@ -66,7 +66,7 @@ class CjObjectModel(BaseModel):
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
     ground_geometry = Column(Geometry("MultiPolygon"))
-    cj_metadata = relationship(CjMetadataModel)
+    cj_metadata = relationship(CjMetadataModel, cascade="all")
     metadata_id_object_id_unique = UniqueConstraint(cj_metadata_id, object_id)
 
     @classmethod

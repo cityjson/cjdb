@@ -41,7 +41,7 @@ def test_single_import_missing_srid(engine_postgresql):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         with pytest.raises(MissingCRSException):
             importer.run_import()
@@ -57,7 +57,7 @@ def test_single_import_with_srid_flag(engine_postgresql):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         importer.run_import()
 
@@ -72,12 +72,12 @@ def test_repeated_file_with_ignore_repeated_file(engine_postgresql):
         partial_indexed_attributes=[],
         ignore_repeated_file=True,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         importer.run_import()
 
 
-def test_repeated_file_with_update_existing(engine_postgresql):
+def test_repeated_file_with_overwrite(engine_postgresql):
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
@@ -87,7 +87,7 @@ def test_repeated_file_with_update_existing(engine_postgresql):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=True,
+        overwrite=True,
     ) as importer:
         importer.run_import()
 
@@ -103,7 +103,7 @@ def test_repeated_file_with_prompt_to_continue(engine_postgresql, monkeypatch):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         importer.run_import()
 
@@ -119,7 +119,7 @@ def test_repeated_file_with_prompt_to_skip_file(engine_postgresql, monkeypatch):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         importer.run_import()
 
@@ -190,7 +190,7 @@ def test_directory_import(engine_postgresql, monkeypatch):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         importer.run_import()
 
@@ -207,7 +207,7 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         importer.run_import()
 
@@ -242,7 +242,7 @@ def test_single_import_without_metadata(engine_postgresql, monkeypatch):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         with pytest.raises(InvalidMetadataException):
             importer.run_import()
@@ -262,7 +262,7 @@ def test_single_import_without_cityjson_obj_in_first_line(
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         with pytest.raises(InvalidCityJSONObjectException):
             importer.run_import()
@@ -280,7 +280,7 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         append_mode=False,
-        update_existing=False,
+        overwrite=False,
     ) as importer:
         importer.run_import()
 
