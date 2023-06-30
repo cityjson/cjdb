@@ -196,7 +196,7 @@ WHERE object_id = 'NL.IMBAG.Pand.0503100000000334';
 - Query a building with a specific child
 ```SQL
 SELECT o.* FROM cjdb.city_object_relationships f
-INNER JOIN cjdb.city_object o ON o.object_id = f.parent_id
+INNER JOIN cjdb.city_object o ON o.id = f.parent_id
 WHERE f.child_id = 'NL.IMBAG.Pand.0503100000000334-0'
 ```
 
