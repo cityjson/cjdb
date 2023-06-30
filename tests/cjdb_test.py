@@ -5,11 +5,13 @@ from pytest_postgresql.janitor import DatabaseJanitor
 from sqlalchemy import MetaData, Table, create_engine, inspect, select
 from sqlalchemy.orm import Session
 
-from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
-                                     InvalidMetadataException,
-                                     MissingCRSException)
-from cjdb.modules.importer import Importer
+from cjdb.modules.exceptions import (
+    InvalidCityJSONObjectException,
+    InvalidMetadataException,
+    MissingCRSException,
+)
 from cjdb.modules.exporter import Exporter
+from cjdb.modules.importer import Importer
 
 
 @pytest.fixture(scope="session")
@@ -130,24 +132,19 @@ def test_db_model(engine_postgresql):
     assert insp.has_table("city_object_relationships", schema="vienna")
 
     city_object = Table(
-        "city_object",
-        MetaData(),
-        schema="vienna",
-        autoload_with=engine_postgresql
+        "city_object", MetaData(), schema="vienna", autoload_with=engine_postgresql
     )
 
     cj_metadata = Table(
-        "cj_metadata",
-        MetaData(),
-        schema="vienna",
-        autoload_with=engine_postgresql
+        "cj_metadata", MetaData(), schema="vienna", autoload_with=engine_postgresql
     )
 
     query_city_object = select(city_object).where(
         city_object.c.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
     )
     query_cj_metadata = select(cj_metadata).where(
-        cj_metadata.c.source_file == "vienna.jsonl")
+        cj_metadata.c.source_file == "vienna.jsonl"
+    )
 
     with Session(engine_postgresql) as session:
         row = session.execute(query_city_object).first()
@@ -170,9 +167,7 @@ def test_db_model(engine_postgresql):
         ]
 
 
-def test_export(
-    engine_postgresql
-):
+def test_export(engine_postgresql):
     conn = engine_postgresql.raw_connection()
     with Exporter(
         connection=conn,
@@ -185,7 +180,7 @@ def test_export(
 
 def test_directory_import(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
+    engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/cjfiles",
@@ -202,7 +197,7 @@ def test_directory_import(engine_postgresql, monkeypatch):
 
 def test_single_import_with_extensions(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
+    engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/extension.city.jsonl",
@@ -217,9 +212,7 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
         importer.run_import()
 
     cj_metadata = Table(
-        "cj_metadata", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
+        "cj_metadata", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     query_cj_metadata = (
@@ -239,7 +232,7 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
 
 def test_single_import_without_metadata(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
+    engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/no_metadata.city.jsonl",
@@ -259,7 +252,7 @@ def test_single_import_without_cityjson_obj_in_first_line(
     engine_postgresql, monkeypatch
 ):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
+    engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/no_cityjson_obj.city.jsonl",
@@ -274,9 +267,10 @@ def test_single_import_without_cityjson_obj_in_first_line(
         with pytest.raises(InvalidCityJSONObjectException):
             importer.run_import()
 
+
 def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    engine_postgresql.update_execution_options(schema_translate_map={'vienna': 'cjdb'})
+    engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
     with Importer(
         engine=engine_postgresql,
         filepath="./tests/files/geomtemplate.city.jsonl",
@@ -297,9 +291,7 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
     assert insp.has_table("city_object_relationships", schema="cjdb")
 
     cj_metadata1 = Table(
-        "cj_metadata", MetaData(),
-        schema="cjdb",
-        autoload_with=engine_postgresql
+        "cj_metadata", MetaData(), schema="cjdb", autoload_with=engine_postgresql
     )
 
     query_cj_metadata = (
