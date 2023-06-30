@@ -257,7 +257,8 @@ SELECT
     COUNT(cor.child_id) AS number_of_parts
 FROM
     bag_cjdb.city_object co
-    LEFT JOIN bag_cjdb.city_object_relationships cor ON co.object_id = cor.parent_id
+    LEFT JOIN bag_cjdb.city_object_relationships cor 
+    ON co.id = cor.parent_id
 WHERE
     co.type = 'Building'
 GROUP BY
