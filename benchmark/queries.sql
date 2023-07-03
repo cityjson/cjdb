@@ -32,7 +32,7 @@ FROM
     ) :: regclass :: oid
 WHERE
     schemaname IN (
-        'bag_3dcitydb_test',
+        'bag_3dcitydb',
         'bag_cjdb',
         'vienna_3dcitydb',
         'vienna_cjdb',
@@ -76,16 +76,11 @@ EXPLAIN ANALYZE
 SELECT
     gmlid
 FROM
-    bag_3dcitydb_test.cityobject co
-    JOIN bag_3dcitydb_test.cityobject_genericattrib coga ON co.id = coga.cityobject_id
+    bag_3dcitydb.cityobject co
+    JOIN bag_3dcitydb.cityobject_genericattrib coga ON co.id = coga.cityobject_id
 WHERE
     coga.attrname = 'h_dak_max'
     AND coga.realval > 20;
-
-SELECT
-    *
-FROM
-    bag_3dcitydb.building cg;
 
 -- CJDB: 
 EXPLAIN ANALYZE
@@ -98,8 +93,9 @@ WHERE
 
 --- 1B: NYC
 ---NOT Possible
+
 --- 1C: Vienna
--- 3DCityDB: 24 + 23 + 24 + 20 + 20
+-- 3DCityDB
 EXPLAIN ANALYZE
 SELECT
     gmlid
@@ -110,7 +106,7 @@ WHERE
     coga.attrname = 'HoeheDach'
     AND coga.strval :: float > 20;
 
--- CJDB: Execution Time: 2 + 2 + 2 + 2 + 2
+-- CJDB: 
 EXPLAIN ANALYZE
 SELECT
     object_id
@@ -196,21 +192,51 @@ WHERE
     );
 
 --- 2C: Vienna
+EXPLAIN ANALYZE
+SELECT
+    c.gmlid,
+    sg.geometry
+FROM
+    vienna_3dcitydb.thematic_surface AS ts
+    LEFT JOIN vienna_3dcitydb.surface_geometry AS sg ON ts.lod2_multi_surface_id = sg.parent_id
+    LEFT JOIN vienna_3dcitydb.cityobject AS c ON ts.building_id = c.id
+WHERE
+    ST_Contains(
+        ST_MakeEnvelope(
+            1305.187,
+            340920.83400000003,
+            1505.187,
+            341120.83400000003,
+            7415
+        ),
+        sg.geometry
+    )
+    AND ts.objectclass_id = 35;
+
+-- CJDB: 
+EXPLAIN ANALYZE
+SELECT
+    object_id,
+    ground_geometry
+FROM
+    vienna_cjdb.city_object
+WHERE
+    ST_Contains(
+        ST_MakeEnvelope(
+            1305.187,
+            340920.83400000003,
+            1505.187,
+            341120.83400000003,
+            4585
+        ),
+        ground_geometry
+    );
+
 ----------------------------------------------------------------------------------------------------------------
 --------------------------------------------3. Query building on point ----------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------
--- 3DcityDB
-EXPLAIN ANALYZE
-SELECT
-    gmlid,
-    envelope
-FROM
-    bag_3dcitydb.cityobject
-WHERE
-    envelope & & st_setsrid(ST_MakePoint(85200, 446900), 7415)
-    AND objectclass_id = 26;
-
--- BUT MORE ACCURATE:   
+--3A: BAG
+-- 3DcityDB   
 EXPLAIN ANALYZE
 SELECT
     c.gmlid,
@@ -223,7 +249,7 @@ WHERE
     sg.geometry & & st_setsrid(ST_MakePoint(85200, 446900), 7415)
     AND ts.objectclass_id = 35;
 
--- CJDB :  Query building on point
+-- CJDB :
 EXPLAIN ANALYZE
 SELECT
     object_id,
@@ -234,14 +260,17 @@ WHERE
     TYPE = 'Building'
     AND ground_geometry & & st_setsrid(ST_MakePoint(85200, 446900), 7415);
 
+--3B: BAG
+--3C: BAG
 ----------------------------------------------------------------------------------------------------------------
 --------------------------------------------4. Query the number of parts for each building ----------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------
--- 3DcityDB
+-- 4A: BAG
+-- 3DcityBAG: 
 EXPLAIN ANALYZE
 SELECT
-    cj.gmlid AS building_id,
-    count(b.id) AS number_of_parts
+    cj.gmlid,
+    count(b.id)
 FROM
     bag_3dcitydb.cityobject cj
     LEFT JOIN bag_3dcitydb.building b ON cj.id = b.building_parent_id
@@ -250,77 +279,382 @@ WHERE
 GROUP BY
     cj.id;
 
+-- CJDB: 
+EXPLAIN ANALYZE
+SELECT
+    co.object_id,
+    COUNT(cor.child_id)
+FROM
+    bag_cjdb.city_object co
+    LEFT JOIN bag_cjdb.city_object_relationships cor ON co.id = cor.parent_id
+WHERE
+    co.type = 'Building'
+GROUP BY
+    co.object_id;
+
+-- 4B: NYC
+-- 3DcityBAG   
+EXPLAIN ANALYZE
+SELECT
+    cj.gmlid,
+    count(b.id)
+FROM
+    ny_3dcitydb.cityobject cj
+    LEFT JOIN ny_3dcitydb.building b ON cj.id = b.building_parent_id
+WHERE
+    cj.objectclass_id = 26
+GROUP BY
+    cj.id;
+
 -- CJDB
 EXPLAIN ANALYZE
 SELECT
-    co.object_id AS building_id,
-    COUNT(cor.child_id) AS number_of_parts
+    co.object_id,
+    COUNT(cor.child_id)
 FROM
-    bag_cjdb.city_object co
-    LEFT JOIN bag_cjdb.city_object_relationships cor 
-    ON co.id = cor.parent_id
+    ny_cjdb.city_object co
+    LEFT JOIN ny_cjdb.city_object_relationships cor ON co.id = cor.parent_id
+WHERE
+    co.type = 'Building'
+GROUP BY
+    co.object_id;
+
+-- 4C: Vienna
+-- 3DcityBAG      
+EXPLAIN ANALYZE
+SELECT
+    cj.gmlid,
+    count(b.id)
+FROM
+    vienna_3dcitydb.cityobject cj
+    LEFT JOIN vienna_3dcitydb.building b ON cj.id = b.building_parent_id
+WHERE
+    cj.objectclass_id = 26
+GROUP BY
+    cj.id;
+
+-- CJDB
+EXPLAIN ANALYZE
+SELECT
+    co.object_id,
+    COUNT(cor.child_id)
+FROM
+    vienna_cjdb.city_object co
+    LEFT JOIN vienna_cjdb.city_object_relationships cor ON co.id = cor.parent_id
 WHERE
     co.type = 'Building'
 GROUP BY
     co.object_id;
 
 ----------------------------------------------------------------------------------------------------------------
---------------------------------------------5. Query all buildings LoD 1.1 ----------------------------------------------------------------------------
+--------------------------------------------5. Query all buildings by LOD ----------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------
+-- 5A: BAG
 -- 3DcityDB :
 EXPLAIN ANALYZE
 SELECT
-    co.gmlid,
-    co.envelope
+    co.gmlid
 FROM
     bag_3dcitydb.cityobject co
     JOIN bag_3dcitydb.building b ON co.id = b.id
-    JOIN bag_3dcitydb.surface_geometry sg ON b.id = sg.cityobject_id
 WHERE
     b.lod1_solid_id IS NOT NULL;
 
 -- CJDB:
 EXPLAIN ANALYZE
 SELECT
-    object_id,
-    ground_geometry
+    object_id
 FROM
     bag_cjdb.city_object
 WHERE
     geometry :: jsonb @ > '[{"lod": 1.2}]' :: jsonb;
 
-----------------------------------------------------------------------------------------------------------------
---------------------------------------------6. Example query of building roofs constructed after the year 2000 ----------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------------------
--- 3DcityBAG 
+-- 5B: NYC
 EXPLAIN ANALYZE
 SELECT
-    ts.id AS roof_id,
-    co_ts.gmlid AS roof_gmlid,
-    building.id AS building_id,
-    co.gmlid AS building_gmlid,
-    coga.intval AS year_of_construction,
-    ST_Collect(sg.geometry) AS roof_geom
+    co.gmlid
 FROM
-    bag_3dcitydb.thematic_surface AS ts
-    INNER JOIN bag_3dcitydb.cityobject AS co_ts ON (co_ts.id = ts.id)
-    INNER JOIN bag_3dcitydb.surface_geometry AS sg ON (ts.lod2_multi_surface_id = sg.root_id)
-    INNER JOIN bag_3dcitydb.building AS building_part ON (building_part.id = ts.building_id)
-    INNER JOIN bag_3dcitydb.building AS building ON (building_part.building_parent_id = building.id)
-    INNER JOIN bag_3dcitydb.cityobject AS co ON (co.id = building.id)
-    INNER JOIN bag_3dcitydb.cityobject_genericattrib coga ON co.id = coga.cityobject_id
+    ny_3dcitydb.cityobject co
+    JOIN bag_3dcitydb.building b ON co.id = b.id
 WHERE
-    ts.objectclass_id = 33 -- roofsurfaces
-    AND building.objectclass_id = 26
-    AND coga.attrname = 'oorspronkelijkbouwjaar'
-    AND coga.intval > 2000
-GROUP BY
-    ts.id,
-    co_ts.gmlid,
-    building.id,
-    co.gmlid,
-    coga.intval
-ORDER BY
-    ts.id;
+    b.lod1_solid_id IS NOT NULL;
 
--- Not possible in  CJDB
+-- CJDB:
+EXPLAIN ANALYZE
+SELECT
+    object_id
+FROM
+    ny_cjdb.city_object
+WHERE
+    geometry :: jsonb @ > '[{"lod": "2"}]' :: jsonb;
+
+-- 5C: Vienna
+EXPLAIN ANALYZE
+SELECT
+    co.gmlid
+FROM
+    vienna_3dcitydb.cityobject co
+    JOIN bag_3dcitydb.building b ON co.id = b.id
+WHERE
+    b.lod1_solid_id IS NOT NULL;
+
+-- CJDB:
+EXPLAIN ANALYZE
+SELECT
+    object_id
+FROM
+    vienna_cjdb.city_object
+WHERE
+    geometry :: jsonb @ > '[{"lod": "2"}]' :: jsonb;
+
+----------------------------------------------------------------------------------------------------------------
+--------------------------------------------6. INSERT new attribute  ----------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+-- 6A: BAG
+-- 3DcityDB
+EXPLAIN ANALYZE
+INSERT INTO
+    bag_3dcitydb.cityobject_genericattrib (attrname, datatype, realval, cityobject_id)
+SELECT
+    'footprint_area',
+    3,
+    ST_Area(cityobject.envelope),
+    cityobject.id
+FROM
+    bag_3dcitydb.cityobject
+WHERE
+    cityobject.objectclass_id = 26;
+
+--cjdb
+EXPLAIN ANALYZE
+UPDATE
+    bag_cjdb.city_object
+SET
+    attributes = jsonb_set(
+        attributes :: jsonb,
+        '{footprint_area}',
+        to_jsonb(ST_Area(ground_geometry))
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+-- 6B: NYC
+-- 3DcityDB
+EXPLAIN ANALYZE
+INSERT INTO
+    ny_3dcitydb.cityobject_genericattrib (attrname, datatype, realval, cityobject_id)
+SELECT
+    'footprint_area',
+    3,
+    ST_Area(cityobject.envelope),
+    cityobject.id
+FROM
+    ny_3dcitydb.cityobject
+WHERE
+    cityobject.objectclass_id = 26;
+
+--cjdb
+EXPLAIN ANALYZE
+UPDATE
+    ny_cjdb.city_object
+SET
+    attributes = jsonb_set(
+        attributes :: jsonb,
+        '{footprint_area}',
+        to_jsonb(ST_Area(ground_geometry))
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+-- 6C: VIENAA
+-- 3DcityDB
+EXPLAIN ANALYZE
+INSERT INTO
+    vienna_3dcitydb.cityobject_genericattrib (attrname, datatype, realval, cityobject_id)
+SELECT
+    'footprint_area',
+    3,
+    ST_Area(cityobject.envelope),
+    cityobject.id
+FROM
+    vienna_3dcitydb.cityobject
+WHERE
+    cityobject.objectclass_id = 26;
+
+--cjdb
+EXPLAIN ANALYZE
+UPDATE
+    vienna_cjdb.city_object
+SET
+    attributes = jsonb_set(
+        attributes :: jsonb,
+        '{footprint_area}',
+        to_jsonb(ST_Area(ground_geometry))
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+----------------------------------------------------------------------------------------------------------------
+--------------------------------------------7. UPDATE attribute  ----------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+-- 7A: BAG
+-- 3DcityDB
+EXPLAIN ANALYZE
+UPDATE
+    bag_3dcitydb.cityobject_genericattrib
+SET
+    realval = realval + 10
+WHERE
+    attrname = 'footprint_area';
+
+--CJDB:
+EXPLAIN ANALYZE
+UPDATE
+    bag_cjdb.city_object
+SET
+    attributes = jsonb_set(
+        attributes :: jsonb,
+        '{footprint_area}',
+        to_jsonb(
+            CAST (
+                jsonb_path_query_first(
+                    attributes :: jsonb,
+                    '$.footprint_area'
+                ) AS real
+            ) + 10.0
+        )
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+-- 7B: NY
+-- 3DcityDB
+EXPLAIN ANALYZE
+UPDATE
+    ny_3dcitydb.cityobject_genericattrib
+SET
+    realval = realval + 10
+WHERE
+    attrname = 'footprint_area';
+
+--CJDB:
+EXPLAIN ANALYZE
+UPDATE
+    ny_cjdb.city_object
+SET
+    attributes = jsonb_set(
+        attributes :: jsonb,
+        '{footprint_area}',
+        to_jsonb(
+            CAST (
+                jsonb_path_query_first(
+                    attributes :: jsonb,
+                    '$.footprint_area'
+                ) AS real
+            ) + 10.0
+        )
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+-- 7C: Vienna
+-- 3DcityDB
+EXPLAIN ANALYZE
+UPDATE
+    vienna_3dcitydb.cityobject_genericattrib
+SET
+    realval = realval + 10
+WHERE
+    attrname = 'footprint_area';
+
+--CJDB:
+EXPLAIN ANALYZE
+UPDATE
+    vienna_cjdb.city_object
+SET
+    attributes = jsonb_set(
+        attributes :: jsonb,
+        '{footprint_area}',
+        to_jsonb(
+            CAST (
+                jsonb_path_query_first(
+                    attributes :: jsonb,
+                    '$.footprint_area'
+                ) AS real
+            ) + 10.0
+        )
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+----------------------------------------------------------------------------------------------------------------
+--------------------------------------------8. Delete attribute  ----------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+-- 8A: BAG
+-- 3DcityDB
+EXPLAIN ANALYZE
+DELETE FROM
+    bag_3dcitydb.cityobject_genericattrib
+WHERE
+    attrname = 'footprint_area';
+
+--CJDB   
+EXPLAIN ANALYZE
+UPDATE
+    bag_cjdb.city_object
+SET
+    attributes = jsonb_set_lax(
+        attributes :: jsonb,
+        '{footprint_area}',
+        NULL,
+        TRUE,
+        'delete_key'
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+-- 8B: NY
+-- 3DcityDB
+EXPLAIN ANALYZE
+DELETE FROM
+    ny_3dcitydb.cityobject_genericattrib
+WHERE
+    attrname = 'footprint_area';
+
+--CJDB   
+EXPLAIN ANALYZE
+UPDATE
+    ny_cjdb.city_object
+SET
+    attributes = jsonb_set_lax(
+        attributes :: jsonb,
+        '{footprint_area}',
+        NULL,
+        TRUE,
+        'delete_key'
+    ) :: json
+WHERE
+    TYPE = 'Building';
+
+-- 8C: Vienna
+-- 3DcityDB
+EXPLAIN ANALYZE
+DELETE FROM
+    vienna_3dcitydb.cityobject_genericattrib
+WHERE
+    attrname = 'footprint_area';
+
+--CJDB   
+EXPLAIN ANALYZE
+UPDATE
+    vienna_cjdb.city_object
+SET
+    attributes = jsonb_set_lax(
+        attributes :: jsonb,
+        '{footprint_area}',
+        NULL,
+        TRUE,
+        'delete_key'
+    ) :: json
+WHERE
+    TYPE = 'Building';
