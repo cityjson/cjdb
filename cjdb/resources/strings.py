@@ -56,10 +56,10 @@ skip_existing = (
     "twice will result in an error."
 )
 
-update_existing = (
-    "Check if the object with given ID exists before inserting, and "
-    "update it if it does. "
-    "The old object will be updated with the new object's properties."
+overwrite = (
+    "If the file has been imported before, delete all "
+    "associated objects with this filename and reimport "
+    "all objects in the file."
 )
 
 output_help = (

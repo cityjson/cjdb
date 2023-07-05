@@ -1,13 +1,14 @@
 from click.testing import CliRunner
-from cjdb.cli import cjdb
+
 from cjdb import __version__
+from cjdb.cli import cjdb
 
 
 def test_version_flag():
     runner = CliRunner()
     result = runner.invoke(cjdb, ["--version"])
     assert result.exit_code == 0
-    assert result.output == 'cjdb ' + __version__ + "\n"
+    assert result.output == "cjdb " + __version__ + "\n"
 
 
 def test_import_help():

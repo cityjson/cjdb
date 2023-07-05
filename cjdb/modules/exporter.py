@@ -29,7 +29,7 @@ class Exporter:
                 SELECT cjo.id, cjo.object_id
                 FROM {self.schema}.city_object cjo
                 LEFT JOIN {self.schema}.city_object_relationships f
-                ON cjo.object_id = f.child_id
+                ON cjo.id = f.child_id
                 WHERE f.child_id IS NULL)
             SELECT
                 cjo.id, cjo.object_id, cjo.type, cjo.attributes,
@@ -42,7 +42,7 @@ class Exporter:
             ON cjo.cj_metadata_id  = cjm.id
             LEFT JOIN
                 {self.schema}.city_object_relationships  f
-            ON cjo.object_id  = f.parent_id
+            ON cjo.id  = f.parent_id
             JOIN
                 only_parents op
             ON cjo.id = op.id
@@ -130,11 +130,12 @@ class Exporter:
         if "children" not in j["CityObjects"][parent_id]:
             j["CityObjects"][parent_id]["children"] = []
         cursor = self.connection.cursor(cursor_factory=DictCursor)
+        # TODO: Incorporate Metadata
         cursor.execute(
             sql.SQL(
                 """SELECT cjo.*
                        FROM {}.city_object cjo
-                       WHERE cjo.object_id = %s"""
+                       WHERE cjo.id = %s"""
             ).format(sql.Identifier(self.schema)),
             (child_id,),
         )

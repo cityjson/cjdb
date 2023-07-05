@@ -89,7 +89,7 @@ Bug when deleting an object
 `Added`
 - dockerfile to build and run locally with docker
 - --ignore-existing/-e flag to check and ignore objects with duplicated ID
-- --update-existing/-u flag to update existing objects matched by ID with the new properties when importing a file
+- --overwrite flag to overwrite existing objects matched by ID with the new properties when importing a file
 
 `Removed`
 - bbox column for cjdb object (ground_geometry now used)
