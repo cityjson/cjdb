@@ -33,7 +33,7 @@ class Exporter:
                 SELECT cjo.id, cjo.object_id
                 FROM {self.schema}.city_object cjo
                 LEFT JOIN {self.schema}.city_object_relationships f
-                ON cjo.object_id = f.child_id
+                ON cjo.id = f.child_id
                 WHERE f.child_id IS NULL)
             SELECT
                 cjo.id, cjo.object_id, array_agg(f.child_id) as children
@@ -41,7 +41,7 @@ class Exporter:
                 {self.schema}.city_object cjo
             LEFT JOIN
                 {self.schema}.city_object_relationships  f
-            ON cjo.object_id  = f.parent_id
+            ON cjo.id  = f.parent_id
             JOIN
                 only_parents op
             ON cjo.id = op.id
@@ -59,7 +59,7 @@ class Exporter:
         
         pcrel = {}
         for r in rows:
-            pcrel[r['object_id']] = r['children']
+            pcrel[r['id']] = r['children']
         # print(pcrel)
         # query_ids = list(map(lambda x: x[0], rows))
 
@@ -90,40 +90,52 @@ class Exporter:
         else:
             j["metadata"]["referenceSystem"] = "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])
         
-        cursor.execute("select * from cjdb.city_object;")
+        sq = f"select * from {self.schema}.city_object;"
+        cursor.execute(sq)
         rows = cursor.fetchall()
         self.bboxmin = self.find_min_bbox(rows)
         j["transform"]["translate"] = self.bboxmin
 
         # TODO: what do we do with other metadata? Cannot merge really... so only CRS
+        f_out = open(self.output, "w") 
+        print(json.dumps(j, separators=(',', ':')), file=f_out)
         # with open(self.output, 'a') as f:
             # f.write(json.dumps(j, separators=(',', ':')) + '\n')
         # f.close()
 
         d = {}
         for r in rows:
-            d[r["object_id"]] = r
+            d[r["id"]] = r
+
+        for key, children in pcrel.items():
+            re = write_cjf_4(key, children, d, pcrel, self.bboxmin)
+            print(re, file=f_out)
 
 
         # t = []
         # for key, children in pcrel.items():
-        #     t.append([key, children, d, pcrel, self.bboxmin, self.fout])
+        #     t.append([key, children, d, pcrel, self.bboxmin])
+        # # print("done this.")
+        # with mp.Pool() as p:
+        #     for result in p.starmap(write_cjf_4, t):
+        #         print(result, file=f_out)
 
-        manager = mp.Manager()
-        q = manager.Queue()
-        file_pool = mp.Pool(1)
-        file_pool.apply_async(mp_listener, (q, self.output))
-        pool = mp.Pool(16)
-        jobs = []
-        for key, children in pcrel.items():
-            job = pool.apply_async(write_cjf_3, (key, children, d, pcrel, self.bboxmin, q))
-            jobs.append(job)
-        for job in jobs:
-            job.get()
+        f_out.close()
 
-        q.put('#done#')  # all workers are done, we close the output file
-        pool.close()
-        pool.join()
+        # manager = mp.Manager()
+        # q = manager.Queue()
+        # file_pool = mp.Pool(1)
+        # file_pool.apply_async(mp_listener, (q, self.output))
+        # pool = mp.Pool(16)
+        # jobs = []
+        # for key, children in pcrel.items():
+            # job = pool.apply_async(write_cjf_3, (key, children, d, pcrel, self.bboxmin, q))
+            # jobs.append(job)
+        # for job in jobs:
+            # job.get()
+        # q.put('#done#')  # all workers are done, we close the output file
+        # pool.close()
+        # pool.join()
         # outputs_async = pool.starmap(write_cjf_3, t)
         # outputs_async.get() 
         # for key, children in pcrel.items():
@@ -412,8 +424,44 @@ def write_cjf_3(parent, children, d, pcrel, bboxmin, q):
             ls_parents_children.extend(pcrel[pc[1]])
     j["vertices"] = vertices
     j = remove_duplicate_vertices(j)
-    q.put(json.dumps(j, separators=(",", ":")))
+    # return json.dumps(j, separators=(",", ":"))
+    fout.write(json.dumps(j, separators=(",", ":")) + "\n")
+
+def write_cjf_4(parent, children, d, pcrel, bboxmin):
+    j = {}
+    j["type"] = "CityJSONFeature"
+    j["id"] = parent
+    j["CityObjects"] = {}
+    j["CityObjects"][parent] = {}
+    j["CityObjects"][parent]["type"] = d[parent]["type"]
+    if d[parent]["attributes"] is not None:
+        j["CityObjects"][parent]["attributes"] =\
+            d[parent]["attributes"]
+    # parent first
+    vertices = []
+    g2, vs = reference_vertices_in_cjf_3(
+        d[parent]["geometry"], 3, bboxmin, len(vertices)
+    )
+    vertices.extend(vs)
+    if g2 is not None:
+        j["CityObjects"][parent]["geometry"] = g2
+    ls_parents_children = []
+    for child in children:
+        if child is not None:
+            ls_parents_children.append((parent, child))
+    while len(ls_parents_children) > 0:
+        pc = ls_parents_children.pop()
+        j, vertices = add_child_to_cjf_3(
+            j, pc[0], pc[1], vertices, bboxmin, d
+        )
+        # ls_parents_children.extend(new_pc)
+        if pc[1] in pcrel:
+            ls_parents_children.extend(pcrel[pc[1]])
+    j["vertices"] = vertices
+    j = remove_duplicate_vertices(j)
+    return json.dumps(j, separators=(",", ":"))
     # fout.write(json.dumps(j, separators=(",", ":")) + "\n")
+
 
 
 
