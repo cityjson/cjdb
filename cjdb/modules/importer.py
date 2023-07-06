@@ -232,8 +232,6 @@ class Importer:
                 f"""File already imported. Overwriting all objects
                 from source file {cj_metadata.source_file}""")
             imported_files.delete()
-            #self.session.commit()
-            print("deleting")
 
         different_srid = cj_metadata.different_srid_meta(self.session)
         if different_srid:
