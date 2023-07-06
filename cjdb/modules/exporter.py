@@ -15,7 +15,10 @@ class Exporter:
     def __init__(self, connection, schema, sqlquery, output):
         self.connection = connection
         self.schema = schema
-        self.sqlquery = sqlquery
+        if sqlquery == "ALL":
+            self.sqlquery = f"select cjo.id from {self.schema}.city_object cjo"
+        else:
+            self.sqlquery = sqlquery
         self.output = output
         self.bboxmin = [0.0, 0.0, 0.0]
 
