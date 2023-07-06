@@ -125,7 +125,10 @@ def import_cj(
               default="cj_export.jsonl",
               help=s.output_help)
 def export_cj(query, host, port, user, password, database, schema, output):
-    """Export a CityJSONL stream to a file."""
+    """Export a CityJSONL stream to a file.
+        The query should return IDs from the table 'city_object';
+        use "ALL" to export the whole database/schema.
+    """
     # where to save the file
     base = os.path.basename(output)
     dirname = os.path.abspath(os.path.dirname(output))
