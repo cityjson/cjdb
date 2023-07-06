@@ -79,8 +79,8 @@ Run in append mode (as opposed to default create mode). This assumes the databas
 Default: False
 
 
-`-u, --update-existing`
-Check if the object with given ID exists before inserting, and update it if it does. The old object will be updated with the new object’s properties.
+`--overwrite`
+If the file has been imported before, delete all associated objects with this filename and reimport all objects in the file.
 
 Default: False
 
@@ -196,7 +196,7 @@ WHERE object_id = 'NL.IMBAG.Pand.0503100000000334';
 - Query a building with a specific child
 ```SQL
 SELECT o.* FROM cjdb.city_object_relationships f
-INNER JOIN cjdb.city_object o ON o.object_id = f.parent_id
+INNER JOIN cjdb.city_object o ON o.id = f.parent_id
 WHERE f.child_id = 'NL.IMBAG.Pand.0503100000000334-0'
 ```
 
@@ -366,7 +366,7 @@ It sends out warnings when:
 ### Repeated object IDs
 By default, the importer does not check if an object with a given ID exists already in the database. This is because such an operation for every inserted object results in a performance penalty.
 
-The user can choose to run the import with either the `-e/--skip-existing` option to skip existing objects or `-u, --update-existing` to update existing objects. This will slow down the import, but it will also ensure that repeated object cases are handled.
+The user can choose to run the import with either the `-e/--skip-existing` option to skip existing objects or `--overwrite` to overwrite existing objects. This will slow down the import, but it will also ensure that repeated object cases are handled.
 
 
 

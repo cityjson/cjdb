@@ -90,6 +90,11 @@ class Exporter:
         else:
             j["metadata"]["referenceSystem"] = "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])
         
+        # TODO: add geometry-template from all imported files or select only the ones relevant?
+        #       We could iterate over the ids and fetch the ones having '+' but that's tricky
+        #       Outputting an extension that is not used is not a huge issue though
+        # TODO: add extra-properties? Tricky to know which ones to be honest, maybe a flag?
+        
         #-- fetch in memory *all* we need, won't work for super large datasets
         sq = f"select * from {self.schema}.city_object;"
         cursor.execute(sq)

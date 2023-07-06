@@ -47,7 +47,7 @@ class SingleFileImport:
 class Importer:
     def __init__(self, engine, filepath, append_mode, db_schema, target_srid,
                  indexed_attributes, partial_indexed_attributes,
-                 ignore_repeated_file, update_existing):
+                 ignore_repeated_file, overwrite):
         self.engine = engine
         self.filepath = filepath
         self.append_mode = append_mode
@@ -56,7 +56,9 @@ class Importer:
         self.indexed_attributes = indexed_attributes
         self.partial_indexed_attributes = partial_indexed_attributes
         self.ignore_repeated_file = ignore_repeated_file
-        self.update_existing = update_existing
+        self.overwrite = overwrite
+        self.max_id = 0
+        self.processed = dict()
 
         # get allowed types for validation
         self.city_object_types = get_city_object_types()
@@ -76,6 +78,7 @@ class Importer:
         # create model if in create mode, else append data
         if not self.append_mode:
             self.prepare_database()
+        self.max_id = CjObjectModel.get_max_id(self.session)
         self.parse_cityjson()
         self.session.commit()
         # post import operations like clustering, indexing...
@@ -204,10 +207,10 @@ class Importer:
             self.session
         )
 
-        if self.ignore_repeated_file and file_imported and not self.update_existing:
+        if self.ignore_repeated_file and file_imported and not self.overwrite:
             logger.warning("File already imported. Skipping...")
             return False
-        elif file_imported and not self.update_existing:
+        elif file_imported and not self.overwrite:
             logger.warning(
                 "A file with the same name (%s) was previously "
                 "imported on %s. Use the --ignore-repeated-file "
@@ -217,13 +220,16 @@ class Importer:
             user_answer = input(
                 "Should the import continue? "
                 "Already imported city objects will be skipped. "
-                "If you want to update them instead "
-                "use the flag --update-existing. \n"
+                "If you want to overwrite them instead "
+                "use the flag --overwrite. \n"
                 " [y / n]\n"
             )
             if user_answer.lower() != "y":
                 logger.warning(f"Import of file {cj_metadata.source_file} skipped by user.")
                 return False
+            elif file_imported and self.overwrite:
+                logger.warning("File already imported. Overwritting all objects...")
+                file_imported.delete()
 
         different_srid = cj_metadata.different_srid_meta(self.session)
         if different_srid:
@@ -268,20 +274,7 @@ class Importer:
 
         # create CityJSONObjects
         for obj_id, cityobj in line_json["CityObjects"].items():
-            obj_to_update = None
 
-            # optionally check if the object exists -
-            # to skip it or update it
-            if self.update_existing:
-                existing = (
-                    self.session.query(CjObjectModel)
-                    .filter_by(object_id=obj_id)
-                    .first()
-                )
-
-                if existing:
-                    logger.warning(f"CityObject (id:{obj_id}) already exists. Updating.")  # noqa
-                    obj_to_update = existing
 
             # get 3D geom, ground geom and bbox
             geometry, ground_geometry = self.get_geometries(
@@ -300,40 +293,38 @@ class Importer:
 
             # update or insert the object
             # 'or None' is added to change empty json "{}" to database null
-            if obj_to_update:
-                city_object = obj_to_update
-                city_object.type = cityobj.get("type")
-                city_object.attributes = cityobj.get("attributes") or None
-                city_object.geometry = geometry
-                city_object.ground_geometry = ground_geometry
-                city_object.cj_metadata = self.current.cj_metadata
-            else:
-                city_object = CjObjectModel(
-                    object_id=obj_id,
-                    type=cityobj.get("type"),
-                    attributes=cityobj.get("attributes") or None,
-                    geometry=geometry,
-                    ground_geometry=ground_geometry,
-                )
 
-                # add CityJson object to the database
-                city_object.__table__.schema = self.db_schema
-                city_object.cj_metadata_id = self.current.cj_metadata.id
-                self.current.city_objects.append(to_dict(city_object))
+            city_object_id = self.processed.get(obj_id, None)
+            if not city_object_id:
+                self.max_id = self.max_id + 1
+                self.processed[obj_id] = self.max_id
+                city_object_id = self.max_id
+            city_object = CjObjectModel(
+                id=city_object_id,
+                object_id=obj_id,
+                type=cityobj.get("type"),
+                attributes=cityobj.get("attributes") or None,
+                geometry=geometry,
+                ground_geometry=ground_geometry,
+            )
+
+            # add CityJson object to the database
+            city_object.__table__.schema = self.db_schema
+            city_object.cj_metadata_id = self.current.cj_metadata.id
+            self.current.city_objects.append(to_dict(city_object))
 
             cj_feature_objects[obj_id] = city_object
 
             # save children-parent links
             for child_id in cityobj.get("children", []):
-                city_object_relationships_ties.append((obj_id, child_id))
+                child_unique_id = self.processed.get(child_id, None)
+                if child_unique_id:
+                    city_object_relationships_ties.append((city_object_id, child_unique_id))
+                else:
+                    self.max_id = self.max_id + 1
+                    self.processed[child_id] = self.max_id
+                    city_object_relationships_ties.append((city_object_id, self.max_id))
 
-                # delete previous ties if updating object
-                if obj_to_update:
-                    children = self.session.query(
-                        CityObjectRelationshipModel).filter_by(
-                        child_id=child_id
-                    )
-                    children.delete()
 
         # create children-parent links after all objects
         # from the CityJSONFeature already exist
@@ -371,13 +362,14 @@ class Importer:
                 .on_conflict_do_nothing()
             )
             self.session.execute(obj_insert)
+        self.session.commit()
 
         if self.current.families:
             city_object_relationships_insert = (
                 insert(CityObjectRelationshipModel)
                 .values(self.current.families)
                 .on_conflict_do_nothing()
-            )  # noqa
+            )
             self.session.execute(city_object_relationships_insert)
         self.current.cj_metadata.finished_at = func.now()
         self.session.commit()

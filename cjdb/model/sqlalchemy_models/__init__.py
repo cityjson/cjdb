@@ -1,5 +1,3 @@
-import sys
-
 from geoalchemy2 import Geometry
 from sqlalchemy import (Column, ForeignKey, Integer, String, UniqueConstraint,
                         func)
@@ -63,12 +61,13 @@ class CjObjectModel(BaseModel):
     __tablename__ = "city_object"
     __table_args__ = {"schema": "cjdb"}
     cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id))
-    object_id = Column(String, nullable=False, unique=True)
+    object_id = Column(String, nullable=False)
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
     ground_geometry = Column(Geometry("MultiPolygon"))
-    cj_metadata = relationship(CjMetadataModel)
+    cj_metadata = relationship(CjMetadataModel, cascade="all")
+    metadata_id_object_id_unique = UniqueConstraint(cj_metadata_id, object_id)
 
     @classmethod
     def get_attributes_and_types(cls, session):
@@ -95,12 +94,20 @@ class CjObjectModel(BaseModel):
 
         return type_mapping
 
+    @classmethod
+    def get_max_id(cls, session) -> int:
+        max = session.query(func.max(cls.id)).scalar()
+        if max:
+            return max
+        else:
+            return 0
+
 
 class CityObjectRelationshipModel(BaseModel):
     __tablename__ = "city_object_relationships"
     __table_args__ = {"schema": "cjdb"}
-    parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
-    child_id = Column(String, ForeignKey(CjObjectModel.object_id))
+    parent_id = Column(Integer, ForeignKey(CjObjectModel.id))
+    child_id = Column(Integer, ForeignKey(CjObjectModel.id))
 
     parent = relationship(CjObjectModel,
                           foreign_keys=[parent_id],
