@@ -32,8 +32,8 @@ class CjMetadataModel(BaseModel):
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry("Polygon"))
     objects = relationship("CjObjectModel",
-        cascade="all, delete",
-        passive_deletes=True)
+                           backref='cj_metadata',
+                           passive_deletes=True)
 
     def get_already_imported_files(self, session):
         # query already imported files,
@@ -62,13 +62,12 @@ class CjMetadataModel(BaseModel):
 class CjObjectModel(BaseModel):
     __tablename__ = "city_object"
     __table_args__ = {"schema": "cjdb"}
-    cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id))
+    cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id, ondelete='CASCADE'))
     object_id = Column(String, nullable=False)
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
     ground_geometry = Column(Geometry("MultiPolygon"))
-    cj_metadata = relationship(CjMetadataModel)
     metadata_id_object_id_unique = UniqueConstraint(cj_metadata_id, object_id)
 
     @classmethod
@@ -108,8 +107,10 @@ class CjObjectModel(BaseModel):
 class CityObjectRelationshipModel(BaseModel):
     __tablename__ = "city_object_relationships"
     __table_args__ = {"schema": "cjdb"}
-    parent_id = Column(Integer, ForeignKey(CjObjectModel.id))
-    child_id = Column(Integer, ForeignKey(CjObjectModel.id))
+    parent_id = Column(Integer, ForeignKey(CjObjectModel.id,
+                                           ondelete='CASCADE'))
+    child_id = Column(Integer, ForeignKey(CjObjectModel.id,
+                                          ondelete='CASCADE'))
 
     parent = relationship(CjObjectModel,
                           foreign_keys=[parent_id],
