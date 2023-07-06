@@ -159,6 +159,10 @@ def test_db_model_after_overwrite(engine_postgresql):
         city_object.c.object_id == "UUID_LOD2_011599-c429e388-91c6-4438-b244"
     )
 
+    query_existing_city_object = select(city_object).where(
+        city_object.c.object_id == "UUID_LOD2_011978-eb576db6-7fb3-427d-afe3"
+    )
+
     with Session(engine_postgresql) as session:
         row = session.execute(query_missing_city_object).first()
         assert row is None
@@ -167,6 +171,8 @@ def test_db_model_after_overwrite(engine_postgresql):
         assert row.version == "1.1"
         assert row.transform["scale"] == [0.001, 0.001, 0.001]
         assert row.transform["translate"] == [986.77, 340531.81, 29.09]
+        row = session.execute(query_existing_city_object).first()
+        assert row.id == 593
 
 
 def test_repeated_file_with_prompt_to_continue(engine_postgresql, monkeypatch):
@@ -209,12 +215,23 @@ def test_db_model(engine_postgresql):
     assert insp.has_table("city_object_relationships", schema="vienna")
 
 
-def test_export(engine_postgresql):
+def test_export_all(engine_postgresql):
     conn = engine_postgresql.raw_connection()
     with Exporter(
         connection=conn,
         schema="vienna",
-        sqlquery="SELECT 3 AS id",
+        sqlquery="ALL",
+        output="./tests/files/ex.jsonl",
+    ) as exporter:
+        exporter.run_export()
+
+
+def test_export_one(engine_postgresql):
+    conn = engine_postgresql.raw_connection()
+    with Exporter(
+        connection=conn,
+        schema="vienna",
+        sqlquery="SELECT 593 as id",
         output="./tests/files/ex.jsonl",
     ) as exporter:
         exporter.run_export()
