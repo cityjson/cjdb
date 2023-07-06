@@ -65,3 +65,7 @@ overwrite = (
 output_help = (
     "Name of the output file. Default name: 'cj_export.city.json' "
 )
+
+query_help = (
+    "SQL query with the ids of the objects to be exported."
+)

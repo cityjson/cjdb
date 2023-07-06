@@ -106,7 +106,7 @@ def import_cj(
 
 
 @cjdb.command(name="export")
-@click.argument("query", type=str)
+@click.option("-q", "--query", type=str, default=None, help=s.query_help)
 @click.option("--host", "-H", type=str, default="localhost", help=s.host_help)
 @click.option("--port", "-p", type=int, default=5432, help=s.port_help)
 @click.option("--user", "-U", type=str, default="postgres", help=s.user_help)

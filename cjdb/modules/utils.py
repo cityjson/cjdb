@@ -1,8 +1,9 @@
 from typing import Any, Dict
-from cjdb.resources import object_types
-from sqlalchemy import create_engine
-import psycopg2
 
+import psycopg2
+from sqlalchemy import create_engine
+
+from cjdb.resources import object_types
 
 
 def is_valid_file(filepath: str) -> bool:

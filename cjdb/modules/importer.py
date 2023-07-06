@@ -207,7 +207,9 @@ class Importer:
             self.session
         )
 
-        if self.ignore_repeated_file and imported_files.first() and not self.overwrite:
+        if (self.ignore_repeated_file
+           and imported_files.first()
+           and not self.overwrite):
             logger.warning("File already imported. Skipping...")
             return False
         elif imported_files.first() and not self.overwrite:
@@ -225,12 +227,14 @@ class Importer:
                 " [y / n]\n"
             )
             if user_answer.lower() != "y":
-                logger.warning(f"Import of file {cj_metadata.source_file} skipped by user.")
+                logger.warning(
+                    f"Import of file {cj_metadata.source_file}"
+                    "skipped by user.")
                 return False
         elif imported_files.first() and self.overwrite:
             logger.warning(
-                f"""File already imported. Overwriting all objects
-                from source file {cj_metadata.source_file}""")
+                "File already imported. Overwriting all objects"
+                f"from source file {cj_metadata.source_file}")
             imported_files.delete()
 
         different_srid = cj_metadata.different_srid_meta(self.session)
@@ -277,7 +281,6 @@ class Importer:
         # create CityJSONObjects
         for obj_id, cityobj in line_json["CityObjects"].items():
 
-
             # get 3D geom, ground geom and bbox
             geometry, ground_geometry = self.get_geometries(
                 obj_id, cityobj, vertices, source_target_srid
@@ -321,12 +324,13 @@ class Importer:
             for child_id in cityobj.get("children", []):
                 child_unique_id = self.processed.get(child_id, None)
                 if child_unique_id:
-                    city_object_relationships_ties.append((city_object_id, child_unique_id))
+                    city_object_relationships_ties.append((city_object_id,
+                                                           child_unique_id))
                 else:
                     self.max_id = self.max_id + 1
                     self.processed[child_id] = self.max_id
-                    city_object_relationships_ties.append((city_object_id, self.max_id))
-
+                    city_object_relationships_ties.append((city_object_id,
+                                                           self.max_id))
 
         # create children-parent links after all objects
         # from the CityJSONFeature already exist
