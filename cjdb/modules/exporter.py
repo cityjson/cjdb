@@ -1,13 +1,12 @@
 import copy
 import json
+import multiprocessing as mp
 import sys
 
 from psycopg2 import sql
 from psycopg2.extras import DictCursor
 
 from cjdb.logger import logger
-
-import multiprocessing as mp
 
 
 # exporter class
