@@ -405,14 +405,15 @@ def write_cjf_3(parent, children, d, pcrel, bboxmin, q):
     fout.write(json.dumps(j, separators=(",", ":")) + "\n")
 
 def write_cjf_4(parent, children, d, pcrel, bboxmin):
+    poid = d[parent]["object_id"]
     j = {}
     j["type"] = "CityJSONFeature"
-    j["id"] = parent
+    j["id"] = poid
     j["CityObjects"] = {}
-    j["CityObjects"][parent] = {}
-    j["CityObjects"][parent]["type"] = d[parent]["type"]
+    j["CityObjects"][poid] = {}
+    j["CityObjects"][poid]["type"] = d[parent]["type"]
     if d[parent]["attributes"] is not None:
-        j["CityObjects"][parent]["attributes"] =\
+        j["CityObjects"][poid]["attributes"] =\
             d[parent]["attributes"]
     # parent first
     vertices = []
@@ -421,7 +422,7 @@ def write_cjf_4(parent, children, d, pcrel, bboxmin):
     )
     vertices.extend(vs)
     if g2 is not None:
-        j["CityObjects"][parent]["geometry"] = g2
+        j["CityObjects"][poid]["geometry"] = g2
     ls_parents_children = []
     for child in children:
         if child is not None:
@@ -444,19 +445,21 @@ def write_cjf_4(parent, children, d, pcrel, bboxmin):
 
 
 def add_child_to_cjf_3(j, parent_id, child_id, vertices, bboxmin, d):
-    if "children" not in j["CityObjects"][parent_id]:
-        j["CityObjects"][parent_id]["children"] = []
-    j["CityObjects"][parent_id]["children"].append(child_id)
-    j["CityObjects"][child_id] = {}
-    j["CityObjects"][child_id]["type"] = d[child_id]["type"]
+    poid = d[parent_id]["object_id"]
+    coid = d[child_id]["object_id"]
+    if "children" not in j["CityObjects"][poid]:
+        j["CityObjects"][poid]["children"] = []
+    j["CityObjects"][poid]["children"].append(coid)
+    j["CityObjects"][coid] = {}
+    j["CityObjects"][coid]["type"] = d[child_id]["type"]
     if "attributes" in d[child_id]:
-        j["CityObjects"][child_id]["attributes"] = d[child_id]["attributes"]
-    j["CityObjects"][child_id]["parents"] = [parent_id]
+        j["CityObjects"][coid]["attributes"] = d[child_id]["attributes"]
+    j["CityObjects"][coid]["parents"] = [poid]
     g2, vs = \
         reference_vertices_in_cjf_3(d[child_id]["geometry"], 3, bboxmin, len(vertices))
     vertices.extend(vs)
     if g2 is not None:
-        j["CityObjects"][child_id]["geometry"] = g2
+        j["CityObjects"][coid]["geometry"] = g2
     return (j, vertices)
 
 def remove_duplicate_vertices(j):
