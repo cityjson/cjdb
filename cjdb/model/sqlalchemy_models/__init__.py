@@ -36,7 +36,8 @@ class CjMetadataModel(BaseModel):
         passive_deletes=True)
 
     def get_already_imported_files(self, session):
-        # check if the file was already imported
+        # query already imported files,
+        # return false if stdin.
         if self.source_file.lower() != "stdin":
             same_source_import = (
                 session.query(CjMetadataModel)
