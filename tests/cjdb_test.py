@@ -77,10 +77,60 @@ def test_repeated_file_with_ignore_repeated_file(engine_postgresql):
         importer.run_import()
 
 
+def test_db_model_before_overwrite(engine_postgresql):
+    insp = inspect(engine_postgresql)
+    assert insp.has_schema("vienna")
+    assert insp.has_table("city_object", schema="vienna")
+    assert insp.has_table("cj_metadata", schema="vienna")
+    assert insp.has_table("city_object_relationships", schema="vienna")
+
+    city_object = Table(
+        "city_object", MetaData(), schema="vienna", autoload_with=engine_postgresql
+    )
+
+    cj_metadata = Table(
+        "cj_metadata", MetaData(), schema="vienna", autoload_with=engine_postgresql
+    )
+
+    query_city_object = select(city_object).where(
+        city_object.c.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
+    )
+    query_cj_metadata = select(cj_metadata).where(
+        cj_metadata.c.source_file == "vienna.jsonl"
+    )
+
+    query_missing_city_object = select(city_object).where(
+        city_object.c.object_id == "UUID_LOD2_011515-87eee19d-0f72-4c25-99d1"
+    )
+
+    with Session(engine_postgresql) as session:
+        row = session.execute(query_city_object).first()
+        assert row.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
+        assert row.attributes["roofType"] == "FLACHDACH"
+        assert row.type == "BuildingPart"
+
+        row = session.execute(query_cj_metadata).first()
+        assert row.source_file == "vienna.jsonl"
+        assert row.version == "1.1"
+        assert row.transform["scale"] == [0.001, 0.001, 0.001]
+        assert row.transform["translate"] == [983.16, 340433.878, 27.861]
+        assert row.metadata["geographicalExtent"] == [
+            983.16,
+            340433.878,
+            27.861,
+            1510.432,
+            341048.5,
+            84.987,
+        ]
+
+        row = session.execute(query_missing_city_object).first()
+        assert row != None
+
+
 def test_repeated_file_with_overwrite(engine_postgresql):
     with Importer(
         engine=engine_postgresql,
-        filepath="./tests/files/vienna.jsonl",
+        filepath="./tests/files/vienna_modified/vienna.jsonl",
         db_schema="vienna",
         target_srid=4326,
         indexed_attributes=[],
@@ -90,6 +140,33 @@ def test_repeated_file_with_overwrite(engine_postgresql):
         overwrite=True,
     ) as importer:
         importer.run_import()
+
+
+def test_db_model_after_overwrite(engine_postgresql):
+    cj_metadata = Table(
+        "cj_metadata", MetaData(), schema="vienna", autoload_with=engine_postgresql
+    )
+
+    query_cj_metadata = select(cj_metadata).where(
+        cj_metadata.c.source_file == "vienna.jsonl"
+    )
+
+    city_object = Table(
+        "city_object", MetaData(), schema="vienna", autoload_with=engine_postgresql
+    )
+
+    query_missing_city_object = select(city_object).where(
+        city_object.c.object_id == "UUID_LOD2_011599-c429e388-91c6-4438-b244"
+    )
+
+    with Session(engine_postgresql) as session:
+        row = session.execute(query_missing_city_object).first()
+        assert row is None
+        row = session.execute(query_cj_metadata).first()
+        assert row.source_file == "vienna.jsonl"
+        assert row.version == "1.1"
+        assert row.transform["scale"] == [0.001, 0.001, 0.001]
+        assert row.transform["translate"] == [986.77, 340531.81, 29.09]
 
 
 def test_repeated_file_with_prompt_to_continue(engine_postgresql, monkeypatch):
@@ -130,41 +207,6 @@ def test_db_model(engine_postgresql):
     assert insp.has_table("city_object", schema="vienna")
     assert insp.has_table("cj_metadata", schema="vienna")
     assert insp.has_table("city_object_relationships", schema="vienna")
-
-    city_object = Table(
-        "city_object", MetaData(), schema="vienna", autoload_with=engine_postgresql
-    )
-
-    cj_metadata = Table(
-        "cj_metadata", MetaData(), schema="vienna", autoload_with=engine_postgresql
-    )
-
-    query_city_object = select(city_object).where(
-        city_object.c.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
-    )
-    query_cj_metadata = select(cj_metadata).where(
-        cj_metadata.c.source_file == "vienna.jsonl"
-    )
-
-    with Session(engine_postgresql) as session:
-        row = session.execute(query_city_object).first()
-        assert row.object_id == "UUID_LOD2_011491-3cd51f89-4727-44e6-b12e_6"
-        assert row.attributes["roofType"] == "FLACHDACH"
-        assert row.type == "BuildingPart"
-
-        row = session.execute(query_cj_metadata).first()
-        assert row.source_file == "vienna.jsonl"
-        assert row.version == "1.1"
-        assert row.transform["scale"] == [0.001, 0.001, 0.001]
-        assert row.transform["translate"] == [983.16, 340433.878, 27.861]
-        assert row.metadata["geographicalExtent"] == [
-            983.16,
-            340433.878,
-            27.861,
-            1510.432,
-            341048.5,
-            84.987,
-        ]
 
 
 def test_export(engine_postgresql):
