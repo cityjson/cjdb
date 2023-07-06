@@ -96,12 +96,10 @@ class Exporter:
         self.bboxmin = self.find_min_bbox(rows)
         j["transform"]["translate"] = self.bboxmin
 
-        # TODO: what do we do with other metadata? Cannot merge really... so only CRS
+        
         f_out = open(self.output, "w") 
         print(json.dumps(j, separators=(',', ':')), file=f_out)
-        # with open(self.output, 'a') as f:
-            # f.write(json.dumps(j, separators=(',', ':')) + '\n')
-        # f.close()
+        
 
         d = {}
         for r in rows:
@@ -112,34 +110,15 @@ class Exporter:
             print(re, file=f_out)
 
 
-        # t = []
-        # for key, children in pcrel.items():
-        #     t.append([key, children, d, pcrel, self.bboxmin])
-        # # print("done this.")
+        t = []
+        for key, children in pcrel.items():
+            t.append([key, children, d, pcrel, self.bboxmin])
+        # print("done this.")
         # with mp.Pool() as p:
-        #     for result in p.starmap(write_cjf_4, t):
-        #         print(result, file=f_out)
+            # for result in p.starmap(write_cjf_4, t):
+                # print(result, file=f_out)
 
         f_out.close()
-
-        # manager = mp.Manager()
-        # q = manager.Queue()
-        # file_pool = mp.Pool(1)
-        # file_pool.apply_async(mp_listener, (q, self.output))
-        # pool = mp.Pool(16)
-        # jobs = []
-        # for key, children in pcrel.items():
-            # job = pool.apply_async(write_cjf_3, (key, children, d, pcrel, self.bboxmin, q))
-            # jobs.append(job)
-        # for job in jobs:
-            # job.get()
-        # q.put('#done#')  # all workers are done, we close the output file
-        # pool.close()
-        # pool.join()
-        # outputs_async = pool.starmap(write_cjf_3, t)
-        # outputs_async.get() 
-        # for key, children in pcrel.items():
-            # write_cjf_3(key, children, d, pcrel, self.bboxmin, self.fout)
 
     def run_export(self) -> None:
         sql_query = f"""
@@ -179,8 +158,6 @@ class Exporter:
         if len(rows) == 0:
             logger.warning("No data from the input ids.")
             sys.exit(1)
-
-        
 
         # TODO: verify that all queried buildings have the same metadata.
         # For now we take the first.
