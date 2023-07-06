@@ -113,16 +113,17 @@ Default: “cjdb”
 ### Exporter
 
 ```bash
-cjdb export [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-o OUTPUT][query]
+cjdb export [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-o OUTPUT][-q SQL_QUERY]
 ```
-#### Positional Arguments
-query
-
 
 #### Named Arguments
 `-o, --output`
 
 The name of the output file
+
+`-q, --query`
+
+SQL query with the desired ids of the objects to be exported. If not used, all the objects will be exported. 
 
 #### Database connection arguments
 `-H, --host`
@@ -148,6 +149,19 @@ PostgreSQL database name
 Target database schema
 
 Default: “cjdb”
+
+
+Example for exporting all the objects in a schema:
+
+```bash
+cjdb export -H localhost -U myusername -d mydb  -s myschema -p 5432 -o result.jsonl
+```
+
+Example for exporting a specific object in a schema:
+
+```bash
+cjdb export -H localhost -U myusername -d mydb  -s myschema -p 5432 -o result.jsonl -q "SELECT 1 as id"
+```
 
 ### Quickstart
 
