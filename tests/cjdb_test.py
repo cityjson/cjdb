@@ -225,7 +225,7 @@ def test_export_all(engine_postgresql):
     with Exporter(
         connection=conn,
         schema="vienna",
-        sqlquery="ALL",
+        sqlquery=None,
         output="./tests/files/ex.jsonl",
     ) as exporter:
         exporter.run_export()

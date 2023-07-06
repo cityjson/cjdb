@@ -14,8 +14,9 @@ class Exporter:
     def __init__(self, connection, schema, sqlquery, output):
         self.connection = connection
         self.schema = schema
-        if sqlquery == "ALL":
-            self.sqlquery = f"select cjo.id from {self.schema}.city_object cjo"
+        if not sqlquery:
+            self.sqlquery = f"""SELECT cjo.id 
+                                FROM {self.schema}.city_object cjo"""
         else:
             self.sqlquery = sqlquery
         self.output = output
@@ -64,7 +65,7 @@ class Exporter:
 
         #-- first line of the CityJSONL stream with some metadata
         cursor.execute(
-            sql.SQL("select m.* from {}.cj_metadata m")
+            sql.SQL("SELECT m.* FROM {}.cj_metadata m")
                      .format(sql.Identifier(self.schema))
         )
         meta1 = cursor.fetchone()
