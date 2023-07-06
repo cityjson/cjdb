@@ -142,7 +142,7 @@ def export_cj(query, host, port, user, password, database, schema, output):
         query,
         output_abs
     ) as exp:
-        exp.run_export_3()
+        exp.run_export_fast()
 
 
 if __name__ == "__main__":

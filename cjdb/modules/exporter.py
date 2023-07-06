@@ -27,7 +27,7 @@ class Exporter:
         self.connection.close()
         # self.fout.close()
 
-    def run_export_3(self) -> None:
+    def run_export_fast(self) -> None:
         sql_query = f"""
             WITH only_parents AS (
                 SELECT cjo.id, cjo.object_id
@@ -56,14 +56,13 @@ class Exporter:
         if len(rows) == 0:
             logger.warning("No data from the input ids.")
             sys.exit(1)
-        
+
+        #-- get the parent-[children]        
         pcrel = {}
         for r in rows:
             pcrel[r['id']] = r['children']
-        # print(pcrel)
-        # query_ids = list(map(lambda x: x[0], rows))
 
-        #-- first line of the CityJSONL stream
+        #-- first line of the CityJSONL stream with some metadata
         cursor.execute(
             sql.SQL("select m.* from {}.cj_metadata m")
                      .format(sql.Identifier(self.schema))
@@ -90,34 +89,32 @@ class Exporter:
         else:
             j["metadata"]["referenceSystem"] = "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])
         
+        #-- fetch in memory all we need, won't work for super large datasets
         sq = f"select * from {self.schema}.city_object;"
         cursor.execute(sq)
         rows = cursor.fetchall()
         self.bboxmin = self.find_min_bbox(rows)
         j["transform"]["translate"] = self.bboxmin
-
         
         f_out = open(self.output, "w") 
         print(json.dumps(j, separators=(',', ':')), file=f_out)
         
-
+        #-- modify the dict for quick access
         d = {}
         for r in rows:
             d[r["id"]] = r
 
+        #-- iterate over each and write to the file
         for key, children in pcrel.items():
-            re = write_cjf_4(key, children, d, pcrel, self.bboxmin)
+            re = write_cjf_fast(key, children, d, pcrel, self.bboxmin)
             print(re, file=f_out)
-
-
-        t = []
-        for key, children in pcrel.items():
-            t.append([key, children, d, pcrel, self.bboxmin])
-        # print("done this.")
+        #-- testing multiprocessing
+        # t = []
+        # for key, children in pcrel.items():
+            # t.append([key, children, d, pcrel, self.bboxmin])
         # with mp.Pool() as p:
-            # for result in p.starmap(write_cjf_4, t):
+            # for result in p.starmap(write_cjf_fast, t):
                 # print(result, file=f_out)
-
         f_out.close()
 
     def run_export(self) -> None:
@@ -369,42 +366,8 @@ class Exporter:
         return (gs2, vertices)
 
 
-def write_cjf_3(parent, children, d, pcrel, bboxmin, q):
-    j = {}
-    j["type"] = "CityJSONFeature"
-    j["id"] = parent
-    j["CityObjects"] = {}
-    j["CityObjects"][parent] = {}
-    j["CityObjects"][parent]["type"] = d[parent]["type"]
-    if d[parent]["attributes"] is not None:
-        j["CityObjects"][parent]["attributes"] =\
-            d[parent]["attributes"]
-    # parent first
-    vertices = []
-    g2, vs = reference_vertices_in_cjf_3(
-        d[parent]["geometry"], 3, bboxmin, len(vertices)
-    )
-    vertices.extend(vs)
-    if g2 is not None:
-        j["CityObjects"][parent]["geometry"] = g2
-    ls_parents_children = []
-    for child in children:
-        if child is not None:
-            ls_parents_children.append((parent, child))
-    while len(ls_parents_children) > 0:
-        pc = ls_parents_children.pop()
-        j, vertices = add_child_to_cjf_3(
-            j, pc[0], pc[1], vertices, bboxmin, d
-        )
-        # ls_parents_children.extend(new_pc)
-        if pc[1] in pcrel:
-            ls_parents_children.extend(pcrel[pc[1]])
-    j["vertices"] = vertices
-    j = remove_duplicate_vertices(j)
-    # return json.dumps(j, separators=(",", ":"))
-    fout.write(json.dumps(j, separators=(",", ":")) + "\n")
 
-def write_cjf_4(parent, children, d, pcrel, bboxmin):
+def write_cjf_fast(parent, children, d, pcrel, bboxmin):
     poid = d[parent]["object_id"]
     j = {}
     j["type"] = "CityJSONFeature"
@@ -417,7 +380,7 @@ def write_cjf_4(parent, children, d, pcrel, bboxmin):
             d[parent]["attributes"]
     # parent first
     vertices = []
-    g2, vs = reference_vertices_in_cjf_3(
+    g2, vs = reference_vertices_in_cjf_fast(
         d[parent]["geometry"], 3, bboxmin, len(vertices)
     )
     vertices.extend(vs)
@@ -429,7 +392,7 @@ def write_cjf_4(parent, children, d, pcrel, bboxmin):
             ls_parents_children.append((parent, child))
     while len(ls_parents_children) > 0:
         pc = ls_parents_children.pop()
-        j, vertices = add_child_to_cjf_3(
+        j, vertices = add_child_to_cjf_fast(
             j, pc[0], pc[1], vertices, bboxmin, d
         )
         # ls_parents_children.extend(new_pc)
@@ -444,7 +407,7 @@ def write_cjf_4(parent, children, d, pcrel, bboxmin):
 
 
 
-def add_child_to_cjf_3(j, parent_id, child_id, vertices, bboxmin, d):
+def add_child_to_cjf_fast(j, parent_id, child_id, vertices, bboxmin, d):
     poid = d[parent_id]["object_id"]
     coid = d[child_id]["object_id"]
     if "children" not in j["CityObjects"][poid]:
@@ -456,7 +419,7 @@ def add_child_to_cjf_3(j, parent_id, child_id, vertices, bboxmin, d):
         j["CityObjects"][coid]["attributes"] = d[child_id]["attributes"]
     j["CityObjects"][coid]["parents"] = [poid]
     g2, vs = \
-        reference_vertices_in_cjf_3(d[child_id]["geometry"], 3, bboxmin, len(vertices))
+        reference_vertices_in_cjf_fast(d[child_id]["geometry"], 3, bboxmin, len(vertices))
     vertices.extend(vs)
     if g2 is not None:
         j["CityObjects"][coid]["geometry"] = g2
@@ -495,7 +458,7 @@ def remove_duplicate_vertices(j):
     j["vertices"] = newv2
     return j
 
-def reference_vertices_in_cjf_3(gs, imp_digits, translate, offset=0):
+def reference_vertices_in_cjf_fast(gs, imp_digits, translate, offset=0):
         vertices = []
         if gs is None:
             return (gs, vertices)
@@ -535,15 +498,3 @@ def reference_vertices_in_cjf_3(gs, imp_digits, translate, offset=0):
             # TODO: MultiSolid
         return (gs2, vertices)
 
-def mp_listener(q, path):
-    """
-    continue to listen for messages on the queue and writes to file when receive one
-    if it receives a '#done#' message it will exit
-    """
-    with open(path, 'a') as f:
-        while True:
-            m = q.get()
-            if m == '#done#':
-                break
-            f.write(str(m) + '\n')
-            f.flush()        
