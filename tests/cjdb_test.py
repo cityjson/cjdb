@@ -5,11 +5,9 @@ from pytest_postgresql.janitor import DatabaseJanitor
 from sqlalchemy import MetaData, Table, create_engine, inspect, select
 from sqlalchemy.orm import Session
 
-from cjdb.modules.exceptions import (
-    InvalidCityJSONObjectException,
-    InvalidMetadataException,
-    MissingCRSException,
-)
+from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
+                                     InvalidMetadataException,
+                                     MissingCRSException)
 from cjdb.modules.exporter import Exporter
 from cjdb.modules.importer import Importer
 
