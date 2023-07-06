@@ -203,19 +203,19 @@ class Importer:
         )
 
         # compare to existing import metas
-        file_imported = cj_metadata.file_already_imported(
+        imported_files = cj_metadata.get_already_imported_files(
             self.session
         )
 
-        if self.ignore_repeated_file and file_imported and not self.overwrite:
+        if self.ignore_repeated_file and imported_files.first() and not self.overwrite:
             logger.warning("File already imported. Skipping...")
             return False
-        elif file_imported and not self.overwrite:
+        elif imported_files.first() and not self.overwrite:
             logger.warning(
                 "A file with the same name (%s) was previously "
                 "imported on %s. Use the --ignore-repeated-file "
                 "to skip already imported files.",
-                cj_metadata.source_file, file_imported.finished_at
+                cj_metadata.source_file, imported_files.first().finished_at
             )
             user_answer = input(
                 "Should the import continue? "
@@ -227,9 +227,11 @@ class Importer:
             if user_answer.lower() != "y":
                 logger.warning(f"Import of file {cj_metadata.source_file} skipped by user.")
                 return False
-            elif file_imported and self.overwrite:
-                logger.warning("File already imported. Overwritting all objects...")
-                file_imported.delete()
+        elif imported_files.first() and self.overwrite:
+            logger.warning(
+                f"""File already imported. Overwriting all objects
+                from source file {cj_metadata.source_file}""")
+            imported_files.delete()
 
         different_srid = cj_metadata.different_srid_meta(self.session)
         if different_srid:

@@ -134,6 +134,11 @@ def get_ground_geometry(geometry, obj_id):
     # from cityjson -> the argument of this function
     # the geometry is a multipolygon of all the ground
     # surfaces in the lowest available LOD
+    if len(geometry) == 0:
+        logger.warning(
+            f"No geometry object ID=({obj_id}) "
+        )
+        return None
 
     planes = dict()
     z_min = 0

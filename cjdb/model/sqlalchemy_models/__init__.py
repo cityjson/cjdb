@@ -31,16 +31,18 @@ class CjMetadataModel(BaseModel):
     started_at = Column(TIMESTAMP, default=func.now())
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry("Polygon"))
+    objects = relationship("CjObjectModel",
+                           backref='cj_metadata',
+                           passive_deletes=True)
 
-    def file_already_imported(self, session):
-        # check if the file was already imported
+    def get_already_imported_files(self, session):
+        # query already imported files,
+        # return false if stdin.
         if self.source_file.lower() != "stdin":
             same_source_import = (
                 session.query(CjMetadataModel)
                 .filter_by(source_file=self.source_file)
                 .filter(CjMetadataModel.finished_at.isnot(None))
-                .order_by(CjMetadataModel.finished_at.desc())
-                .first()
             )
 
             return same_source_import
@@ -60,13 +62,12 @@ class CjMetadataModel(BaseModel):
 class CjObjectModel(BaseModel):
     __tablename__ = "city_object"
     __table_args__ = {"schema": "cjdb"}
-    cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id))
+    cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id, ondelete='CASCADE'))
     object_id = Column(String, nullable=False)
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
     ground_geometry = Column(Geometry("MultiPolygon"))
-    cj_metadata = relationship(CjMetadataModel, cascade="all")
     metadata_id_object_id_unique = UniqueConstraint(cj_metadata_id, object_id)
 
     @classmethod
@@ -106,8 +107,10 @@ class CjObjectModel(BaseModel):
 class CityObjectRelationshipModel(BaseModel):
     __tablename__ = "city_object_relationships"
     __table_args__ = {"schema": "cjdb"}
-    parent_id = Column(Integer, ForeignKey(CjObjectModel.id))
-    child_id = Column(Integer, ForeignKey(CjObjectModel.id))
+    parent_id = Column(Integer, ForeignKey(CjObjectModel.id,
+                                           ondelete='CASCADE'))
+    child_id = Column(Integer, ForeignKey(CjObjectModel.id,
+                                          ondelete='CASCADE'))
 
     parent = relationship(CjObjectModel,
                           foreign_keys=[parent_id],
