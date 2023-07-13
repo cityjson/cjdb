@@ -1,18 +1,12 @@
 # cjdb
 [![MIT badge](https://img.shields.io/pypi/l/cjdb)](LICENSE) &nbsp; [![PyPI](https://img.shields.io/pypi/v/cjdb)](https://pypi.org/project/cjdb)
 
-`cjdb` is a Python based importer/exporter of CityJSONL files to and from a PostgreSQL database. It requires the [PostGIS](https://postgis.net/) extension.
-
-Authors: Cynthia Cai, Lan Yan, Yitong Xia, Chris Poon, Siebren Meines, Leon Powalka
-
-Maintainer: Gina Stavropoulou
+`cjdb` is a Python-based importer/exporter of [CityJSONL files (CityJSON Lines)](https://www.cityjson.org/cityjsonl/) to and from a PostgreSQL database. 
+It requires the [PostGIS](https://postgis.net/) extension.
 
 
-## 1. Data model
-For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
 
-
-## 2. Installation
+## Installation
 ### Using pip
 ```bash
 pip install cjdb
@@ -34,7 +28,11 @@ To import some files, the `-v` option is needed to mount our local file director
 ```bash
 docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb import -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
 ```
-## 3. Usage
+
+## Data model
+For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
+
+## Usage
 
 ```bash
 cjdb --help
@@ -252,7 +250,7 @@ SELECT * FROM cjdb.city_object
 WHERE geometry::jsonb @> '[{"lod": 1.2}]'::jsonb
 ```
 
-## 4. Local development
+## Local development
 
 ### Install and Build
 Make sure [poetry](https://python-poetry.org/docs/) is installed and the [creation of virtual environments within the project is allowed](
@@ -287,7 +285,7 @@ In onder to run the tests you need to have [PostgreSQL](https://www.postgresql.o
 pytest -v
 ```
 
-## 5. Explanation
+## Explanation
 ---
 ### Model assumptions
 The `cjdb` importer loads the data in accordance with a specific data model.
@@ -383,5 +381,11 @@ By default, the importer does not check if an object with a given ID exists alre
 The user can choose to run the import with either the `-e/--skip-existing` option to skip existing objects or `--overwrite` to overwrite existing objects. This will slow down the import, but it will also ensure that repeated object cases are handled.
 
 
+## Contributors
 
+This project started as a group project in the [MSc Geomatics at TUDelft](https://geomatics.tudelft.nl/).
+The original code for the project is available at https://github.com/leoleonsio/cjdb, and the authors were:
+@#2cynthiacai56, @LanYan1110, @YitongXia, @Topher2k, @siebren014, @leoleonsio
+
+This version has been improved and will be maintained by @GinaStavropoulou and @hugoledoux.
 
