@@ -38,6 +38,45 @@ For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
 cjdb --help
 ```
 
+### Quickstart
+
+Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/). 
+For example download the tile "9-284-556", where part of TU Delft is located: https://data.3dbag.nl/cityjson/v20230622/tiles/9/284/556/9-284-556.city.json
+Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cjdb is needed to import it to a specified schema in a database. 
+
+1. Convert CityJSON to CityJSONL
+
+```bash
+cjio --suppress_msg 9-284-556.json export jsonl 9-284-556.jsonl 
+```
+
+2. Create a new database called "testcjdb"
+
+If you installed PostgreSQL you should have the program 'createdb', so `createdb testcjdb`
+
+Alternatively, you can use PgAdmin, [see how](https://postgis.net/workshops/postgis-intro/creating_db.html).
+
+3. Import CityJSONL to the database in the schema "cjdb"
+```bash
+cjdb import -H localhost -U postgres -d testcjdb -s cjdb  9-284-556.jsonl
+```
+
+4. Export CityJSONL from the database
+```bash
+cjdb export -H localhost -U postgres -d testcjdb -s cjdb  "..."
+```
+
+**Alternatively steps 1 and 3 in a single command:**
+
+```bash
+cjio --suppress_msg 9-284-556.json export jsonl stdout | cjdb -H localhost -U postgres -d postgres -s cjdb
+```
+
+The metadata and the objects can then be found in the tables in the specified schema (`cjdb` in this example).
+
+
+Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
+
 ### Importer
 
 ```bash
@@ -161,69 +200,33 @@ Example for exporting a specific object in a schema:
 cjdb export -H localhost -U myusername -d mydb  -s myschema -p 5432 -o result.jsonl -q "SELECT 1 as id"
 ```
 
-### Quickstart
-
-Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/nl/download?tid=901). Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cjdb is needed to import it to a specified schema in a database. 
-
-1. Convert CityJSON to CityJSONL
-
-```bash
-cjio --suppress_msg tile_901.json export jsonl tile_901.jsonl 
-```
-
-2. Create a new database
-
-  - [how to create a new database](https://postgis.net/workshops/postgis-intro/creating_db.html)
-
-3. Import CityJSONL to the database
-```bash
-cjdb import -H localhost -U postgres -d postgres -s cjdb  tile_901.jsonl
-```
-
-4. Export CityJSONL from the database
-```bash
-cjdb export -H localhost -U postgres -d postgres -s cjdb  "..."
-```
-
-**Alternatively steps 1 and 3 in a single command:**
-
-```bash
-cjio --suppress_msg tile_901.json export jsonl stdout | cjdb -H localhost -U postgres -d postgres -s cjdb
-```
-
-The metadata and the objects can then be found in the tables in the specified schema (`cjdb` in this example).
-
-
-Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
-
-
 ### Basic Queries
 
 - Query an object with a specific id:
 ```SQL
 SELECT * FROM cjdb.city_object
-WHERE object_id = 'NL.IMBAG.Pand.0503100000000334';
+WHERE object_id = 'NL.IMBAG.Pand.0503100000000010';
 ```
 
 - Query a building with a specific child
 ```SQL
 SELECT o.* FROM cjdb.city_object_relationships f
 INNER JOIN cjdb.city_object o ON o.id = f.parent_id
-WHERE f.child_id = 'NL.IMBAG.Pand.0503100000000334-0'
+WHERE f.child_id = 'NL.IMBAG.Pand.0503100000000010-0'
 ```
 
 - Query all buildings within a bounding box
 ```SQL
 SELECT * FROM cjdb.city_object
 WHERE type = 'Building'
-AND ST_Contains(ST_MakeEnvelope(81900.00, 446850.00, 81930.00, 446900.00, 7415), ground_geometry)
+AND ST_Contains(ST_MakeEnvelope(85000.00, 446700.00, 85200.00, 446900.00, 7415), ground_geometry)
 ORDER BY id ASC;
 ```
 
 - Query the building intersecting with a point
 ```SQL
 SELECT * FROM cjdb.city_object
-WHERE ground_geometry && ST_MakePoint(81915.00, 446850.00)
+WHERE ground_geometry && ST_MakePoint(85218.0, 446880.0)
 AND type = 'Building'
 ORDER BY object_id ASC;
 ```
@@ -231,7 +234,7 @@ ORDER BY object_id ASC;
 - Query all objects with a slanted roof
 ```SQL
 SELECT * FROM cjdb.city_object
-WHERE (attributes->'dak_type')::varchar = '"slanted"'
+WHERE (attributes->'b3_dak_type')::varchar = '"slanted"'
 ORDER BY id ASC;
 ```
 
@@ -247,7 +250,7 @@ ORDER BY id ASC;
 
 ```SQL
 SELECT * FROM cjdb.city_object
-WHERE geometry::jsonb @> '[{"lod": 1.2}]'::jsonb
+WHERE geometry::jsonb @> '[{"lod": "1.2"}]'::jsonb
 ```
 
 ## Local development
