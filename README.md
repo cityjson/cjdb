@@ -210,9 +210,12 @@ WHERE object_id = 'NL.IMBAG.Pand.0503100000000010';
 
 - Query a building with a specific child
 ```SQL
-SELECT o.* FROM cjdb.city_object_relationships f
-INNER JOIN cjdb.city_object o ON o.id = f.parent_id
-WHERE f.child_id = 'NL.IMBAG.Pand.0503100000000010-0'
+select * from cjdb.city_object p
+inner join cjdb.city_object_relationships rel 
+ON p.id = rel.parent_id
+inner join cjdb.city_object c
+ON c.id = rel.child_id
+where c.object_id = 'NL.IMBAG.Pand.0503100000000010-0';
 ```
 
 - Query all buildings within a bounding box
