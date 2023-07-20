@@ -234,7 +234,7 @@ class Importer:
         elif imported_files.first() and self.overwrite:
             logger.warning(
                 "File already imported. Overwriting all objects"
-                f"from source file {cj_metadata.source_file}")
+                f" from source file {cj_metadata.source_file}")
             imported_files.delete()
 
         different_srid = cj_metadata.different_srid_meta(self.session)
