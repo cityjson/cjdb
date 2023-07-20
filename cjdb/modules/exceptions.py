@@ -74,3 +74,17 @@ class InconsistentCRSException(Exception):
                     "Use the '-I/--srid' flag to reproject everything "
                     "to a single specified CRS or modify source data or "
                     "create a new schema.")
+
+
+class InvalidLodException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"{self.msg}"
+        else:
+            return """The Geomerty object has invalid value for 'lod'."""

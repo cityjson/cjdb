@@ -1,4 +1,5 @@
 import copy
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from pyproj import CRS, Transformer
@@ -6,6 +7,7 @@ from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.validation import explain_validity
 
 from cjdb.logger import logger
+from cjdb.modules.exceptions import InvalidLodException
 
 
 # get srid from a CRS string definition
@@ -127,22 +129,44 @@ def resolve_geometry_vertices(
     return geometry
 
 
-def get_ground_geometry(geometry, obj_id):
+def get_geometry_with_minimum_lod(
+        geometries: List[Dict[str, Any]]) \
+        -> Optional[Dict[str, Any]]:
+    """ Receives a list of Geometry objects and returns
+    the geometry with the minimum LoD."""
+    if len(geometries) == 0:
+        return None
+    elif len(geometries) == 1:
+        return geometries[0]
+    else:
+        try:
+            lods = [float(geom['lod']) for geom in geometries]
+        except ValueError:
+            raise InvalidLodException()
+        # returns first occurrence.
+        index_of_min = lods.index(min(lods))
+        return geometries[index_of_min]
+
+
+def get_ground_geometry(geometries: List[Dict[str, Any]],
+                        obj_id: str) -> List[Dict[str, Any]]:
     # returns a shapely multipolygon (see shapely.geometry.MultiPolygon)
     # the MultiPolygon should be a 2D geometry (Z coordinate is omitted)
     # this geometry should be obtained by parsing the "geometry" object
     # from cityjson -> the argument of this function
     # the geometry is a multipolygon of all the ground
     # surfaces in the lowest available LOD
-    if len(geometry) == 0:
+
+    geometry = get_geometry_with_minimum_lod(geometries)
+
+    if geometry is None:
         logger.warning(
-            f"No geometry object ID=({obj_id}) "
+            f"No geometry for object ID=({obj_id}) "
         )
         return None
-
     planes = dict()
     z_min = 0
-    for boundary in geometry[0]["boundaries"]:
+    for boundary in geometry["boundaries"]:
         for i, shell in enumerate(boundary):
             if type(shell[0]) is list:
                 if type(shell[0][0]) is list:
@@ -195,7 +219,7 @@ def get_ground_geometry(geometry, obj_id):
     if len(ground_points) >= 3:
         ground_polygon = Polygon([[p.x, p.y] for p in ground_points])
     else:
-        # TODO: Fix this
+        print(ground_points)
         logger.warning(
             f"Ground geometry for object ID=({obj_id}) could not be"
             " calculated."
