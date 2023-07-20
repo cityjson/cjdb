@@ -22,14 +22,10 @@ class ExtensionHandler:
                 try:
                     resp = requests.get(url, timeout=10)
                 except Exception as e:
-                    print(f"{url} didnt work: {e}")
+                    logger.error(e)
                     resp = None
 
-                if resp and resp.status_code != 200:
-                    print(f"{url} is shit")
-
                 if resp and resp.status_code == 200:
-                    print(f"{url} is working")
                     try:
                         ext_definition = json.loads(resp.text)
                         self.full_definitions[ext_name] = ext_definition
