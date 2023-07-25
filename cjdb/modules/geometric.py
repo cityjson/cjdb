@@ -8,6 +8,7 @@ from shapely.validation import explain_validity
 
 from cjdb.logger import logger
 from cjdb.modules.exceptions import InvalidLodException
+from shapely.ops import unary_union
 
 
 # get srid from a CRS string definition
@@ -148,6 +149,73 @@ def get_geometry_with_minimum_lod(
         return geometries[index_of_min]
 
 
+def get_flattened_polygons_from_boundaries(boundaries: List, polygons: List = None) -> List:
+    if polygons is None:
+        polygons = []
+    print("here")
+    print(polygons)
+    if isinstance(boundaries[0], list) and\
+       len(boundaries[0]) == 3 and\
+       all(isinstance(p, float) for p in boundaries[0]):
+        surface_points = []
+        for point in boundaries:
+            surface_points.append(Point(point[0], point[1]))
+        polygons.append(Polygon(surface_points))
+        return polygons.copy()
+    else:
+        for shell in boundaries:
+            polygons = get_flattened_polygons_from_boundaries(shell, polygons=polygons)
+        return polygons.copy()
+
+
+def get_surfaces_from_boundaries(boundaries: List) -> List:
+    if isinstance(boundaries[0], list) and\
+       len(boundaries[0]) == 3 and\
+       all(isinstance(p, float) for p in boundaries[0]):
+        surface_points = []
+        for point in boundaries:
+            surface_points.append(Point(point[0], point[1], point[2]))
+        return Polygon(surface_points)
+    else:
+        surfaces = []
+        for shell in boundaries:
+            surfaces.append(get_surfaces_from_boundaries(shell))
+        return surfaces
+
+
+def get_ground_geometry_mine(geometries: List[Dict[str, Any]],
+                        obj_id: str) -> List[Dict[str, Any]]:
+    
+    geometry = get_geometry_with_minimum_lod(geometries)
+
+    if geometry is None:
+        logger.warning(
+            f"No geometry for object ID=({obj_id}) "
+        )
+        return None
+    
+    if geometry["type"] == 'MultiPoint' or geometry["type"] == 'MultiLineString':
+        logger.warning(
+            f"MultiPoint or MultiLineString type has no ground geometry, object ID=({obj_id}) "
+        )
+        # TODO return convex hull of points
+        return None
+    # else:
+    #     surfaces = get_surfaces_from_boundaries(geometries["boundaries"])
+    #     # TODO explore nested
+
+    if float(geometry["lod"]) < 1:
+        # TODO: merge footprint geometries if LoD == 0.
+        # print('geometry["boundaries"]')
+        # print(geometry["boundaries"])
+        flattented_polygons = get_flattened_polygons_from_boundaries(geometry["boundaries"])
+        # print("flattented_polygons")
+        # print(flattented_polygons)
+        return unary_union(flattented_polygons)
+    else:
+        pass
+
+
 def get_ground_geometry(geometries: List[Dict[str, Any]],
                         obj_id: str) -> List[Dict[str, Any]]:
     # returns a shapely multipolygon (see shapely.geometry.MultiPolygon)
@@ -164,6 +232,26 @@ def get_ground_geometry(geometries: List[Dict[str, Any]],
             f"No geometry for object ID=({obj_id}) "
         )
         return None
+    
+    if geometry["type"] == 'MultiPoint' or geometry["type"] == 'MultiLineString':
+        logger.warning(
+            f"MultiPoint or MultiLineString type has no ground geometry, object ID=({obj_id}) "
+        )
+        # TODO return convex hull of points
+        return None
+    # else:
+        # print(geometry["type"])
+        # print(geometry["boundaries"])
+        # print(geometry["lod"])
+    # else:
+    #     surfaces = get_surfaces_from_boundaries(geometries["boundaries"])
+    #     # TODO explore nested
+
+    # if float(geometry["lod"]) < 1:
+    #     # TODO: merge footprint geometries if LoD == 0.
+    #     flattented_polygons = get_flattened_polygons_from_boundaries(geometries["boundaries"])
+    #     return unary_union(flattented_polygons)
+
     planes = dict()
     z_min = 0
     for boundary in geometry["boundaries"]:
