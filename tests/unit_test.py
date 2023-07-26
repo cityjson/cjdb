@@ -5,9 +5,7 @@ from shapely.geometry import MultiPolygon, Polygon
 from cjdb.modules.exceptions import InvalidLodException
 from cjdb.modules.geometric import (get_flattened_polygons_from_boundaries,
                                     get_geometry_with_minimum_lod,
-                                    get_ground_geometry,
-                                    get_ground_geometry_mine,
-                                    get_surfaces_from_boundaries)
+                                    get_ground_geometry)
 
 boundary_multipoint_single_point = [[121483.808, 484844.936, 0.0]]
 boundary_multipoint_many_points = [
@@ -90,22 +88,14 @@ geometry_5["boundaries"] = boundary_multisurface
 geometry_5["lod"] = "0"
 geometry_5["type"] = "MultiSurface"
 
-def test_get_surfaces_from_boundaries_multisurface():
-    res = get_surfaces_from_boundaries(boundary_multisurface)
-    print(res)
-    assert isinstance(res[0][0], Polygon)
-    assert isinstance(res[0][1], Polygon)
-
-
-def test_get_surfaces_from_boundaries_solid():
-    res = get_surfaces_from_boundaries(boundary_solid)
-    print(res)
-    assert isinstance(res[0][0][0], Polygon)
+geometry_6 = dict()
+geometry_6["boundaries"] = boundary_solid
+geometry_6["lod"] = "1.2"
+geometry_6["type"] = "MultiSurface"
 
 
 def test_get_flattened_polygons_from_boundaries_multisurface():
     res = get_flattened_polygons_from_boundaries(boundary_multisurface_not_nested)
-    print(res)
     assert isinstance(res[0], Polygon)
     assert res[0].exterior.coords[0][0] == approx(121077.757)
     assert res[0].exterior.coords[0][1] == approx(485119.04699999996)
@@ -114,50 +104,7 @@ def test_get_flattened_polygons_from_boundaries_multisurface():
 
 def test_get_flattened_polygons_from_boundaries_solid():
     res = get_flattened_polygons_from_boundaries(boundary_solid)
-    print(res)
     assert isinstance(res[0], Polygon)
-
-
-# def test_get_geometries_from_boundaries_single_point():
-#     res = get_geometries_from_boundaries(boundary_multipoint_single_point)
-#     assert isinstance(res[0], Point)
-
-
-# def test_get_geometries_from_boundaries_multiple_points():
-#     res = get_geometries_from_boundaries(boundary_multipoint_many_points)
-#     assert isinstance(res[0], Point)
-#     assert isinstance(res[1], Point)
-
-
-# def test_get_geometries_from_boundaries_multiline_string():
-#     res = get_geometries_from_boundaries(boundary_multiline_string)
-#     print(res)
-#     assert isinstance(res[0][0], Point)
-#     assert res[0][0].x == approx(121483.808)
-#     assert res[0][0].y == approx(484844.936)
-#     assert res[0][0].z == approx(0.0)
-#     assert isinstance(res[0][1], Point)
-#     assert res[0][1].x == approx(121099.937)
-#     assert res[0][1].y == approx(485192.14)
-#     assert res[0][1].z == approx(0.0)
-#     assert isinstance(res[1][0], Point)
-#     assert res[1][0].x == approx(121099.444)
-#     assert res[1][0].y == approx(485194.594)
-#     assert res[1][0].z == approx(0.0)
-#     assert isinstance(res[1][1], Point)
-#     assert res[1][1].x == approx(121093.329)
-#     assert res[1][1].y == approx(485196.323)
-#     assert res[1][1].z == approx(0.0)
-
-
-# def test_get_geometries_from_boundaries_solid():
-#     res = get_geometries_from_boundaries(boundary_solid)
-#     print(res)
-#     print(type(res[0][0][0]))
-#     assert isinstance(res[0][0][0], Polygon)
-#     assert isinstance(res[0][1][0], Polygon)
-#     assert isinstance(res[0][2][0], Polygon)
-#     assert isinstance(res[0][3][0], Polygon)
 
 
 def test_get_geometry_with_minimum_lod_no_geom():
@@ -182,17 +129,11 @@ def test_get_geometry_with_minimum_lod_wrong_value():
 
 def test_get_ground_geometry():
     ground_geometry = get_ground_geometry([geometry_2], "test")
-    print(ground_geometry)
     assert isinstance(ground_geometry, MultiPolygon)
 
 
-def test_get_ground_geometry_mine():
-    ground_geometry1 = get_ground_geometry([geometry_2], "test")
-    ground_geometry2 = get_ground_geometry_mine([geometry_2], "test")
-    assert ground_geometry1 == MultiPolygon([ground_geometry2])
-
-
-def test_get_ground_geometry_mine():
-    ground_geometry1 = get_ground_geometry([geometry_5], "test")
-    ground_geometry2 = get_ground_geometry_mine([geometry_5], "test")
-    assert ground_geometry1 == MultiPolygon([ground_geometry2])
+def test_get_ground_geometry_surfaces():
+    ground_geometry = get_ground_geometry([geometry_5], "test")
+    assert isinstance(ground_geometry, MultiPolygon)
+    ground_geometry = get_ground_geometry([geometry_5], "test")
+    assert isinstance(ground_geometry, MultiPolygon)
