@@ -1,8 +1,9 @@
 import copy
 from statistics import mean
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
+from cjio.geom_help import get_normal_newell
 from pyproj import CRS, Transformer
 from shapely import force_2d
 from shapely.geometry import MultiPolygon, Point, Polygon
@@ -10,7 +11,6 @@ from shapely.ops import unary_union
 
 from cjdb.logger import logger
 from cjdb.modules.exceptions import InvalidLodException
-from cjio.geom_help import get_normal_newell
 
 
 # get srid from a CRS string definition
@@ -151,8 +151,8 @@ def get_geometry_with_minimum_lod(
 
 
 def get_flattened_polygons_from_boundaries(
-    boundaries: List, polygons: List = None
-) -> List:
+    boundaries: List, polygons: Optional[List] = None
+) -> List[Union[Polygon, MultiPolygon]]:
     if polygons is None:
         polygons = []
     if (
@@ -164,23 +164,28 @@ def get_flattened_polygons_from_boundaries(
         for point in boundaries:
             surface_points.append(Point(point[0], point[1], point[2]))
         polygons.append(Polygon(surface_points))
-        return polygons.copy()
+        return polygons
     else:
         for shell in boundaries:
             polygons = get_flattened_polygons_from_boundaries(
                 shell,
                 polygons=polygons)
-        return polygons.copy()
+        return polygons
 
 
-def is_surface_vertical(normal):
-    """If the dot product is near 0 then vector and ground
-    vector are perpendicular =surface vertical
+def is_surface_vertical(normal: np.ndarray) -> bool:
     """
-    xy_normal = [0, 0, 1]
-    dot_prd = xy_normal[0] * normal[0] \
-        + xy_normal[1] * normal[1] \
-        + xy_normal[2] * normal[2]
+    Given the surface normal as input, if it is (almost)
+    perpendicular to the "ground" (xy) normal (0,0,1) then
+    the surface can be considered vertical and the function
+    will return True, otherwise False.
+    We check if the vectors are perpendicular to each other
+    by calculating their dot product. If the dot product is
+    close to 0 then the vectors are perpendicular.
+    """
+    dot_prd = 0 * normal[0] \
+        + 0 * normal[1] \
+        + 1 * normal[2]
 
     if abs(dot_prd) < 0.1:
         return True
@@ -188,7 +193,7 @@ def is_surface_vertical(normal):
         return False
 
 
-def get_ground_surfaces(polygons: List):
+def get_ground_surfaces(polygons: List[Polygon]) -> List[Polygon]:
     ground_surfaces = {}
     for polygon in polygons:
         xyz = np.asarray(polygon.exterior.coords)[0:-1]
@@ -196,7 +201,7 @@ def get_ground_surfaces(polygons: List):
         if is_surface_vertical(normal):
             continue
         else:
-            z = mean([a[2] for a in polygon.exterior.coords])
+            z = mean([point[2] for point in polygon.exterior.coords])
             ground_surfaces[z] = force_2d(polygon)
     if len(ground_surfaces) == 0:
         raise Exception(polygons)
@@ -204,9 +209,27 @@ def get_ground_surfaces(polygons: List):
     return [v for k, v in ground_surfaces.items() if k < z_mean]
 
 
+def merge_into_a_multipolygon(ground_surfaces:
+                              List[Union[Polygon, MultiPolygon]]
+                              ) -> MultiPolygon:
+    polygon = unary_union(force_2d(ground_surfaces))
+    if isinstance(polygon, MultiPolygon):
+        return polygon
+    else:
+        return MultiPolygon([polygon])
+
+
 def get_ground_geometry(
     geometries: List[Dict[str, Any]], obj_id: str
-) -> List[Dict[str, Any]]:
+) -> MultiPolygon:
+    """ Receives a list of transformed boundary coordinates
+    of the city object
+    and extracts only the ground surface.
+    If there is an LoD 0, then all the available surfaces
+    are merged and returned.
+    If not, then only the non-vertical surfaces with the lowest
+    height are merged and returned.
+    """
     geometry = get_geometry_with_minimum_lod(geometries)
 
     if geometry is None:
@@ -219,17 +242,18 @@ def get_ground_geometry(
             f"""MultiPoint or MultiLineString type has no ground geometry,
             object ID=({obj_id})"""
         )
-        # TODO return convex hull as ground geometry of points
+        # TODO return convex hull of the points as ground geometry.
         return None
 
     if float(geometry["lod"]) < 1:
-        # TODO: merge footprint geometries if LoD == 0.
         flattented_polygons = get_flattened_polygons_from_boundaries(
             geometry["boundaries"]
         )
-        return MultiPolygon([unary_union(force_2d(flattented_polygons))])
+        return merge_into_a_multipolygon(flattented_polygons)
     else:
+        # TODO: check if there are surface types available
+        # to choose the ground surfaces
         surfaces = get_flattened_polygons_from_boundaries(
             geometry["boundaries"])
         ground_surfaces = get_ground_surfaces(surfaces)
-        return MultiPolygon([unary_union(force_2d(ground_surfaces))])
+        return merge_into_a_multipolygon(ground_surfaces)
