@@ -3,12 +3,9 @@ from pytest import approx
 from shapely.geometry import MultiPolygon, Polygon
 
 from cjdb.modules.exceptions import InvalidLodException
-from cjdb.modules.geometric import (
-    get_flattened_polygons_from_boundaries,
-    get_geometry_with_minimum_lod,
-    get_ground_geometry,
-    get_ground_surfaces,
-)
+from cjdb.modules.geometric import (get_flattened_polygons_from_boundaries,
+                                    get_geometry_with_minimum_lod,
+                                    get_ground_geometry, get_ground_surfaces)
 
 boundary_multipoint_single_point = [[121483.808, 484844.936, 0.0]]
 boundary_multipoint_many_points = [
