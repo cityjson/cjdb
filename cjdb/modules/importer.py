@@ -464,7 +464,7 @@ class Importer:
 
         ground_geometry = get_ground_geometry(geometry, obj_id)
 
-        if (ground_geometry is None) is False:
+        if ground_geometry is not None:
             if not self.current.target_srid:
                 ground_geometry = func.st_geomfromtext(ground_geometry.wkt)
             else:
