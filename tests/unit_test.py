@@ -3,9 +3,12 @@ from pytest import approx
 from shapely.geometry import MultiPolygon, Polygon
 
 from cjdb.modules.exceptions import InvalidLodException
-from cjdb.modules.geometric import (get_flattened_polygons_from_boundaries,
-                                    get_geometry_with_minimum_lod,
-                                    get_ground_geometry)
+from cjdb.modules.geometric import (
+    get_flattened_polygons_from_boundaries,
+    get_geometry_with_minimum_lod,
+    get_ground_geometry,
+    get_ground_surfaces,
+)
 
 boundary_multipoint_single_point = [[121483.808, 484844.936, 0.0]]
 boundary_multipoint_many_points = [
@@ -95,7 +98,8 @@ geometry_6["type"] = "MultiSurface"
 
 
 def test_get_flattened_polygons_from_boundaries_multisurface():
-    res = get_flattened_polygons_from_boundaries(boundary_multisurface_not_nested)
+    res = get_flattened_polygons_from_boundaries(
+        boundary_multisurface_not_nested)
     assert isinstance(res[0], Polygon)
     assert res[0].exterior.coords[0][0] == approx(121077.757)
     assert res[0].exterior.coords[0][1] == approx(485119.04699999996)
@@ -137,3 +141,13 @@ def test_get_ground_geometry_surfaces():
     assert isinstance(ground_geometry, MultiPolygon)
     ground_geometry = get_ground_geometry([geometry_5], "test")
     assert isinstance(ground_geometry, MultiPolygon)
+
+
+def test_get_ground_surfaces():
+    surfaces = get_flattened_polygons_from_boundaries(boundary_solid)
+    ground_surfaces = get_ground_surfaces(surfaces)
+    assert ground_surfaces[0] == Polygon(((0, 1),
+                                          (1, 1),
+                                          (1, 0),
+                                          (0, 0),
+                                          (0, 1)))

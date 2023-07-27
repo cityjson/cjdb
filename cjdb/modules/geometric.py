@@ -10,6 +10,7 @@ from shapely.ops import unary_union
 
 from cjdb.logger import logger
 from cjdb.modules.exceptions import InvalidLodException
+from cjio.geom_help import get_normal_newell
 
 
 # get srid from a CRS string definition
@@ -172,12 +173,27 @@ def get_flattened_polygons_from_boundaries(
         return polygons.copy()
 
 
+def is_surface_vertical(normal):
+    """If the dot product is near 0 then vector and ground
+    vector are perpendicular =surface vertical
+    """
+    xy_normal = [0, 0, 1]
+    dot_prd = xy_normal[0] * normal[0] \
+        + xy_normal[1] * normal[1] \
+        + xy_normal[2] * normal[2]
+
+    if abs(dot_prd) < 0.1:
+        return True
+    else:
+        return False
+
+
 def get_ground_surfaces(polygons: List):
     ground_surfaces = {}
     for polygon in polygons:
-        print(polygon.area)
-        if polygon.area < 0.1:
-            print("Rejected")
+        xyz = np.asarray(polygon.exterior.coords)[0:-1]
+        normal, is_coplanar = get_normal_newell(xyz)
+        if is_surface_vertical(normal):
             continue
         else:
             z = mean([a[2] for a in polygon.exterior.coords])
