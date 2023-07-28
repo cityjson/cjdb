@@ -1,11 +1,16 @@
 import copy
+from statistics import mean
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
+from cjio.geom_help import get_normal_newell
 from pyproj import CRS, Transformer
+from shapely import force_2d
 from shapely.geometry import MultiPolygon, Point, Polygon
-from shapely.validation import explain_validity
+from shapely.ops import unary_union
 
 from cjdb.logger import logger
+from cjdb.modules.exceptions import InvalidLodException
 
 
 # get srid from a CRS string definition
@@ -127,87 +132,128 @@ def resolve_geometry_vertices(
     return geometry
 
 
-def get_ground_geometry(geometry, obj_id):
-    # returns a shapely multipolygon (see shapely.geometry.MultiPolygon)
-    # the MultiPolygon should be a 2D geometry (Z coordinate is omitted)
-    # this geometry should be obtained by parsing the "geometry" object
-    # from cityjson -> the argument of this function
-    # the geometry is a multipolygon of all the ground
-    # surfaces in the lowest available LOD
-    if len(geometry) == 0:
-        logger.warning(
-            f"No geometry object ID=({obj_id}) "
-        )
+def get_geometry_with_minimum_lod(
+    geometries: List[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """Receives a list of Geometry objects and returns
+    the geometry with the minimum LoD."""
+    if len(geometries) == 0:
         return None
-
-    planes = dict()
-    z_min = 0
-    for boundary in geometry[0]["boundaries"]:
-        for i, shell in enumerate(boundary):
-            if type(shell[0]) is list:
-                if type(shell[0][0]) is list:
-                    for ring in shell:
-                        Point_list = []
-                        z_tot = 0
-                        z_count = 0
-                        for x, y, z in ring:
-                            z_tot = z + z_tot
-                            z_count = z_count + 1
-                            p = Point(x, y, z)
-                            Point_list.append(p)
-                        z_avg = round(z_tot / z_count, 6)
-                        z_min = z_avg
-                        planes[str(z_avg)] = Point_list
-                else:
-                    Point_list = []
-                    z_tot = 0
-                    z_count = 0
-                    for x, y, z in shell:
-                        z_tot = z + z_tot
-                        z_count = z_count + 1
-                        p = Point(x, y, z)
-                        Point_list.append(p)
-                    z_avg = round(z_tot / z_count, 6)
-                    z_min = z_avg
-                    planes[str(z_avg)] = Point_list
-
-    for key in planes:
-        z_num = float(key)
-        if z_num < z_min:
-            z_min = z_num
-
-    ground_points = []
-    ground_points_dic = {}
-
-    for key in planes:
-        if abs(float(key) - z_min) < 0.3:
-            for p in planes[key]:
-                str_p = str(p.x) + " " + str(p.y)
-                if (str_p in ground_points_dic.keys()) is False:
-                    ground_points_dic[str_p] = 0
-
-    for key in ground_points_dic:
-        p_x = key.split()[0]
-        p_y = key.split()[1]
-        p = Point(float(p_x), float(p_y))
-        ground_points.append(p)
-
-    if len(ground_points) >= 3:
-        ground_polygon = Polygon([[p.x, p.y] for p in ground_points])
+    elif len(geometries) == 1:
+        return geometries[0]
     else:
-        # TODO: Fix this
-        logger.warning(
-            f"Ground geometry for object ID=({obj_id}) could not be"
-            " calculated."
-        )
+        try:
+            lods = [float(geom["lod"]) for geom in geometries]
+        except ValueError:
+            raise InvalidLodException()
+        index_of_min = lods.index(min(lods))
+        return geometries[index_of_min]
+
+
+def get_flattened_polygons_from_boundaries(
+    boundaries: List, polygons: Optional[List] = None
+) -> List[Union[Polygon, MultiPolygon]]:
+    if polygons is None:
+        polygons = []
+    if (
+        isinstance(boundaries[0], list)
+        and len(boundaries[0]) == 3
+        and all(isinstance(p, float) for p in boundaries[0])
+    ):
+        surface_points = []
+        for point in boundaries:
+            surface_points.append(Point(point[0], point[1], point[2]))
+        polygons.append(Polygon(surface_points))
+        return polygons
+    else:
+        for shell in boundaries:
+            polygons = get_flattened_polygons_from_boundaries(
+                shell,
+                polygons=polygons)
+        return polygons
+
+
+def is_surface_vertical(normal: np.ndarray) -> bool:
+    """
+    Given the surface normal as input, if it is (almost)
+    perpendicular to the "ground" (xy) normal (0,0,1) then
+    the surface can be considered vertical and the function
+    will return True, otherwise False.
+    We check if the vectors are perpendicular to each other
+    by calculating their dot product. If the dot product is
+    close to 0 then the vectors are perpendicular.
+    """
+    dot_prd = 0 * normal[0] \
+        + 0 * normal[1] \
+        + 1 * normal[2]
+
+    if abs(dot_prd) < 0.1:
+        return True
+    else:
+        return False
+
+
+def get_ground_surfaces(polygons: List[Polygon]) -> List[Polygon]:
+    ground_surfaces = {}
+    for polygon in polygons:
+        xyz = np.asarray(polygon.exterior.coords)[0:-1]
+        normal, is_coplanar = get_normal_newell(xyz)
+        if is_surface_vertical(normal):
+            continue
+        else:
+            z = mean([point[2] for point in polygon.exterior.coords])
+            ground_surfaces[z] = force_2d(polygon)
+    if len(ground_surfaces) == 0:
+        raise Exception(polygons)
+    z_mean = mean(ground_surfaces.keys())
+    return [v for k, v in ground_surfaces.items() if k < z_mean]
+
+
+def merge_into_a_multipolygon(ground_surfaces:
+                              List[Union[Polygon, MultiPolygon]]
+                              ) -> MultiPolygon:
+    polygon = unary_union(force_2d(ground_surfaces))
+    if isinstance(polygon, MultiPolygon):
+        return polygon
+    else:
+        return MultiPolygon([polygon])
+
+
+def get_ground_geometry(
+    geometries: List[Dict[str, Any]], obj_id: str
+) -> MultiPolygon:
+    """ Receives a list of transformed boundary coordinates
+    of the city object
+    and extracts only the ground surface.
+    If there is an LoD 0, then all the available surfaces
+    are merged and returned.
+    If not, then only the non-vertical surfaces with the lowest
+    height are merged and returned.
+    """
+    geometry = get_geometry_with_minimum_lod(geometries)
+
+    if geometry is None:
+        logger.warning(f"No geometry for object ID=({obj_id}) ")
         return None
 
-    if ground_polygon.is_valid is False:
-        ground_polygon = ground_polygon.buffer(0)
-        if ground_polygon.is_valid is False:
-            logger.info(explain_validity(ground_polygon))
+    if geometry["type"] == "MultiPoint" or\
+       geometry["type"] == "MultiLineString":
+        logger.warning(
+            f"""MultiPoint or MultiLineString type has no ground geometry,
+            object ID=({obj_id})"""
+        )
+        # TODO return convex hull of the points as ground geometry.
+        return None
 
-    if type(ground_polygon) is Polygon:
-        ground_polygon = MultiPolygon([ground_polygon])
-
-    return ground_polygon
+    if float(geometry["lod"]) < 1:
+        flattented_polygons = get_flattened_polygons_from_boundaries(
+            geometry["boundaries"]
+        )
+        return merge_into_a_multipolygon(flattented_polygons)
+    else:
+        # TODO: check if there are surface types available
+        # to choose the ground surfaces
+        surfaces = get_flattened_polygons_from_boundaries(
+            geometry["boundaries"])
+        ground_surfaces = get_ground_surfaces(surfaces)
+        return merge_into_a_multipolygon(ground_surfaces)

@@ -234,7 +234,7 @@ class Importer:
         elif imported_files.first() and self.overwrite:
             logger.warning(
                 "File already imported. Overwriting all objects"
-                f"from source file {cj_metadata.source_file}")
+                f" from source file {cj_metadata.source_file}")
             imported_files.delete()
 
         different_srid = cj_metadata.different_srid_meta(self.session)
@@ -464,7 +464,7 @@ class Importer:
 
         ground_geometry = get_ground_geometry(geometry, obj_id)
 
-        if (ground_geometry is None) is False:
+        if ground_geometry is not None:
             if not self.current.target_srid:
                 ground_geometry = func.st_geomfromtext(ground_geometry.wkt)
             else:
