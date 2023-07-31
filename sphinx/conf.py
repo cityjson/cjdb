@@ -14,8 +14,9 @@ sys.path.insert(0, os.path.abspath(".."))
 
 
 project = 'cjdb'
-copyright = '2023, Gina Stavropoulou'
-author = 'Gina Stavropoulou'
+copyright = '2023, 3Dgeoinformation group, TUDelft'
+authors = '["Cynthia Cai", "Lan Yan", "Yitong Xia", "Chris Poon", "Siebren Meines", "Leon Powalka"]'
+maintainer = '["Gina Stavropoulou", "Hugo Ledoux"]'
 release = __version__
 
 # -- General configuration ---------------------------------------------------
