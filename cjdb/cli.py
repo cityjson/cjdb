@@ -136,17 +136,17 @@ def export_cj(query, host, port, user, password, database, schema, output):
        use "ALL" to export the whole database/schema.
        Example for exporting all the objects in a schema:
 
-        ```
+        `
         cjdb export -H localhost -U myusername -d mydb
         -s myschema -p 5432 -o result.jsonl
-        ```
+        `
 
-        Example for exporting a specific object in a schema:
+       Example for exporting a specific object in a schema:
 
-        ```
+        `
         cjdb export -H localhost -U myusername -d mydb
         -s myschema -p 5432 -o result.jsonl -q "SELECT 1 as id"
-        ```
+        `
     """
     base = os.path.basename(output)
     dirname = os.path.abspath(os.path.dirname(output))
