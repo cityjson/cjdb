@@ -91,10 +91,11 @@ def import_cj(
 ):
     """Import CityJSONL files to a PostgreSQL database. 
     Example of cli command:
-    ```
-    cjdb import -H localhost -U myusername -p 5433 -d mydb
-    -s myschema "/path/to/file.jsonl"
-    ```
+    
+        `
+        cjdb import -H localhost -U myusername -p 5433 -d mydb
+        -s myschema "/path/to/file.jsonl"
+        `
     """
     engine = get_db_engine(user, password, host, port, database)
     with Importer(
