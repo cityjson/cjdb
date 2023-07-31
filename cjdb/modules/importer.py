@@ -202,40 +202,41 @@ class Importer:
             bbox=bbox,
         )
 
-        # compare to existing import metas
-        imported_files = cj_metadata.get_already_imported_files(
-            self.session
-        )
+        if cj_metadata.source_file.lower() != "stdin":
+            # compare to existing import metas
+            imported_files = cj_metadata.get_already_imported_files(
+                self.session
+            )
 
-        if (self.ignore_repeated_file
-           and imported_files.first()
-           and not self.overwrite):
-            logger.warning("File already imported. Skipping...")
-            return False
-        elif imported_files.first() and not self.overwrite:
-            logger.warning(
-                "A file with the same name (%s) was previously "
-                "imported on %s. Use the --ignore-repeated-file "
-                "to skip already imported files.",
-                cj_metadata.source_file, imported_files.first().finished_at
-            )
-            user_answer = input(
-                "Should the import continue? "
-                "Already imported city objects will be skipped. "
-                "If you want to overwrite them instead "
-                "use the flag --overwrite. \n"
-                " [y / n]\n"
-            )
-            if user_answer.lower() != "y":
-                logger.warning(
-                    f"Import of file {cj_metadata.source_file}"
-                    "skipped by user.")
+            if (self.ignore_repeated_file
+            and imported_files.first()
+            and not self.overwrite):
+                logger.warning("File already imported. Skipping...")
                 return False
-        elif imported_files.first() and self.overwrite:
-            logger.warning(
-                "File already imported. Overwriting all objects"
-                f" from source file {cj_metadata.source_file}")
-            imported_files.delete()
+            elif imported_files.first() and not self.overwrite:
+                logger.warning(
+                    "A file with the same name (%s) was previously "
+                    "imported on %s. Use the --ignore-repeated-file "
+                    "to skip already imported files.",
+                    cj_metadata.source_file, imported_files.first().finished_at
+                )
+                user_answer = input(
+                    "Should the import continue? "
+                    "Already imported city objects will be skipped. "
+                    "If you want to overwrite them instead "
+                    "use the flag --overwrite. \n"
+                    " [y / n]\n"
+                )
+                if user_answer.lower() != "y":
+                    logger.warning(
+                        f"Import of file {cj_metadata.source_file}"
+                        "skipped by user.")
+                    return False
+            elif imported_files.first() and self.overwrite:
+                logger.warning(
+                    "File already imported. Overwriting all objects"
+                    f" from source file {cj_metadata.source_file}")
+                imported_files.delete()
 
         different_srid = cj_metadata.different_srid_meta(self.session)
         if different_srid:
