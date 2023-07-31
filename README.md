@@ -5,43 +5,26 @@
 It requires the [PostGIS](https://postgis.net/) extension.
 
 
-
 ## Installation
-### Using pip
 ```bash
 pip install cjdb
 ```
-It is recommended to install it in an isolated environment, because of fragile external library dependencies for CQL filter parsing.
+It is recommended to install it in an isolated environment.
 
-### Using docker
-Build:
-```bash
-docker build -t cjdb:latest .
-```
 
-Run:
-```bash
-docker run --rm -it cjdb cjdb --help
-```
-
-To import some files, the `-v` option is needed to mount our local file directory in the container:
-```bash
-docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb import -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
-```
-
-## Data model
-For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
 
 ## Usage
+
+Check our [docs online](https://cityjson.github.io/cjdb/cjdb.html)  or
 
 ```bash
 cjdb --help
 ```
 
-### Quickstart
+## Quickstart
 
 Sample CityJSON data can be downloaded from [3DBAG download service](https://3dbag.nl/). 
-For example download the tile "9-284-556", where part of TU Delft is located: https://data.3dbag.nl/cityjson/v20230622/tiles/9/284/556/9-284-556.city.json
+For example [download the tile "9-284-556"](https://data.3dbag.nl/cityjson/v20230622/tiles/9/284/556/9-284-556.city.json), where part of TU Delft is located.
 Then, having the CityJSON file, a combination of [cjio](https://github.com/cityjson/cjio) (external CityJSON processing library) and cjdb is needed to import it to a specified schema in a database. 
 
 1. Convert CityJSON to CityJSONL
@@ -61,200 +44,26 @@ Alternatively, you can use PgAdmin, [see how](https://postgis.net/workshops/post
 cjdb import -H localhost -U postgres -d testcjdb -s cjdb  9-284-556.jsonl
 ```
 
-4. Export CityJSONL from the database
+4. Export the whole database in a CityJSONL file: 
 ```bash
-cjdb export -H localhost -U postgres -d testcjdb -s cjdb  "..."
+cjdb export -H localhost -U postgres -d testcjdb -s cjdb -o result.jsonl
+```
+or export only part of it, based on the Objects ids:
+
+```bash
+cjdb export -H localhost -U postgres -d testcjdb -s cjdb -o result.jsonl -q "SELECT 1 as id"
 ```
 
 **Alternatively steps 1 and 3 in a single command:**
 
 ```bash
-cjio --suppress_msg 9-284-556.json export jsonl stdout | cjdb -H localhost -U postgres -d postgres -s cjdb
+cjio --suppress_msg 9-284-556.json export jsonl stdout | cjdb import -H localhost -U postgres -d postgres -s cjdb
 ```
 
 The metadata and the objects can then be found in the tables in the specified schema (`cjdb` in this example).
 
 
 Password can be specified in the `PGPASSWORD` environment variable. If not specified, the app will prompt for the password.
-
-### Importer
-
-```bash
-cjdb import [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-I TARGET_SRID][-x INDEXED_ATTRIBUTES] [-px PARTIAL_INDEXED_ATTRIBUTES] [-g] [-a] [file_or_directory]
-```
-#### Positional Arguments
-file_or_directory
-Source CityJSONL file or a directory with CityJSONL files. STDIN if not specified. If specifying a directory, all the *.jsonl files inside of it will be imported.
-
-Default: “stdin”
-
-#### Named Arguments
-`-I, --srid`
-Target coordinate system SRID. All 3D and 2D geometries will be reprojected.
-
-`-x, --attr-index`
-CityObject attribute to be indexed using a btree index. Can be specified multiple times, for each attribute once.
-
-Default: []
-
-`-px, --partial-attr-index`
-CityObject attribute to be indexed using a btree partial index. Can be specified multiple times, for each attribute once. This index indexes on a condition ‘where {
-                {ATTR_NAME
-                }
-        } is not null’. This means that it saves space and improves query performance when the attribute is not present for all imported CityObjects.
-
-Default: []
-
-`-g, --ignore-repeated-file`
-Ignore repeated file names warning when importing. By default, the importer will send out warnings if a specific file has already been imported.
-
-Default: False
-
-`-a, --append`
-Run in append mode (as opposed to default create mode). This assumes the database structure exists already and new data is to be appended.
-
-Default: False
-
-
-`--overwrite`
-If the file has been imported before, delete all associated objects with this filename and reimport all objects in the file.
-
-Default: False
-
-#### Database connection arguments
-`-H, --host`
-PostgreSQL database host
-
-Default: “localhost”
-
-`-p, --port`
-PostgreSQL database port
-
-Default: 5432
-
-`-U, --user`
-PostgreSQL database user name
-
-`--password`
-PostgreSQL database user password
-
-`-d, --database`
-PostgreSQL database name
-
-`-s, --schema`
-Target database schema
-
-Default: “cjdb”
-
-
-### Exporter
-
-```bash
-cjdb export [-h] [-H DB_HOST] [-p DB_PORT] -U DB_USER [--password DB_PASSWORD] -d DB_NAME [-s DB_SCHEMA] [-o OUTPUT][-q SQL_QUERY]
-```
-
-#### Named Arguments
-`-o, --output`
-
-The name of the output file
-
-`-q, --query`
-
-SQL query with the desired ids of the objects to be exported. If not used, all the objects will be exported. 
-
-#### Database connection arguments
-`-H, --host`
-PostgreSQL database host
-
-Default: “localhost”
-
-`-p, --port`
-PostgreSQL database port
-
-Default: 5432
-
-`-U, --user`
-PostgreSQL database user name
-
-`--password`
-PostgreSQL database user password
-
-`-d, --database`
-PostgreSQL database name
-
-`-s, --schema`
-Target database schema
-
-Default: “cjdb”
-
-
-Example for exporting all the objects in a schema:
-
-```bash
-cjdb export -H localhost -U myusername -d mydb  -s myschema -p 5432 -o result.jsonl
-```
-
-Example for exporting a specific object in a schema:
-
-```bash
-cjdb export -H localhost -U myusername -d mydb  -s myschema -p 5432 -o result.jsonl -q "SELECT 1 as id"
-```
-
-### Basic Queries
-
-- Query an object with a specific id:
-```SQL
-SELECT * FROM cjdb.city_object
-WHERE object_id = 'NL.IMBAG.Pand.0503100000000010';
-```
-
-- Query a building with a specific child
-```SQL
-select * from cjdb.city_object p
-inner join cjdb.city_object_relationships rel 
-ON p.id = rel.parent_id
-inner join cjdb.city_object c
-ON c.id = rel.child_id
-where c.object_id = 'NL.IMBAG.Pand.0503100000000010-0';
-```
-
-- Query all buildings within a bounding box
-```SQL
-SELECT * FROM cjdb.city_object
-WHERE type = 'Building'
-AND ST_Contains(ST_MakeEnvelope(85000.00, 446700.00, 85200.00, 446900.00, 7415), ground_geometry)
-ORDER BY id ASC;
-```
-
-- Query the building intersecting with a point
-```SQL
-SELECT * FROM cjdb.city_object
-WHERE ground_geometry && ST_MakePoint(85218.0, 446880.0)
-AND type = 'Building'
-ORDER BY object_id ASC;
-```
-
-- Query all objects with a slanted roof
-```SQL
-SELECT * FROM cjdb.city_object
-WHERE (attributes->'b3_dak_type')::varchar = '"slanted"'
-ORDER BY id ASC;
-```
-
-- Query all the buildings made after 2000:
-```SQL
-SELECT * FROM cjdb.city_object
-WHERE (attributes->'oorspronkelijkbouwjaar')::int > 2000
-AND type = 'Building'
-ORDER BY id ASC;
-```
-
-- Query all objects with LOD 1.2
-
-```SQL
-SELECT * FROM cjdb.city_object
-WHERE geometry::jsonb @> '[{"lod": "1.2"}]'::jsonb
-```
 
 ## Local development
 
@@ -283,7 +92,6 @@ cjdb --help
 
 Every time you make some changed to the package you can run `poetry install` to reinstall.
 
-
 ### Testing
 In onder to run the tests you need to have [PostgreSQL](https://www.postgresql.org/download/) installed. Then you can run:
 
@@ -291,15 +99,33 @@ In onder to run the tests you need to have [PostgreSQL](https://www.postgresql.o
 pytest -v
 ```
 
+## Using docker
+Build:
+```bash
+docker build -t cjdb:latest .
+```
+
+Run:
+```bash
+docker run --rm -it cjdb cjdb --help
+```
+
+To import some files, the `-v` option is needed to mount our local file directory in the container:
+```bash
+docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb import -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
+```
+
 ## Explanation
----
-### Model assumptions
+### Data model
+
 The `cjdb` importer loads the data in accordance with a specific data model.
 
-Model documentation:
- [model/README](model/README.md)
+For the underlying data model see [cjdb/model/README.md](cjdb/model/README.md)
 
-#### Indexes
+For example SQL queries on the table see [cjdb/model/BASICQUERIES.md](cjdb/model/BASICQUERIES.md)
+
+
+### Indexes
 Some indexes are created by default (refer to [model/README](model/README.md)).
 
 Additionally, the user can specify which CityObject attributes are to be indexed with the `-x/--attr-index` or `-px/--partial-attr-index` flag, we recommend doing this if several queries are made on specific attributes. 
@@ -325,7 +151,6 @@ The importer supports 3 kinds of input:
   1. a single CityJSONL file (only those as the output of cjio currently work)
   1. a directory of CityJSONL files (all files with *jsonl* extensions are located and imported)
   1. STDIN using the pipe operator: `cat file.jsonl | cjdb ...`
-
 
 
 ### Coordinate Reference Systems
