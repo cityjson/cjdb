@@ -208,9 +208,10 @@ class Importer:
                 self.session
             )
 
-            if (self.ignore_repeated_file
-            and imported_files.first()
-            and not self.overwrite):
+            if (
+                self.ignore_repeated_file and
+                    imported_files.first() and 
+                    not self.overwrite):
                 logger.warning("File already imported. Skipping...")
                 return False
             elif imported_files.first() and not self.overwrite:
