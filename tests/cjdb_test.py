@@ -5,9 +5,11 @@ from pytest_postgresql.janitor import DatabaseJanitor
 from sqlalchemy import MetaData, Table, create_engine, inspect, select
 from sqlalchemy.orm import Session
 
-from cjdb.modules.exceptions import (InvalidCityJSONObjectException,
+from cjdb.modules.exceptions import (InconsistentCRSException,
+                                     InvalidCityJSONObjectException,
                                      InvalidMetadataException,
-                                     MissingCRSException)
+                                     MissingCRSException,
+                                     NoSchemaSridException)
 from cjdb.modules.exporter import Exporter
 from cjdb.modules.importer import Importer
 
@@ -229,6 +231,75 @@ def test_export_all(engine_postgresql):
         output="./tests/files/ex.jsonl",
     ) as exporter:
         exporter.run_export()
+
+
+def test_single_import_with_srid_flag_different_from_existing_schema(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    with Importer(
+        engine=engine_postgresql,
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="vienna",
+        input_srid=28992,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        overwrite=False,
+        transform=False
+    ) as importer:
+        with pytest.raises(InconsistentCRSException):
+            importer.run_import()
+
+
+def test_transform_flag_with_same_SRID_than_schema(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    with Importer(
+        engine=engine_postgresql,
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="vienna",
+        input_srid=4326,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        overwrite=False,
+        transform=True
+    ) as importer:
+        importer.run_import()
+
+
+def test_transform_flag_with_different_SRID_than_schema(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    with Importer(
+        engine=engine_postgresql,
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="vienna",
+        input_srid=28992,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        overwrite=False,
+        transform=True
+    ) as importer:
+        importer.run_import()
+
+
+def test_transform_flag_to_new_schema(engine_postgresql,
+                                                         monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    engine_postgresql.update_execution_options(
+        schema_translate_map={"vienna": "new_schema"})
+    with Importer(
+        engine=engine_postgresql,
+        filepath="./tests/files/vienna.jsonl",
+        db_schema="new_schema",
+        input_srid=4326,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        overwrite=False,
+        transform=True
+    ) as importer:
+        with pytest.raises(NoSchemaSridException):
+            importer.run_import()
 
 
 def test_export_one(engine_postgresql):
