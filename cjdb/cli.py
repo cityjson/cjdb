@@ -98,9 +98,8 @@ def import_cj(
     overwrite,
     transform
 ):
-    """Import CityJSONL files to a PostgreSQL database. 
+    """Import CityJSONL files to a PostgreSQL database.
     Example of cli command:
-
 
         cjdb import -H localhost -U myusername -p 5433 -d mydb
         -s myschema -f "/path/to/file.jsonl"
@@ -146,17 +145,13 @@ def export_cj(query, host, port, user, password, database, schema, output):
        use "ALL" to export the whole database/schema.
        Example for exporting all the objects in a schema:
 
-        `
         cjdb export -H localhost -U myusername -d mydb
         -s myschema -p 5432 -o result.jsonl
-        `
 
        Example for exporting a specific object in a schema:
 
-        `
         cjdb export -H localhost -U myusername -d mydb
         -s myschema -p 5432 -o result.jsonl -q "SELECT 1 as id"
-        `
     """
     base = os.path.basename(output)
     dirname = os.path.abspath(os.path.dirname(output))
