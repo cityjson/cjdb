@@ -89,7 +89,14 @@ def import_cj(
     ignore_repeated_file,
     overwrite,
 ):
-    """Import CityJSONL files to a PostgreSQL database."""
+    """Import CityJSONL files to a PostgreSQL database. 
+    Example of cli command:
+    
+        `
+        cjdb import -H localhost -U myusername -p 5433 -d mydb
+        -s myschema "/path/to/file.jsonl"
+        `
+    """
     engine = get_db_engine(user, password, host, port, database)
     with Importer(
         engine,
@@ -126,13 +133,24 @@ def import_cj(
               help=s.output_help)
 def export_cj(query, host, port, user, password, database, schema, output):
     """Export a CityJSONL stream to a file.
-        The query should return IDs from the table 'city_object';
-        use "ALL" to export the whole database/schema.
+       The query should return IDs from the table 'city_object';
+       use "ALL" to export the whole database/schema.
+       Example for exporting all the objects in a schema:
+
+        `
+        cjdb export -H localhost -U myusername -d mydb
+        -s myschema -p 5432 -o result.jsonl
+        `
+
+       Example for exporting a specific object in a schema:
+
+        `
+        cjdb export -H localhost -U myusername -d mydb
+        -s myschema -p 5432 -o result.jsonl -q "SELECT 1 as id"
+        `
     """
-    # where to save the file
     base = os.path.basename(output)
     dirname = os.path.abspath(os.path.dirname(output))
-    # parent directory must exist
     if not os.path.exists(dirname):
         raise click.ClickException(
             'Output path does not exist: "%s"' % (dirname)

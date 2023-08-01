@@ -7,12 +7,9 @@ cjdb data model is designed to store 3D city models in CityJSON in a PostgreSQL/
 
 The conceptual data model contains two main tables. The **cj_metadata** table for storing imported files' information, e.g. name or metadata of the source file. The **city_object** table for storing city objects. 
 
-![UML drawio](https://user-images.githubusercontent.com/92783160/200633172-e33fc6ae-26b4-4b16-a2a7-968cc9a34d5e.png)
-
 The physical data model adds one more table on the conceptual data model: the **city_object_relationships** table to store relations between city objects, e.g the parent-children relationship. This table is added to achieve higher querying speed when selecting objects by their parent/child relationship. Example of this would be: "give me all the objects which are children of X". 
 
-
-![Physical Model drawio (3)](https://user-images.githubusercontent.com/92783160/200633220-92f95184-edce-44b9-bfa9-7db5fccbfc0e.png)
+![UML drawio](uml.png)
 
 
 ### cj_metadata 
@@ -20,17 +17,18 @@ The physical data model adds one more table on the conceptual data model: the **
 The `cj_metadata` table stores information from imported files, e.g. name or metadata of the source file. 
 
  - **id**: cj_metadata record's index within the database.
+ - **version**: CityJSON version used.
  - **source_file**: name of the source file.
-  - **version**: CityJSON version used.
-  - **metadata**: [CityJSON metadata object](https://www.cityjson.org/specs/#metadata), a JSON object describing the creator, dataset extent or coordinate reference system used, etc.
-  - **transform**: [CityJSON transform object](https://www.cityjson.org/specs/#transform-object), a JSON object describing how to decompress the integer coordinates of the geometries to obtain real-world coordinates.
-  - **geometry_templates**: [CityJSON geometry-templates object](https://www.cityjson.org/specs/#geometry-templates), a JSON object containing the templates that can be reused by different City Objects (usually for trees).
-  - **srid**: Coordinate reference system (CRS) of the imported city objects in the database. If not specified when importing, the CRS will be the same with the source file's CRS. If specified when importing, the CRS will be the specified CRS.
-  - **extensions**: [CityJSON Extensions](https://www.cityjson.org/specs/#extensions), a JSON file that documents how the core data model of CityJSON is extended.
-  - **extra_properties**: [extraRootProperties](https://www.cityjson.org/specs/#case-2-adding-new-properties-at-the-root-of-a-document), a JSON object with added new properties at the root of the imported document.
-  - **started_at**: importing start time.
-  - **finished_at**: importing finish time. `null` if not finished.
-  - **bounding box**: bounding box is taken from the `geographicExtent` object from the `metadata` section
+ - **metadata**: [CityJSON metadata object](https://www.cityjson.org/specs/#metadata), a JSON object describing the creator, dataset extent or coordinate reference system used, etc.
+ - **transform**: [CityJSON transform object](https://www.cityjson.org/specs/#transform-object), a JSON object describing how to decompress the integer coordinates of the geometries to obtain real-world coordinates.
+ - **srid**: Coordinate reference system (CRS) of the imported city objects in the database. If not specified when importing, the CRS will be the same with the source file's CRS. If specified when importing, the CRS will be the specified CRS.
+ - **extensions**: [CityJSON Extensions](https://www.cityjson.org/specs/#extensions), a JSON file that documents how the core data model of CityJSON is extended.
+ - **extra_properties**: [extraRootProperties](https://www.cityjson.org/specs/#case-2-adding-new-properties-at-the-root-of-a-document), a JSON object with added new properties at the root of the imported document.
+ - **geometry_templates**: [CityJSON geometry-templates object](https://www.cityjson.org/specs/#geometry-templates), a JSON object containing the templates that can be reused by different City Objects (usually for trees).
+ - **bbox**: bounding box is taken from the `geographicExtent` object from the `metadata` section
+ - **started_at**: importing start time.
+ - **finished_at**: importing finish time. `null` if not finished.
+
 
 
 ### city_object 
@@ -40,9 +38,10 @@ The **attributes** and **geometry** are seperated into two jsonb column for quer
 
   - **id**: city object's index within the database.
   - **cj_metadata_id**: the source file id of the city object, foriegn key to the id column of metadata table.
-  - **object_id**: the identification string of the city object (e.g. NL.IMBAG.Pand.0503100000000033-0).
   - **type**: type of the city object (e.g. building, buildingparts, etc.).
-  - **attributes**:[cityJSON attributes](https://www.cityjson.org/specs/#attributes-for-all-city-objects), a JSON object that describes attributes of the city object (e.g. roof type, area, etc.).
+  - **object_id**: the identification string of the city object (e.g. NL.IMBAG.Pand.0503100000000033-0).
+  - **cj_metadata_id**: the source file id of the city object, foriegn key to the id column of metadata table.
+  - **attributes**: [cityJSON attributes](https://www.cityjson.org/specs/#attributes-for-all-city-objects), a JSON object that describes attributes of the city object (e.g. roof type, area, etc.).
   - **geometry**: [cityJSON geometry](https://www.cityjson.org/specs/#geometry-objects), a JSON object that describes the geometry of the city object.
   - **ground_geometry**: the 2D footprint of the city object, in PostGIS geometry type.
 
@@ -51,9 +50,9 @@ The **attributes** and **geometry** are seperated into two jsonb column for quer
 
 The `city_object_relationships` model stores the relations between city objects.
 
-  - **id**: city_object_relationships object's index within the database.
-  - **parent_id**: the identification id of the parent object.
-  - **child_id**: the identification id of the child object.
+  - **id**: city_object_relationships index within the database.
+  - **parent_id**: the id of the parent object.
+  - **child_id**: the id of the child object.
 
 
 ## Indexing
