@@ -71,9 +71,10 @@ class InconsistentCRSException(Exception):
             return f"{self.msg}"
         else:
             return ("Inconsistent Coordinate Reference Systems detected. "
-                    "Use the '-I/--srid' flag to reproject everything "
-                    "to a single specified CRS or modify source data or "
-                    "create a new schema.")
+                    "File has different CRS than the existing schema. "
+                    "Use the '--transform' flag to reproject everything "
+                    "to the existing schema's CRS or create a new schema."
+                    )
 
 
 class InvalidLodException(Exception):
@@ -88,3 +89,20 @@ class InvalidLodException(Exception):
             return f"{self.msg}"
         else:
             return """The Geomerty object has invalid value for 'lod'."""
+
+
+class NoSchemaSridException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"{self.msg}"
+        else:
+            return ("Schema does not have a previously defined SRID. "
+                    "Therefore no transformation is possible. "
+                    "If you want the file's SRID to be used as the "
+                    "schema SRID remove the --transform flag.")

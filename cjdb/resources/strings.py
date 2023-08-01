@@ -42,7 +42,6 @@ overwrite_help = (
     "all objects in the file."
 )
 
-
 transform_help = ("Convert input geometries to the SRID of the existing schema")
 
 output_help = (

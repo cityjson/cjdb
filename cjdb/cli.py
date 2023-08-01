@@ -38,7 +38,7 @@ def cjdb(ctx):
               required=True,
               help=s.database_help)
 @click.option("--schema", "-s", type=str, default="cjdb", help=s.schema_help)
-@click.option("--srid", "-I", "target_srid",
+@click.option("--srid", "-I", "input_srid",
               type=int,
               default=None,
               help=s.srid_help)
@@ -88,7 +88,7 @@ def import_cj(
     password,
     database,
     schema,
-    target_srid,
+    input_srid,
     indexed_attributes,
     partial_indexed_attributes,
     ignore_repeated_file,
@@ -110,7 +110,7 @@ def import_cj(
         engine,
         filepath,
         schema,
-        target_srid,
+        input_srid,
         indexed_attributes,
         partial_indexed_attributes,
         ignore_repeated_file,

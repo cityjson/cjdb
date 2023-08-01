@@ -34,11 +34,12 @@ def test_single_import_missing_srid(engine_postgresql):
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
         db_schema="vienna",
-        target_srid=None,
+        input_srid=None,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         with pytest.raises(MissingCRSException):
             importer.run_import()
@@ -49,11 +50,12 @@ def test_single_import_with_srid_flag(engine_postgresql):
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
         db_schema="vienna",
-        target_srid=4326,
+        input_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         importer.run_import()
 
@@ -63,11 +65,12 @@ def test_repeated_file_with_ignore_repeated_file(engine_postgresql):
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
         db_schema="vienna",
-        target_srid=4326,
+        input_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=True,
         overwrite=False,
+        transform=False
     ) as importer:
         importer.run_import()
 
@@ -129,11 +132,12 @@ def test_repeated_file_with_overwrite(engine_postgresql):
         engine=engine_postgresql,
         filepath="./tests/files/vienna_modified/vienna.jsonl",
         db_schema="vienna",
-        target_srid=4326,
+        input_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=True,
+        transform=False
     ) as importer:
         importer.run_import()
 
@@ -181,11 +185,12 @@ def test_repeated_file_with_prompt_to_continue(engine_postgresql, monkeypatch):
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
         db_schema="vienna",
-        target_srid=4326,
+        input_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         importer.run_import()
 
@@ -197,11 +202,12 @@ def test_repeated_file_with_prompt_to_skip_file(engine_postgresql,
         engine=engine_postgresql,
         filepath="./tests/files/vienna.jsonl",
         db_schema="vienna",
-        target_srid=4326,
+        input_srid=4326,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         importer.run_import()
 
@@ -244,11 +250,12 @@ def test_directory_import(engine_postgresql, monkeypatch):
         engine=engine_postgresql,
         filepath="./tests/files/cjfiles",
         db_schema="cjdb",
-        target_srid=None,
+        input_srid=None,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         importer.run_import()
 
@@ -261,11 +268,12 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
         engine=engine_postgresql,
         filepath="./tests/files/extension.city.jsonl",
         db_schema="cjdb",
-        target_srid=None,
+        input_srid=None,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         importer.run_import()
 
@@ -298,11 +306,12 @@ def test_single_import_without_metadata(engine_postgresql, monkeypatch):
         engine=engine_postgresql,
         filepath="./tests/files/no_metadata.city.jsonl",
         db_schema="cjdb",
-        target_srid=None,
+        input_srid=None,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         with pytest.raises(InvalidMetadataException):
             importer.run_import()
@@ -318,11 +327,12 @@ def test_single_import_without_cityjson_obj_in_first_line(
         engine=engine_postgresql,
         filepath="./tests/files/no_cityjson_obj.city.jsonl",
         db_schema="cjdb",
-        target_srid=None,
+        input_srid=None,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         with pytest.raises(InvalidCityJSONObjectException):
             importer.run_import()
@@ -336,11 +346,12 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
         engine=engine_postgresql,
         filepath="./tests/files/geomtemplate.city.jsonl",
         db_schema="cjdb",
-        target_srid=None,
+        input_srid=None,
         indexed_attributes=[],
         partial_indexed_attributes=[],
         ignore_repeated_file=False,
         overwrite=False,
+        transform=False
     ) as importer:
         importer.run_import()
 
