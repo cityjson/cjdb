@@ -284,14 +284,18 @@ cjdb export -H localhost -U myusername -d mydb
 Example of cli command:</p>
 <blockquote>
 <div><p>cjdb import -H localhost -U myusername -p 5433 -d mydb
--s myschema “/path/to/file.jsonl”</p>
+-s myschema -f “/path/to/file.jsonl”</p>
 </div></blockquote>
-<p>FILEPATH: path to a CityJSONL file or a directory with CityJSONL files.
-If a path is not specified, STDIN will be used.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cjdb<span class="w"> </span>import<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>FILEPATH<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cjdb<span class="w"> </span>import<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-cjdb-import-f">
+<span id="cmdoption-cjdb-import-filepath"></span><span class="sig-name descname"><span class="pre">-f</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--filepath</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;filepath&gt;</span></span><a class="headerlink" href="#cmdoption-cjdb-import-f" title="Permalink to this definition">#</a></dt>
+<dd><p>Path to a CityJSONL file or a directory with CityJSONL files. If no path is specified, STDIN will be used.</p>
+</dd></dl>
+
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-cjdb-import-H">
 <span id="cmdoption-cjdb-import-host"></span><span class="sig-name descname"><span class="pre">-H</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--host</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;host&gt;</span></span><a class="headerlink" href="#cmdoption-cjdb-import-H" title="Permalink to this definition">#</a></dt>
@@ -362,13 +366,6 @@ If a path is not specified, STDIN will be used.</p>
 <dt class="sig sig-object std" id="cmdoption-cjdb-import-transform">
 <span class="sig-name descname"><span class="pre">--transform</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-cjdb-import-transform" title="Permalink to this definition">#</a></dt>
 <dd><p>Transform input geometries to the CRS of the existing schema</p>
-</dd></dl>
-
-<p class="rubric">Arguments</p>
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-cjdb-import-arg-FILEPATH">
-<span class="sig-name descname"><span class="pre">FILEPATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-cjdb-import-arg-FILEPATH" title="Permalink to this definition">#</a></dt>
-<dd><p>Optional argument</p>
 </dd></dl>
 
 </section>
