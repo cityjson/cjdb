@@ -1,4 +1,4 @@
-# CJDB Changelog
+# cjdb Changelog
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Types of changes
@@ -18,13 +18,25 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 
-## [1.3.0] - 2023-04-26
+## [2.0.0] - 2023-08-01
+
+`Added`
+- exporter
+- --transform flag
+- sphinx docs
+- benchmark
+- unit tests
 
 `Changed`
 - click instead of arg_parser
+- functionality of --overwrite and -I/--srid flags
+- filepath became an option instead of an argument
+- Shorter ReadMe
+- changes in data model: every object is given an integer id instead of the object id.
 
 `Removed`
-- overwrite
+- --append flag
+
 
 ## [1.2.0] - 2023-04-12
 Version 1.2.0
