@@ -28,6 +28,7 @@ class Exporter:
         self.connection.close()
 
     def run_export(self) -> None:
+        logger.info("Exporting from schema %s", self.schema)
         sql_query = f"""
             WITH only_parents AS (
                 SELECT cjo.id, cjo.object_id
@@ -127,6 +128,8 @@ class Exporter:
             # for result in p.starmap(write_cjf_fast, t):
             #     print(result, file=f_out)
         f_out.close()
+
+        logger.info("Schema exported in %s", self.output)
 
     def find_min_bbox(self, rows):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]

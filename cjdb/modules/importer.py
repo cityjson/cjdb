@@ -139,7 +139,7 @@ class Importer:
                 self.current.target_srid = schema_srid.srid
             else:
                 raise exceptions.NoSchemaSridException()
-        logger.info("Target SRID: %s", self.current.target_srid)
+        logger.debug("Target SRID: %s", self.current.target_srid)
 
     def set_source_srid(self, line_json) -> None:
         """
@@ -169,7 +169,7 @@ class Importer:
             if not self.current.source_srid:
                 raise exceptions.MissingCRSException()
 
-        logger.info("SRID of input file: %s", self.current.source_srid)
+        logger.debug("SRID of input file: %s", self.current.source_srid)
 
     def extract_cj_metadatadata(self, line_json):
         if "metadata" not in line_json:
@@ -415,7 +415,7 @@ class Importer:
             self.session.execute(city_object_relationships_insert)
         self.current.cj_metadata.finished_at = func.now()
         self.session.commit()
-        logger.info(f"File {filepath} imported sucessfully.")
+        logger.info(f"File {filepath} imported successfully.")
         return True
 
     def process_directory(self, dir_path) -> None:
