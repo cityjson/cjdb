@@ -118,13 +118,14 @@ class Importer:
         self.index_attributes()
 
     def set_target_srid(self) -> None:
-        """ 
+        """
         This function sets the  target SRID for the file being imported,
-        ie the 
-        if the flag --transform is used then the geometries are supposed to 
-        be transformed from the source SRID to the SRID of the existing schema. 
-        If no --transform flag is used then the geoemtries should not be
-        transformed and the target SRID is set as the source SRID. 
+        i.e. the SRID for the geometries to be transformed to.
+        If the flag --transform is used then the geometries should
+        be transformed from the source SRID to the SRID of the existing
+        schema and the target SRID is set to the SRID of the schema.
+        If no --transform flag is used then the geometries do not need to
+        be transformed and the target SRID is set to the source SRID.
         """
         if not self.transform:
             self.current.target_srid = self.current.source_srid
