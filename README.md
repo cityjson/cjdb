@@ -84,7 +84,6 @@ docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb import -H lo
 
 The `cjdb` importer loads the data in accordance with a [specific data model](cjdb/model/README.md).
 
-
 For example SQL queries on the tables see [here](cjdb/model/BASICQUERIES.md)
 
 
@@ -121,12 +120,13 @@ The importer supports 3 kinds of input:
 ### Coordinate Reference Systems
 The `cjdb` importer does not allow inconsistent CRSs (coordinate reference systems) within the same database schema. For storing data in different CRSs, you have to create different schemas.
 
-The data needs to be either harmonized beforehand, or the `-I/--srid` flag can be used upon import, to reproject all the geometries to the one specified CRS. 
+The data needs to be either harmonized beforehand, or the `--transform` flag can be used upon import, to reproject all the geometries to the CRS of the existing schema. 
 Specifying a 2D CRS (instead of a 3D one) will cause the Z-coordinates to remain unchanged.
 
 **Note:** reprojections slow down the import significantly.
 
-**Note:** Source data with missing `"metadata"/"referenceSystem"` cannot be reprojected due to unknown source reference system.
+**Note:** Source data with missing `"metadata"/"referenceSystem"` cannot be reprojected due to unknown source reference system. 
+You can use the `-I/--srid` flag to set the SRID of the input file. 
 
 
 ### 3D reprojections

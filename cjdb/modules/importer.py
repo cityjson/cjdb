@@ -9,17 +9,13 @@ from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+import cjdb.modules.exceptions as exceptions
 from cjdb.logger import logger
 from cjdb.model.sqlalchemy_models import (BaseModel,
                                           CityObjectRelationshipModel,
                                           CjMetadataModel, CjObjectModel)
-from cjdb.modules.checks import (check_object_type, check_reprojection,
+from cjdb.modules.checks import (check_object_type,
                                  check_root_properties)
-from cjdb.modules.exceptions import (InconsistentCRSException,
-                                     InvalidCityJSONObjectException,
-                                     InvalidFileException,
-                                     InvalidMetadataException,
-                                     MissingCRSException)
 from cjdb.modules.extensions import ExtensionHandler
 from cjdb.modules.geometric import (get_ground_geometry, get_srid,
                                     reproject_vertex_list,
@@ -33,9 +29,9 @@ from cjdb.modules.utils import (find_extra_properties, get_city_object_types,
 class SingleFileImport:
     def __init__(self, file="stdin"):
         self.file = file
-        self.target_srid = None
-        self.cj_metadata = None  # meta read from the file
         self.source_srid = None
+        self.cj_metadata = None  # meta read from the file
+        self.target_srid = None
         self.extension_handler = (
             None  # data about extensions - extra properties, root attributes
         )
@@ -45,20 +41,20 @@ class SingleFileImport:
 
 # importer class called once per whole import
 class Importer:
-    def __init__(self, engine, filepath, append_mode, db_schema, target_srid,
+    def __init__(self, engine, filepath, db_schema, input_srid,
                  indexed_attributes, partial_indexed_attributes,
-                 ignore_repeated_file, overwrite):
+                 ignore_repeated_file, overwrite, transform):
         self.engine = engine
         self.filepath = filepath
-        self.append_mode = append_mode
         self.db_schema = db_schema
-        self.target_srid = target_srid
+        self.input_srid = input_srid
         self.indexed_attributes = indexed_attributes
         self.partial_indexed_attributes = partial_indexed_attributes
         self.ignore_repeated_file = ignore_repeated_file
         self.overwrite = overwrite
         self.max_id = 0
         self.processed = dict()
+        self.transform = transform
 
         # get allowed types for validation
         self.city_object_types = get_city_object_types()
@@ -75,15 +71,12 @@ class Importer:
         self.session.close()
 
     def run_import(self) -> None:
-        # create model if in create mode, else append data
-        if not self.append_mode:
-            self.prepare_database()
+        self.prepare_database()
         self.max_id = CjObjectModel.get_max_id(self.session)
         self.parse_cityjson()
         self.session.commit()
         # post import operations like clustering, indexing...
-        if not self.append_mode:
-            self.post_import()
+        self.post_import()
         self.session.commit()
 
     def prepare_database(self) -> None:
@@ -124,28 +117,70 @@ class Importer:
             conn.execute(text(cmd))
         self.index_attributes()
 
-    def extract_cj_metadatadata(self, line_json):
-        if "metadata" not in line_json:
-            raise InvalidMetadataException("The file should contain a member"
-                                           "'metadata', in the first object")
+    def set_target_srid(self) -> None:
+        """
+        This function sets the  target SRID for the file being imported,
+        i.e. the SRID for the geometries to be transformed to.
+        If the flag --transform is used then the geometries should
+        be transformed from the source SRID to the SRID of the existing
+        schema and the target SRID is set to the SRID of the schema.
+        If no --transform flag is used then the geometries do not need to
+        be transformed and the target SRID is set to the source SRID.
+        """
+        if not self.transform:
+            self.current.target_srid = self.current.source_srid
+        else:
+            schema_srid = (self.session.query(CjMetadataModel)
+                           .filter(CjMetadataModel.finished_at.isnot(None))
+                           .order_by(CjMetadataModel.finished_at.desc())
+                           .first()
+                           )
+            if schema_srid:
+                self.current.target_srid = schema_srid.srid
+            else:
+                raise exceptions.NoSchemaSridException()
+        logger.info("Target SRID: %s", self.current.target_srid)
 
-        extra_root_properties = find_extra_properties(line_json)
+    def set_source_srid(self, line_json) -> None:
+        """
+        This function sets the SRID of the file being imported.
+        Usually the SRID of the file is defined in the "referenceSystem"
+        member of the json's metadata. If the file does have such member,
+        the user can use the flag -I/--srid to set the SRID of the file.
+        If both metadata-defined and user-defined SRIDs exist then the
+        user-defined SRID overwrites the metadata-SRID.
+        """
         self.current.source_srid = get_srid(
             line_json["metadata"].get("referenceSystem")
         )
-        if not self.current.source_srid and not self.target_srid:
-            raise MissingCRSException()
 
-        # use specified target SRID for all the geometries
-        # If not specified use same as source.
-        elif self.target_srid and self.current.source_srid:
-            self.current.target_srid = self.target_srid
-            check_reprojection(self.current.source_srid,
-                               self.current.target_srid)
-        elif self.target_srid:
-            self.current.target_srid = self.target_srid
+        if self.input_srid:
+            if self.current.source_srid:
+                logger.warning("""Input SRID is different than the SRID in the 
+                                file's metadata:
+                                Input SRID: %s
+                                Source SRID: %s
+                                Source SRID will be overwritten.""",
+                               self.input_srid,
+                               self.current.source_srid)
+
+            self.current.source_srid = self.input_srid
         else:
-            self.current.target_srid = self.current.source_srid
+            if not self.current.source_srid:
+                raise exceptions.MissingCRSException()
+
+        logger.info("SRID of input file: %s", self.current.source_srid)
+
+    def extract_cj_metadatadata(self, line_json):
+        if "metadata" not in line_json:
+            raise exceptions.InvalidMetadataException(
+                "The file should contain a member"
+                "'metadata', in the first object")
+
+        extra_root_properties = find_extra_properties(line_json)
+
+        self.set_source_srid(line_json)
+        self.set_target_srid()
 
         # calculate dataset bbox based on geographicalExtent
         bbox = None
@@ -154,7 +189,7 @@ class Importer:
             bbox_vertices = [bbox_coords[:3], bbox_coords[3:]]
 
             if (
-                self.current.source_srid
+                self.current.target_srid
                 and self.current.target_srid != self.current.source_srid
             ):
                 bbox_vertices = reproject_vertex_list(
@@ -245,7 +280,7 @@ class Importer:
                          "\nCurrently imported SRID: %s"
                          "\nRecently imported SRID: %s",
                          cj_metadata.srid, different_srid.srid)
-            raise InconsistentCRSException()
+            raise exceptions.InconsistentCRSException()
 
         # add metadata to the database
         cj_metadata.__table__.schema = self.db_schema
@@ -266,8 +301,7 @@ class Importer:
         # reproject if needed
         source_target_srid = None
         if (
-            self.current.source_srid
-            and self.current.target_srid != self.current.source_srid
+            self.current.target_srid != self.current.source_srid
         ):
             source_target_srid = (
                 self.current.source_srid,
@@ -349,13 +383,13 @@ class Importer:
             f = sys.stdin
         else:
             if not is_valid_file(filepath):
-                raise InvalidFileException()
+                raise exceptions.InvalidFileException()
             f = open(filepath, "rt")
 
         first_line = f.readline()
         first_line_json = json.loads(first_line.rstrip("\n"))
         if not is_cityjson_object(first_line_json):
-            raise InvalidCityJSONObjectException()
+            raise exceptions.InvalidCityJSONObjectException()
         metadata_ok = self.extract_cj_metadatadata(first_line_json)
         if not metadata_ok:
             return False
