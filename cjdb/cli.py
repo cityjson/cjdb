@@ -38,7 +38,6 @@ def cjdb(ctx):
               required=True,
               help=s.database_help)
 @click.option("--schema", "-s", type=str, default="cjdb", help=s.schema_help)
-@click.option("--append", "-a", type=bool, default=False, help=s.append_help)
 @click.option("--srid", "-I", "target_srid",
               type=int,
               default=None,
@@ -72,7 +71,14 @@ def cjdb(ctx):
     "overwrite",
     is_flag=True,
     default=False,
-    help=s.overwrite,
+    help=s.overwrite_help,
+)
+@click.option(
+    "--transform",
+    "transform",
+    is_flag=True,
+    default=False,
+    help=s.transform_help,
 )
 def import_cj(
     filepath,
@@ -82,32 +88,34 @@ def import_cj(
     password,
     database,
     schema,
-    append,
     target_srid,
     indexed_attributes,
     partial_indexed_attributes,
     ignore_repeated_file,
     overwrite,
+    transform
 ):
     """Import CityJSONL files to a PostgreSQL database. 
     Example of cli command:
-    
-        `
+
+
         cjdb import -H localhost -U myusername -p 5433 -d mydb
         -s myschema "/path/to/file.jsonl"
-        `
+
+    FILEPATH: path to a CityJSONL file or a directory with CityJSONL files.
+    If a path is not specified, STDIN will be used.   
     """
     engine = get_db_engine(user, password, host, port, database)
     with Importer(
         engine,
         filepath,
-        append,
         schema,
         target_srid,
         indexed_attributes,
         partial_indexed_attributes,
         ignore_repeated_file,
         overwrite,
+        transform
     ) as imp:
         imp.run_import()
 

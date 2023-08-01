@@ -45,12 +45,11 @@ class SingleFileImport:
 
 # importer class called once per whole import
 class Importer:
-    def __init__(self, engine, filepath, append_mode, db_schema, target_srid,
+    def __init__(self, engine, filepath, db_schema, target_srid,
                  indexed_attributes, partial_indexed_attributes,
                  ignore_repeated_file, overwrite):
         self.engine = engine
         self.filepath = filepath
-        self.append_mode = append_mode
         self.db_schema = db_schema
         self.target_srid = target_srid
         self.indexed_attributes = indexed_attributes
@@ -75,15 +74,12 @@ class Importer:
         self.session.close()
 
     def run_import(self) -> None:
-        # create model if in create mode, else append data
-        if not self.append_mode:
-            self.prepare_database()
+        self.prepare_database()
         self.max_id = CjObjectModel.get_max_id(self.session)
         self.parse_cityjson()
         self.session.commit()
         # post import operations like clustering, indexing...
-        if not self.append_mode:
-            self.post_import()
+        self.post_import()
         self.session.commit()
 
     def prepare_database(self) -> None:

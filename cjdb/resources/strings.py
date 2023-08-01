@@ -12,12 +12,6 @@ database_help = "PostgreSQL database name"
 
 schema_help = "PostgreSQL database schema name"
 
-append_help = (
-    "Run in append mode (as opposed to default create mode). "
-    "This assumes the database structure exists already and "
-    "new data is to be appended."
-)
-
 srid_help = (
     "Target coordinate system SRID. "
     "All 3D and 2D geometries will be reprojected."
