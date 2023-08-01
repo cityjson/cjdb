@@ -213,15 +213,17 @@ The query should return IDs from the table ‘city_object’;
 use “ALL” to export the whole database/schema.
 Example for exporting all the objects in a schema:</p>
 <blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">cjdb</span> <span class="pre">export</span> <span class="pre">-H</span> <span class="pre">localhost</span> <span class="pre">-U</span> <span class="pre">myusername</span> <span class="pre">-d</span> <span class="pre">mydb</span>
-<span class="pre">-s</span> <span class="pre">myschema</span> <span class="pre">-p</span> <span class="pre">5432</span> <span class="pre">-o</span> <span class="pre">result.jsonl</span>
-<span class="pre">`</span></code></p>
+<div><p>`
+cjdb export -H localhost -U myusername -d mydb
+-s myschema -p 5432 -o result.jsonl
+`</p>
+</div></blockquote>
 <p>Example for exporting a specific object in a schema:</p>
-<p><code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">cjdb</span> <span class="pre">export</span> <span class="pre">-H</span> <span class="pre">localhost</span> <span class="pre">-U</span> <span class="pre">myusername</span> <span class="pre">-d</span> <span class="pre">mydb</span>
-<span class="pre">-s</span> <span class="pre">myschema</span> <span class="pre">-p</span> <span class="pre">5432</span> <span class="pre">-o</span> <span class="pre">result.jsonl</span> <span class="pre">-q</span> <span class="pre">&quot;SELECT</span> <span class="pre">1</span> <span class="pre">as</span> <span class="pre">id&quot;</span>
-<span class="pre">`</span></code></p>
+<blockquote>
+<div><p>`
+cjdb export -H localhost -U myusername -d mydb
+-s myschema -p 5432 -o result.jsonl -q “SELECT 1 as id”
+`</p>
 </div></blockquote>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cjdb<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
@@ -266,7 +268,7 @@ Example for exporting all the objects in a schema:</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-cjdb-export-s">
 <span id="cmdoption-cjdb-export-schema"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--schema</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;schema&gt;</span></span><a class="headerlink" href="#cmdoption-cjdb-export-s" title="Permalink to this definition">#</a></dt>
-<dd><p>Target database schema</p>
+<dd><p>PostgreSQL database schema name</p>
 </dd></dl>
 
 <dl class="std option">
@@ -279,11 +281,13 @@ Example for exporting all the objects in a schema:</p>
 <section id="cjdb-import">
 <h3>import<a class="headerlink" href="#cjdb-import" title="Permalink to this heading">#</a></h3>
 <p>Import CityJSONL files to a PostgreSQL database.
-Example of cli command:
-<code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">cjdb</span> <span class="pre">import</span> <span class="pre">-H</span> <span class="pre">localhost</span> <span class="pre">-U</span> <span class="pre">myusername</span> <span class="pre">-p</span> <span class="pre">5433</span> <span class="pre">-d</span> <span class="pre">mydb</span>
-<span class="pre">-s</span> <span class="pre">myschema</span> <span class="pre">&quot;/path/to/file.jsonl&quot;</span>
-<span class="pre">`</span></code></p>
+Example of cli command:</p>
+<blockquote>
+<div><p>cjdb import -H localhost -U myusername -p 5433 -d mydb
+-s myschema “/path/to/file.jsonl”</p>
+</div></blockquote>
+<p>FILEPATH: path to a CityJSONL file or a directory with CityJSONL files.
+If a path is not specified, STDIN will be used.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cjdb<span class="w"> </span>import<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>FILEPATH<span class="o">]</span>
 </pre></div>
 </div>
@@ -321,19 +325,13 @@ Example of cli command:
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-cjdb-import-s">
 <span id="cmdoption-cjdb-import-schema"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--schema</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;schema&gt;</span></span><a class="headerlink" href="#cmdoption-cjdb-import-s" title="Permalink to this definition">#</a></dt>
-<dd><p>Target database schema</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-cjdb-import-a">
-<span id="cmdoption-cjdb-import-append"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--append</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;append&gt;</span></span><a class="headerlink" href="#cmdoption-cjdb-import-a" title="Permalink to this definition">#</a></dt>
-<dd><p>Run in append mode (as opposed to default create mode). This assumes the database structure exists already and new data is to be appended.</p>
+<dd><p>PostgreSQL database schema name</p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-cjdb-import-I">
-<span id="cmdoption-cjdb-import-srid"></span><span class="sig-name descname"><span class="pre">-I</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--srid</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;target_srid&gt;</span></span><a class="headerlink" href="#cmdoption-cjdb-import-I" title="Permalink to this definition">#</a></dt>
-<dd><p>Target coordinate system SRID. All 3D and 2D geometries will be reprojected.</p>
+<span id="cmdoption-cjdb-import-srid"></span><span class="sig-name descname"><span class="pre">-I</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--srid</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;input_srid&gt;</span></span><a class="headerlink" href="#cmdoption-cjdb-import-I" title="Permalink to this definition">#</a></dt>
+<dd><p>If no SRID is defined in the metadata of the file, use this flag to define a SRID for the geometries. If an SRID is defined in the metadata, this flag will overwrite it.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -358,6 +356,12 @@ Example of cli command:
 <dt class="sig sig-object std" id="cmdoption-cjdb-import-overwrite">
 <span class="sig-name descname"><span class="pre">--overwrite</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-cjdb-import-overwrite" title="Permalink to this definition">#</a></dt>
 <dd><p>If the file has been imported before, delete all associated objects with this filename and reimport all objects in the file.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-cjdb-import-transform">
+<span class="sig-name descname"><span class="pre">--transform</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-cjdb-import-transform" title="Permalink to this definition">#</a></dt>
+<dd><p>Transform input geometries to the CRS of the existing schema</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
