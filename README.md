@@ -179,7 +179,7 @@ The importer does not check if an object with a specific ID exists already in th
 
 This project started as a group project in the [MSc Geomatics at TUDelft](https://geomatics.tudelft.nl/).
 The original code for the project can be found [here](https://github.com/leoleonsio/cjdb), and the authors were:
-@#2cynthiacai56, @LanYan1110, @YitongXia, @Topher2k, @siebren014, @leoleonsio
+[@cynthiacai56](https://github.com/cynthiacai56), [@LanYan1110](https://github.com/LanYan1110), [@YitongXia](https://github.com/YitongXia), [@Topher2k](https://github.com/Topher2k), [@siebren014](https://github.com/siebren014), [@leoleonsio](https://github.com/leoleonsio)
 
-This version has been improved and will be maintained by @GinaStavropoulou and @hugoledoux.
+This version has been improved and will be maintained by [@GinaStavropoulou](https://github.com/GinaStavropoulou), and [@hugoledoux](https://github.com/hugoledoux).
 
