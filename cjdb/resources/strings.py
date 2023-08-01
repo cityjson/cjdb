@@ -13,8 +13,10 @@ database_help = "PostgreSQL database name"
 schema_help = "PostgreSQL database schema name"
 
 srid_help = (
-    "Target coordinate system SRID. "
-    "All 3D and 2D geometries will be reprojected."
+    "If no SRID is defined in the metadata of the file, "
+    "use this flag to define a SRID for the geometries. "
+    "If an SRID is defined in the metadata, this flag will "
+    "overwrite it."
 )
 
 index_help = (
@@ -42,7 +44,8 @@ overwrite_help = (
     "all objects in the file."
 )
 
-transform_help = ("Convert input geometries to the SRID of the existing schema")
+transform_help = ("Transform input geometries to the CRS "
+                  "of the existing schema")
 
 output_help = (
     "Name of the output file. Default name: 'cj_export.city.json' "

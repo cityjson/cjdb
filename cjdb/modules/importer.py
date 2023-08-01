@@ -180,7 +180,6 @@ class Importer:
         extra_root_properties = find_extra_properties(line_json)
 
         self.set_source_srid(line_json)
-
         self.set_target_srid()
 
         # calculate dataset bbox based on geographicalExtent
