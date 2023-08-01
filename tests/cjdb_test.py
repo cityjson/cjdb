@@ -233,7 +233,8 @@ def test_export_all(engine_postgresql):
         exporter.run_export()
 
 
-def test_single_import_with_srid_flag_different_from_existing_schema(engine_postgresql, monkeypatch):
+def test_srid_flag_different_from_existing_schema(engine_postgresql,
+                                                  monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     with Importer(
         engine=engine_postgresql,
@@ -250,7 +251,8 @@ def test_single_import_with_srid_flag_different_from_existing_schema(engine_post
             importer.run_import()
 
 
-def test_transform_flag_with_same_SRID_than_schema(engine_postgresql, monkeypatch):
+def test_transform_flag_with_same_SRID_than_schema(engine_postgresql,
+                                                   monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     with Importer(
         engine=engine_postgresql,
@@ -266,7 +268,8 @@ def test_transform_flag_with_same_SRID_than_schema(engine_postgresql, monkeypatc
         importer.run_import()
 
 
-def test_transform_flag_with_different_SRID_than_schema(engine_postgresql, monkeypatch):
+def test_transform_flag_with_different_SRID_than_schema(engine_postgresql,
+                                                        monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     with Importer(
         engine=engine_postgresql,
@@ -283,7 +286,7 @@ def test_transform_flag_with_different_SRID_than_schema(engine_postgresql, monke
 
 
 def test_transform_flag_to_new_schema(engine_postgresql,
-                                                         monkeypatch):
+                                      monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     engine_postgresql.update_execution_options(
         schema_translate_map={"vienna": "new_schema"})
@@ -363,8 +366,8 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
     with Session(engine_postgresql) as session:
         row = session.execute(query_cj_metadata).first()
         assert (
-            row.extensions["Noise"]["url"]
-            == "https://www.cityjson.org/tutorials/files/noise.ext.json"
+            row.extensions["Noise"]["url"] ==
+            "https://www.cityjson.org/tutorials/files/noise.ext.json"
         )
         assert row.extensions["Noise"]["version"] == "1.1.0"
 
