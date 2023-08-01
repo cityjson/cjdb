@@ -1,5 +1,10 @@
 version_help = "Get the current version"
 
+filepath_help = ("Path to a CityJSONL file or a directory with "
+                 "CityJSONL files. If no path is specified, "
+                 "STDIN will be used."
+                 )
+
 host_help = "PostgreSQL database host"
 
 port_help = "PostgreSQL database port"

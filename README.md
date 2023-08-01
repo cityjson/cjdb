@@ -40,7 +40,7 @@ Alternatively, you can use PgAdmin, [see how](https://postgis.net/workshops/post
 
 3. Import CityJSONL to the database in the schema "cjdb"
 ```bash
-cjdb import -H localhost -U postgres -d testcjdb -s cjdb  9-284-556.jsonl
+cjdb import -H localhost -U postgres -d testcjdb -s cjdb  -f 9-284-556.jsonl
 ```
 
 **Alternatively steps 1 and 3 in a single command:**
@@ -76,7 +76,7 @@ docker run --rm -it cjdb cjdb --help
 
 To import some files, the `-v` option is needed to mount our local file directory in the container:
 ```bash
-docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb import -H localhost -U postgres -d postgres -W postgres /data/5870_ext.jsonl 
+docker run -v {MYDIRECTORY}:/data --rm -it --network=host cjdb cjdb import -H localhost -U postgres -d postgres -W postgres -f /data/5870_ext.jsonl 
 ```
 
 ## Important Notes

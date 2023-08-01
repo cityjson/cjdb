@@ -24,7 +24,10 @@ def cjdb(ctx):
 
 
 @cjdb.command(name="import")
-@click.argument("filepath", type=str, default="stdin")
+@click.option("--filepath", "-f",
+              type=str,
+              default="stdin",
+              help=s.filepath_help)
 @click.option("--host", "-H", type=str, default="localhost", help=s.host_help)
 @click.option("--port", "-p", type=int, default=5432, help=s.port_help)
 @click.option("--user", "-U", type=str, required=True, help=s.user_help)
@@ -100,10 +103,8 @@ def import_cj(
 
 
         cjdb import -H localhost -U myusername -p 5433 -d mydb
-        -s myschema "/path/to/file.jsonl"
+        -s myschema -f "/path/to/file.jsonl"
 
-    FILEPATH: path to a CityJSONL file or a directory with CityJSONL files.
-    If a path is not specified, STDIN will be used.   
     """
     engine = get_db_engine(user, password, host, port, database)
     with Importer(
