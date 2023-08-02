@@ -1,37 +1,38 @@
 from typing import Any, Dict
 
 import psycopg2
-from psycopg2.extras import RealDictCursor
 from sqlalchemy import create_engine
 
 from cjdb.resources import object_types
 
 
-def get_db_engine(args, echo=False):
+def is_valid_file(filepath: str) -> bool:
+    # TODO: this check sounds pretty easy to fulfil 
+    if filepath.endswith('.jsonl'):
+        return True
+    return False
+
+
+def get_db_engine(db_user, db_password, db_host, db_port, db_name, echo=False):
     conn_string = (
-        f"postgresql://{args.db_user}:{args.db_password}"
-        f"@{args.db_host}:{args.db_port}/{args.db_name}"
+        f"postgresql://{db_user}:{db_password}"
+        f"@{db_host}:{db_port}/{db_name}"
     )
-
     engine = create_engine(conn_string, echo=echo)
-
     return engine
 
-
-def open_connection(args):
-    conn = psycopg2.connect(
-        database=args.db_name,
-        host=args.db_host,
-        user=args.db_user,
-        port=args.db_port,
-        cursor_factory=RealDictCursor,
-    )
-
+def get_db_psycopg_conn(db_user, db_password, db_host, db_port, db_name):
+    # conn = psycopg2.connect("dbname=cj_denhaag user=hugo")
+    conn = psycopg2.connect(user=db_user, 
+                            password=db_password, 
+                            host=db_host, 
+                            port=db_port, 
+                            dbname=db_name)
     return conn
 
 
-# todo - this should take available object types from the official spec
-def get_cj_object_types():
+# TODO: this should take available object types from the official spec
+def get_city_object_types():
     types = object_types.types
 
     type_list = []

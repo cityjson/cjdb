@@ -1,12 +1,9 @@
-import sys
-
 from geoalchemy2 import Geometry
 from sqlalchemy import (Column, ForeignKey, Integer, String, UniqueConstraint,
                         func)
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import declarative_base, relationship
 
-from cjdb.logger import logger
 
 Base = declarative_base()
 
@@ -20,8 +17,8 @@ def NullableJSONB():
     return JSONB(none_as_null=True)
 
 
-class ImportMetaModel(BaseModel):
-    __tablename__ = "import_meta"
+class CjMetadataModel(BaseModel):
+    __tablename__ = "cj_metadata"
     __table_args__ = {"schema": "cjdb"}
     source_file = Column(String)
     version = Column(String(10), nullable=False)
@@ -34,71 +31,44 @@ class ImportMetaModel(BaseModel):
     started_at = Column(TIMESTAMP, default=func.now())
     finished_at = Column(TIMESTAMP)
     bbox = Column(Geometry("Polygon"))
+    objects = relationship("CjObjectModel",
+                           backref='cj_metadata',
+                           passive_deletes=True)
 
-    def compare_existing(self, session, ignore_repeated_file, update_existing):
-        result_ok = True
-
-        # check if the file was already imported
-        if self.source_file.lower() != "stdin" and \
-           not ignore_repeated_file and \
-           not update_existing:
+    def get_already_imported_files(self, session):
+        # query already imported files,
+        # return false if stdin.
+        if self.source_file.lower() != "stdin":
             same_source_import = (
-                session.query(ImportMetaModel)
+                session.query(CjMetadataModel)
                 .filter_by(source_file=self.source_file)
-                .filter(ImportMetaModel.finished_at.isnot(None))
-                .order_by(ImportMetaModel.finished_at.desc())
-                .first()
+                .filter(CjMetadataModel.finished_at.isnot(None))
             )
-            if same_source_import:
-                logger.warning(
-                    "File %s was previously imported at %s. "
-                    "Use the -g flag to suppress this warning.",
-                    self.source_file,  same_source_import.finished_at
-                )
 
-                user_answer = input(
-                    "Should the import continue? "
-                    "Already imported City Objects will be skipped. "
-                    "If you want to update them instead "
-                    "use the flag --update-existing. \n"
-                    " [y / n]\n"
-                )
-                if user_answer.lower() != "y":
-                    logger.info("Import process terminated by user.")
-                    sys.exit(1)
+            return same_source_import
+        return False
 
-        # check if the CRS is consistent with other imports
-        different_srid_meta = (
-            session.query(ImportMetaModel)
-            .filter(ImportMetaModel.srid != self.srid)
-            .filter(ImportMetaModel.finished_at.isnot(None))
-            .order_by(ImportMetaModel.finished_at.desc())
+    def different_srid_meta(self, session):
+        """Check if the CRS is consistent with previous imports."""
+        return (
+            session.query(CjMetadataModel)
+            .filter(CjMetadataModel.srid != self.srid)
+            .filter(CjMetadataModel.finished_at.isnot(None))
+            .order_by(CjMetadataModel.finished_at.desc())
             .first()
         )
 
-        if different_srid_meta:
-            logger.error("Inconsistent Coordinate Reference Systems detected."
-                         "\nCurrently imported SRID: %s \n"
-                         "Recently imported SRID: %s "
-                         "\nUse the '-I/--srid' flag to reproject everything "
-                         "to a single specified CRS or modify source data.",
-                         self.srid, different_srid_meta.srid
-                         )
-            return False
-
-        return result_ok
-
 
 class CjObjectModel(BaseModel):
-    __tablename__ = "cj_object"
+    __tablename__ = "city_object"
     __table_args__ = {"schema": "cjdb"}
-    import_meta_id = Column(Integer, ForeignKey(ImportMetaModel.id))
-    object_id = Column(String, nullable=False, unique=True)
+    cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id, ondelete='CASCADE'))
+    object_id = Column(String, nullable=False)
     type = Column(String, nullable=False)
     attributes = Column(NullableJSONB())
     geometry = Column(NullableJSONB())
     ground_geometry = Column(Geometry("MultiPolygon"))
-    import_meta = relationship(ImportMetaModel)
+    metadata_id_object_id_unique = UniqueConstraint(cj_metadata_id, object_id)
 
     @classmethod
     def get_attributes_and_types(cls, session):
@@ -125,12 +95,22 @@ class CjObjectModel(BaseModel):
 
         return type_mapping
 
+    @classmethod
+    def get_max_id(cls, session) -> int:
+        max = session.query(func.max(cls.id)).scalar()
+        if max:
+            return max
+        else:
+            return 0
 
-class FamilyModel(BaseModel):
-    __tablename__ = "family"
+
+class CityObjectRelationshipModel(BaseModel):
+    __tablename__ = "city_object_relationships"
     __table_args__ = {"schema": "cjdb"}
-    parent_id = Column(String, ForeignKey(CjObjectModel.object_id))
-    child_id = Column(String, ForeignKey(CjObjectModel.object_id))
+    parent_id = Column(Integer, ForeignKey(CjObjectModel.id,
+                                           ondelete='CASCADE'))
+    child_id = Column(Integer, ForeignKey(CjObjectModel.id,
+                                          ondelete='CASCADE'))
 
     parent = relationship(CjObjectModel,
                           foreign_keys=[parent_id],
