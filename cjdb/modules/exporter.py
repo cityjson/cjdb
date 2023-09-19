@@ -62,7 +62,7 @@ class Exporter:
         # get the parent-[children]
         relationships = {}
         for r in rows:
-            relationships[r['id']] = r
+            relationships[r['id']] = r['children']
                 # Modify the dict for quick access
         return relationships
 
@@ -107,26 +107,31 @@ class Exporter:
         #       maybe a flag?
         
         # fetch in memory *all* we need, won't work for super large datasets
+        j["transform"]["translate"] = self.bboxmin
+        return j
+    
+    def get_data(self):
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             sq = f"select * from {self.schema}.city_object;"
             cursor.execute(sq)
             rows = cursor.fetchall()
-            
-        self.bboxmin = self.find_min_bbox(rows)
-        j["transform"]["translate"] = self.bboxmin
-        return j
+        data = {}
+        for r in rows:
+            data[r['id']] = r
+        return data
 
     def get_stream(self):
         relationships = self.get_parent_children_relationships()
+        data = self.get_data()
+        self.bboxmin = self.find_min_bbox(data)
         j = self.get_metadata()
 
         f_out = io.StringIO()
         print(json.dumps(j, separators=(',', ':')), file=f_out)
 
         # Iterate over each and write to the file
-        for key, value in relationships.items():
-            children = value['children']
-            re = write_cjf(key, children, relationships, self.bboxmin)
+        for key, children in relationships.items():
+            re = write_cjf(key, children, data, relationships, self.bboxmin)
             print(re, file=f_out)
         return f_out
         
@@ -145,11 +150,11 @@ class Exporter:
 
         logger.info("Schema exported in %s", self.output)
 
-    def find_min_bbox(self, rows):
+    def find_min_bbox(self, data: Dict):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
-        for row in rows:
-            if row["geometry"] is not None:
-                for g in row["geometry"]:
+        for object_id, members in data.items():
+            if members["geometry"] is not None:
+                for g in members["geometry"]:
                     if g["type"] == "Solid":
                         for shell in g["boundaries"]:
                             for surface in shell:
@@ -205,22 +210,22 @@ class Exporter:
         return j
 
 
-def write_cjf(parent, children, relationships, bboxmin):
-    poid = relationships[parent]["object_id"]
+def write_cjf(parent, children, data, relationships, bboxmin):
+    poid = data[parent]["object_id"]
     j = {}
     j["type"] = "CityJSONFeature"
     j["id"] = poid
     j["CityObjects"] = {}
     j["CityObjects"][poid] = {}
-    print(relationships[parent].keys())
-    #j["CityObjects"][poid]["type"] = relationships[parent]["type"]
-    if relationships[parent]["attributes"] is not None:
+    print(data[parent].keys())
+    j["CityObjects"][poid]["type"] = data[parent]["type"]
+    if data[parent]["attributes"] is not None:
         j["CityObjects"][poid]["attributes"] =\
-            relationships[parent]["attributes"]
+            data[parent]["attributes"]
     # parent first
     vertices = []
     g2, vs = reference_vertices_in_cjf(
-        relationships[parent]["geometry"], 3, bboxmin, len(vertices)
+        data[parent]["geometry"], 3, bboxmin, len(vertices)
     )
     vertices.extend(vs)
     if g2 is not None:
@@ -232,7 +237,7 @@ def write_cjf(parent, children, relationships, bboxmin):
     while len(ls_parents_children) > 0:
         pc = ls_parents_children.pop()
         j, vertices = add_child_to_cjf(
-            j, pc[0], pc[1], vertices, bboxmin, relationships
+            j, pc[0], pc[1], vertices, bboxmin, data
         )
         # ls_parents_children.extend(new_pc)
         if pc[1] in relationships:
