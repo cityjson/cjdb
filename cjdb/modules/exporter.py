@@ -1,6 +1,7 @@
 import copy
 import json
 import sys
+import shutil
 
 from psycopg2 import sql
 from psycopg2.extras import DictCursor
@@ -53,27 +54,35 @@ class Exporter:
             """
 
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
+            logger.info("Querying.")
             cursor.execute(sql_query)
             rows = cursor.fetchall()
+        logger.info("Got data")
         if len(rows) == 0:
             logger.warning("No data from the input ids.")
             sys.exit(1)
-        
+
         # get the parent-[children]
         relationships = {}
+        # get all candidates
+        candidates = set()
         for r in rows:
+            candidates.add(r['id'])
+            if r['children'][0]:
+                candidates.update(r['children'])
             relationships[r['id']] = r['children']
-                # Modify the dict for quick access
-        return relationships
+        return relationships, candidates
 
     def get_metadata(self) -> Dict:
         # first line of the CityJSONL stream with some metadata
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
+            logger.info("Getting metadata")
             cursor.execute(
                 sql.SQL("SELECT m.* FROM {}.cj_metadata m")
                 .format(sql.Identifier(self.schema))
             )
             meta1 = cursor.fetchone()
+        logger.info("Done")
         j = {}
         j["type"] = "CityJSON"
         j["version"] = meta1[1]
@@ -110,10 +119,14 @@ class Exporter:
         j["transform"]["translate"] = self.bboxmin
         return j
     
-    def get_data(self):
+    def get_data(self, candidates):
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
-            sq = f"select * from {self.schema}.city_object;"
-            cursor.execute(sq)
+            sql = f"""SELECT * FROM {self.schema}.city_object co"""
+            if candidates:
+                sql = sql + f""" WHERE co.id IN
+                     ({ str(candidates).strip('{').strip('}')});"""
+                      
+            cursor.execute(sql)
             rows = cursor.fetchall()
         data = {}
         for r in rows:
@@ -121,8 +134,8 @@ class Exporter:
         return data
 
     def get_stream(self):
-        relationships = self.get_parent_children_relationships()
-        data = self.get_data()
+        relationships, candidates = self.get_parent_children_relationships()
+        data = self.get_data(candidates)
         self.bboxmin = self.find_min_bbox(data)
         j = self.get_metadata()
 
@@ -139,9 +152,7 @@ class Exporter:
         logger.info("Exporting from schema %s", self.schema)
         
         stream = self.get_stream()
-
-        print(stream.getvalue())
-        import shutil
+        
         with open(self.output, "w") as fd:
             stream.seek(0)
             shutil.copyfileobj(stream, fd)
@@ -217,7 +228,6 @@ def write_cjf(parent, children, data, relationships, bboxmin):
     j["id"] = poid
     j["CityObjects"] = {}
     j["CityObjects"][poid] = {}
-    print(data[parent].keys())
     j["CityObjects"][poid]["type"] = data[parent]["type"]
     if data[parent]["attributes"] is not None:
         j["CityObjects"][poid]["attributes"] =\
