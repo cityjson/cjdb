@@ -16,7 +16,7 @@ class Exporter:
         self.connection = connection
         self.schema = schema
         if not sqlquery:
-            self.sqlquery = f"""SELECT cjo.id
+            self.sqlquery = f"""SELECT cjo.object_id
                                 FROM {self.schema}.city_object cjo"""
         else:
             self.sqlquery = sqlquery
@@ -47,7 +47,7 @@ class Exporter:
             JOIN
                 only_parents op
             ON cjo.id = op.id
-            WHERE cjo."id" IN ({self.sqlquery})
+            WHERE cjo."object_id" IN ({self.sqlquery})
             GROUP BY
                 cjo.id, cjo.object_id;
             """
