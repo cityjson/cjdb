@@ -112,6 +112,7 @@ class Exporter:
         
         # fetch in memory *all* we need, won't work for super large datasets
         metadata["transform"]["translate"] = self.bboxmin
+        metadata = json.dumps(metadata, separators=(',', ':'))
         return metadata
     
     def get_data(self):
@@ -146,7 +147,7 @@ class Exporter:
         self.get_data()
 
         metadata = self.get_metadata()
-        print(json.dumps(metadata, separators=(',', ':')), file=f_out)
+        print(metadata, file=f_out)
 
         features = self.get_features()
         for feature in features:

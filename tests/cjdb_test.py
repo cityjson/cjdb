@@ -228,7 +228,7 @@ def test_export_all(engine_postgresql):
         connection=conn,
         schema="vienna",
         sqlquery=None,
-        output="./tests/files/ex.jsonl",
+        output="./tests/files/exported.jsonl",
     ) as exporter:
         exporter.run_export()
 
@@ -311,7 +311,7 @@ def test_export_one(engine_postgresql):
         connection=conn,
         schema="vienna",
         sqlquery="SELECT 'UUID_LOD2_011978-eb576db6-7fb3-427d-afe3' as object_id",
-        output="./tests/files/ex.jsonl",
+        output="./tests/files/exported.jsonl",
     ) as exporter:
         exporter.run_export()
 
