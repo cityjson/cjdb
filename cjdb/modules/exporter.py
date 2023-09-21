@@ -23,6 +23,9 @@ class Exporter:
             self.sqlquery = sqlquery
         self.output = output
         self.bboxmin = [0.0, 0.0, 0.0]
+        self.relationships = {}
+        self.city_objects = set()
+        self.data = {}
 
     def __enter__(self):
         return self
@@ -30,7 +33,7 @@ class Exporter:
     def __exit__(self, exc_type, exc_value, traceback):
         self.connection.close()
 
-    def get_parent_children_relationships(self) -> Dict:
+    def get_city_objects_and_relationships(self) -> Dict:
         sql_query = f"""
             WITH only_parents AS (
                 SELECT cjo.id, cjo.object_id
@@ -54,57 +57,49 @@ class Exporter:
             """
 
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
-            logger.info("Querying.")
             cursor.execute(sql_query)
             rows = cursor.fetchall()
-        logger.info("Got data")
         if len(rows) == 0:
             logger.warning("No data from the input ids.")
             sys.exit(1)
 
-        # get the parent-[children]
-        relationships = {}
-        # get all candidates
-        candidates = set()
         for r in rows:
-            candidates.add(r['id'])
+            self.city_objects.add(r['id'])
             if r['children'][0]:
-                candidates.update(r['children'])
-            relationships[r['id']] = r['children']
-        return relationships, candidates
+                self.city_objects.update(r['children'])
+            self.relationships[r['id']] = r['children']
 
     def get_metadata(self) -> Dict:
         # first line of the CityJSONL stream with some metadata
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
-            logger.info("Getting metadata")
             cursor.execute(
                 sql.SQL("SELECT m.* FROM {}.cj_metadata m")
                 .format(sql.Identifier(self.schema))
             )
             meta1 = cursor.fetchone()
         logger.info("Done")
-        j = {}
-        j["type"] = "CityJSON"
-        j["version"] = meta1[1]
-        j["CityObjects"] = {}
-        j["vertices"] = []
-        j["transform"] = {}
+        metadata = {}
+        metadata["type"] = "CityJSON"
+        metadata["version"] = meta1[1]
+        metadata["CityObjects"] = {}
+        metadata["vertices"] = []
+        metadata["transform"] = {}
         imp_digits = 3  # TODO: defined by users so expose
-        j["transform"]["scale"] = [1.0 / pow(10, imp_digits),
+        metadata["transform"]["scale"] = [1.0 / pow(10, imp_digits),
                                    1.0 / pow(10, imp_digits),
                                    1.0 / pow(10, imp_digits)]
-        j["metadata"] = {}
+        metadata["metadata"] = {}
         if "referenceSystem" in meta1:
             # TODO: Fetch the referenceSystem from the SRID
             # Can be quried from the DB with
             # "ST_SRID(cjo.ground_geometry) as epsg".
             # Will be tricky because the buildings with parts
             # do not have a ground_geometry.
-            j["metadata"]["referenceSystem"] = meta1["metadata"][
+            metadata["metadata"]["referenceSystem"] = meta1["metadata"][
                 "referenceSystem"
             ]
         else:
-            j["metadata"]["referenceSystem"] = "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])  # noqa
+            metadata["metadata"]["referenceSystem"] = "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])  # noqa
         
         # TODO: add geometry-template from all imported files or select only
         #       the ones relevant?
@@ -116,54 +111,53 @@ class Exporter:
         #       maybe a flag?
         
         # fetch in memory *all* we need, won't work for super large datasets
-        j["transform"]["translate"] = self.bboxmin
-        return j
+        metadata["transform"]["translate"] = self.bboxmin
+        return metadata
     
-    def get_data(self, candidates):
+    def get_data(self):
+        self.get_city_objects_and_relationships()
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             sql = f"""SELECT * FROM {self.schema}.city_object co"""
-            if candidates:
+            if self.city_objects:
                 sql = sql + f""" WHERE co.id IN
-                     ({ str(candidates).strip('{').strip('}')});"""
+                     ({ str(self.city_objects).strip('{').strip('}')});"""
                       
             cursor.execute(sql)
             rows = cursor.fetchall()
-        data = {}
         for r in rows:
-            data[r['id']] = r
-        return data
+            self.data[r['id']] = r
+        self.set_min_bbox()
 
-    def get_stream(self):
-        relationships, candidates = self.get_parent_children_relationships()
-        data = self.get_data(candidates)
-        self.bboxmin = self.find_min_bbox(data)
-        j = self.get_metadata()
-
-        f_out = io.StringIO()
-        print(json.dumps(j, separators=(',', ':')), file=f_out)
-
-        # Iterate over each and write to the file
-        for key, children in relationships.items():
-            re = write_cjf(key, children, data, relationships, self.bboxmin)
-            print(re, file=f_out)
-        return f_out
+    def get_features(self):
+        feature_list = []
+        for parent, children in self.relationships.items():
+            feature = write_cjf(parent,
+                                children,
+                                self.data,
+                                self.relationships,
+                                self.bboxmin)
+            feature_list.append(feature)
+        return feature_list
         
     def run_export(self) -> None:
         logger.info("Exporting from schema %s", self.schema)
-        
-        stream = self.get_stream()
-        
-        with open(self.output, "w") as fd:
-            stream.seek(0)
-            shutil.copyfileobj(stream, fd)
-        
-        stream.close()
+        f_out = open(self.output, "w")
 
+        self.get_data()
+
+        metadata = self.get_metadata()
+        print(json.dumps(metadata, separators=(',', ':')), file=f_out)
+
+        features = self.get_features()
+        for feature in features:
+            print(feature, file=f_out)
+
+        f_out.close()
         logger.info("Schema exported in %s", self.output)
 
-    def find_min_bbox(self, data: Dict):
+    def set_min_bbox(self):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
-        for object_id, members in data.items():
+        for object_id, members in self.data.items():
             if members["geometry"] is not None:
                 for g in members["geometry"]:
                     if g["type"] == "Solid":
@@ -185,7 +179,7 @@ class Exporter:
                     else:
                         # TODO: implement for MultiSolid
                         logger.warning("GEOMETRY NOT SUPPORTED YET")
-        return bboxmin
+        self.bboxmin = bboxmin
 
     def remove_duplicate_vertices(self, j):
         def update_geom_indices(a, newids):
