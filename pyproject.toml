@@ -13,7 +13,7 @@ keywords = ["CityJSON", "PostgreSQL"]
 cjdb = "cjdb.cli:cjdb"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.8.1"
 shapely = "^2.0.1"
 numpy = "^1.24.2"
 pyproj = "^3.5.0"
