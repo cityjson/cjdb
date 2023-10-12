@@ -1,11 +1,14 @@
 import copy
 import json
 import sys
+import shutil
 
 from psycopg2 import sql
 from psycopg2.extras import DictCursor
 
 from cjdb.logger import logger
+from typing import Dict
+import io
 
 
 # exporter class
@@ -14,12 +17,15 @@ class Exporter:
         self.connection = connection
         self.schema = schema
         if not sqlquery:
-            self.sqlquery = f"""SELECT cjo.id 
+            self.sqlquery = f"""SELECT cjo.object_id
                                 FROM {self.schema}.city_object cjo"""
         else:
             self.sqlquery = sqlquery
         self.output = output
         self.bboxmin = [0.0, 0.0, 0.0]
+        self.relationships = {}
+        self.city_objects = set()
+        self.data = {}
 
     def __enter__(self):
         return self
@@ -27,8 +33,7 @@ class Exporter:
     def __exit__(self, exc_type, exc_value, traceback):
         self.connection.close()
 
-    def run_export(self) -> None:
-        logger.info("Exporting from schema %s", self.schema)
+    def get_city_objects_and_relationships(self) -> Dict:
         sql_query = f"""
             WITH only_parents AS (
                 SELECT cjo.id, cjo.object_id
@@ -46,51 +51,55 @@ class Exporter:
             JOIN
                 only_parents op
             ON cjo.id = op.id
-            WHERE cjo."id" IN ({self.sqlquery})
+            WHERE cjo."object_id" IN ({self.sqlquery})
             GROUP BY
                 cjo.id, cjo.object_id;
             """
 
-        cursor = self.connection.cursor(cursor_factory=DictCursor)
-        cursor.execute(sql_query)
-        rows = cursor.fetchall()
+        with self.connection.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute(sql_query)
+            rows = cursor.fetchall()
         if len(rows) == 0:
             logger.warning("No data from the input ids.")
             sys.exit(1)
 
-        # get the parent-[children]
-        pcrel = {}
         for r in rows:
-            pcrel[r['id']] = r['children']
+            self.city_objects.add(r['id'])
+            if r['children'][0]:
+                self.city_objects.update(r['children'])
+            self.relationships[r['id']] = r['children']
 
+    def get_metadata(self) -> Dict:
         # first line of the CityJSONL stream with some metadata
-        cursor.execute(
-            sql.SQL("SELECT m.* FROM {}.cj_metadata m")
-            .format(sql.Identifier(self.schema))
-        )
-        meta1 = cursor.fetchone()
-        j = {}
-        j["type"] = "CityJSON"
-        j["version"] = meta1[1]
-        j["CityObjects"] = {}
-        j["vertices"] = []
-        j["transform"] = {}
+        with self.connection.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute(
+                sql.SQL("SELECT m.* FROM {}.cj_metadata m")
+                .format(sql.Identifier(self.schema))
+            )
+            meta1 = cursor.fetchone()
+        logger.info("Done")
+        metadata = {}
+        metadata["type"] = "CityJSON"
+        metadata["version"] = meta1[1]
+        metadata["CityObjects"] = {}
+        metadata["vertices"] = []
+        metadata["transform"] = {}
         imp_digits = 3  # TODO: defined by users so expose
-        j["transform"]["scale"] = [1.0 / pow(10, imp_digits),
+        metadata["transform"]["scale"] = [1.0 / pow(10, imp_digits),
                                    1.0 / pow(10, imp_digits),
                                    1.0 / pow(10, imp_digits)]
-        j["metadata"] = {}
+        metadata["metadata"] = {}
         if "referenceSystem" in meta1:
             # TODO: Fetch the referenceSystem from the SRID
             # Can be quried from the DB with
             # "ST_SRID(cjo.ground_geometry) as epsg".
             # Will be tricky because the buildings with parts
             # do not have a ground_geometry.
-            j["metadata"]["referenceSystem"] = meta1["metadata"][
+            metadata["metadata"]["referenceSystem"] = meta1["metadata"][
                 "referenceSystem"
             ]
         else:
-            j["metadata"]["referenceSystem"] = "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])  # noqa
+            metadata["metadata"]["referenceSystem"] = "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])  # noqa
         
         # TODO: add geometry-template from all imported files or select only
         #       the ones relevant?
@@ -102,40 +111,56 @@ class Exporter:
         #       maybe a flag?
         
         # fetch in memory *all* we need, won't work for super large datasets
-        sq = f"select * from {self.schema}.city_object;"
-        cursor.execute(sq)
-        rows = cursor.fetchall()
-        self.bboxmin = self.find_min_bbox(rows)
-        j["transform"]["translate"] = self.bboxmin
-
-        f_out = open(self.output, "w")
-        print(json.dumps(j, separators=(',', ':')), file=f_out)
-
-        # Modify the dict for quick access
-        d = {}
+        metadata["transform"]["translate"] = self.bboxmin
+        metadata = json.dumps(metadata, separators=(',', ':'))
+        return metadata
+    
+    def get_data(self):
+        self.get_city_objects_and_relationships()
+        with self.connection.cursor(cursor_factory=DictCursor) as cursor:
+            sql = f"""SELECT * FROM {self.schema}.city_object co"""
+            if self.city_objects:
+                sql = sql + f""" WHERE co.id IN
+                     ({ str(self.city_objects).strip('{').strip('}')});"""
+                      
+            cursor.execute(sql)
+            rows = cursor.fetchall()
         for r in rows:
-            d[r["id"]] = r
+            self.data[r['id']] = r
+        self.set_min_bbox()
 
-        # Iterate over each and write to the file
-        for key, children in pcrel.items():
-            re = write_cjf(key, children, d, pcrel, self.bboxmin)
-            print(re, file=f_out)
-        # testing multiprocessing
-        # t = []
-        # for key, children in pcrel.items():
-            # t.append([key, children, d, pcrel, self.bboxmin])
-        # with mp.Pool() as p:
-            # for result in p.starmap(write_cjf_fast, t):
-            #     print(result, file=f_out)
+    def get_features(self):
+        feature_list = []
+        for parent, children in self.relationships.items():
+            feature = write_cjf(parent,
+                                children,
+                                self.data,
+                                self.relationships,
+                                self.bboxmin)
+            feature_list.append(feature)
+        return feature_list
+        
+    def run_export(self) -> None:
+        logger.info("Exporting from schema %s", self.schema)
+        f_out = open(self.output, "w")
+
+        self.get_data()
+
+        metadata = self.get_metadata()
+        print(metadata, file=f_out)
+
+        features = self.get_features()
+        for feature in features:
+            print(feature, file=f_out)
+
         f_out.close()
-
         logger.info("Schema exported in %s", self.output)
 
-    def find_min_bbox(self, rows):
+    def set_min_bbox(self):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
-        for row in rows:
-            if row["geometry"] is not None:
-                for g in row["geometry"]:
+        for object_id, members in self.data.items():
+            if members["geometry"] is not None:
+                for g in members["geometry"]:
                     if g["type"] == "Solid":
                         for shell in g["boundaries"]:
                             for surface in shell:
@@ -155,7 +180,7 @@ class Exporter:
                     else:
                         # TODO: implement for MultiSolid
                         logger.warning("GEOMETRY NOT SUPPORTED YET")
-        return bboxmin
+        self.bboxmin = bboxmin
 
     def remove_duplicate_vertices(self, j):
         def update_geom_indices(a, newids):
@@ -190,62 +215,22 @@ class Exporter:
         j["vertices"] = newv2
         return j
 
-    def reference_vertices_in_cjf(self, gs, imp_digits, translate, offset=0):
-        vertices = []
-        if gs is None:
-            return (gs, vertices)
-        gs2 = copy.deepcopy(gs)
-        p = "%." + str(imp_digits) + "f"
-        for h, g in enumerate(gs):
-            if g["type"] == "Solid":
-                for i, shell in enumerate(g["boundaries"]):
-                    for j, surface in enumerate(shell):
-                        for k, ring in enumerate(surface):
-                            for l, vertex in enumerate(ring):
-                                gs2[h]["boundaries"][i][j][k][l] = offset
-                                offset += 1
-                                v = [0.0, 0.0, 0.0]
-                                for r in range(3):
-                                    v[r] = int(
-                                        (p % (vertex[r] - translate[r]))
-                                        .replace(
-                                            ".", ""
-                                        )
-                                    )
-                                vertices.append(v)
-            elif g["type"] == "MultiSurface" \
-                              or g["type"] == "CompositeSurface":
-                for j, surface in enumerate(g["boundaries"]):
-                    for k, ring in enumerate(surface):
-                        for l, vertex in enumerate(ring):
-                            gs2[h]["boundaries"][j][k][l] = offset
-                            offset += 1
-                            v = [0.0, 0.0, 0.0]
-                            for r in range(3):
-                                v[r] = int(
-                                    (p % (vertex[r] - translate[r]))
-                                    .replace(".", "")
-                                )
-                            vertices.append(v)
-            # TODO: MultiSolid
-        return (gs2, vertices)
 
-
-def write_cjf(parent, children, d, pcrel, bboxmin):
-    poid = d[parent]["object_id"]
+def write_cjf(parent, children, data, relationships, bboxmin):
+    poid = data[parent]["object_id"]
     j = {}
     j["type"] = "CityJSONFeature"
     j["id"] = poid
     j["CityObjects"] = {}
     j["CityObjects"][poid] = {}
-    j["CityObjects"][poid]["type"] = d[parent]["type"]
-    if d[parent]["attributes"] is not None:
+    j["CityObjects"][poid]["type"] = data[parent]["type"]
+    if data[parent]["attributes"] is not None:
         j["CityObjects"][poid]["attributes"] =\
-            d[parent]["attributes"]
+            data[parent]["attributes"]
     # parent first
     vertices = []
     g2, vs = reference_vertices_in_cjf(
-        d[parent]["geometry"], 3, bboxmin, len(vertices)
+        data[parent]["geometry"], 3, bboxmin, len(vertices)
     )
     vertices.extend(vs)
     if g2 is not None:
@@ -257,29 +242,29 @@ def write_cjf(parent, children, d, pcrel, bboxmin):
     while len(ls_parents_children) > 0:
         pc = ls_parents_children.pop()
         j, vertices = add_child_to_cjf(
-            j, pc[0], pc[1], vertices, bboxmin, d
+            j, pc[0], pc[1], vertices, bboxmin, data
         )
         # ls_parents_children.extend(new_pc)
-        if pc[1] in pcrel:
-            ls_parents_children.extend(pcrel[pc[1]])
+        if pc[1] in relationships:
+            ls_parents_children.extend(relationships[pc[1]].children)
     j["vertices"] = vertices
     j = remove_duplicate_vertices(j)
     return json.dumps(j, separators=(",", ":"))
 
 
-def add_child_to_cjf(j, parent_id, child_id, vertices, bboxmin, d):
-    poid = d[parent_id]["object_id"]
-    coid = d[child_id]["object_id"]
+def add_child_to_cjf(j, parent_id, child_id, vertices, bboxmin, relationships):
+    poid = relationships[parent_id]["object_id"]
+    coid = relationships[child_id]["object_id"]
     if "children" not in j["CityObjects"][poid]:
         j["CityObjects"][poid]["children"] = []
     j["CityObjects"][poid]["children"].append(coid)
     j["CityObjects"][coid] = {}
-    j["CityObjects"][coid]["type"] = d[child_id]["type"]
-    if "attributes" in d[child_id]:
-        j["CityObjects"][coid]["attributes"] = d[child_id]["attributes"]
+    j["CityObjects"][coid]["type"] = relationships[child_id]["type"]
+    if "attributes" in relationships[child_id]:
+        j["CityObjects"][coid]["attributes"] = relationships[child_id]["attributes"]
     j["CityObjects"][coid]["parents"] = [poid]
     g2, vs = \
-        reference_vertices_in_cjf(d[child_id]["geometry"],
+        reference_vertices_in_cjf(relationships[child_id]["geometry"],
                                   3,
                                   bboxmin,
                                   len(vertices))
