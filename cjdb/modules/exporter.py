@@ -260,7 +260,7 @@ def add_child_to_cjf(j, parent_id, child_id, vertices, bboxmin, relationships):
     j["CityObjects"][poid]["children"].append(coid)
     j["CityObjects"][coid] = {}
     j["CityObjects"][coid]["type"] = relationships[child_id]["type"]
-    if "attributes" in relationships[child_id]:
+    if "attributes" in relationships[child_id] and relationships[child_id]["attributes"]:
         j["CityObjects"][coid]["attributes"] = relationships[child_id]["attributes"]
     j["CityObjects"][coid]["parents"] = [poid]
     g2, vs = \
