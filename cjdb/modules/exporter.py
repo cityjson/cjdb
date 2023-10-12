@@ -31,7 +31,7 @@ class Exporter:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.connection.close()
+        pass
 
     def get_city_objects_and_relationships(self) -> Dict:
         sql_query = f"""
@@ -73,7 +73,7 @@ class Exporter:
         # first line of the CityJSONL stream with some metadata
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute(
-                sql.SQL("SELECT m.* FROM {}.cj_metadata m")
+                sql.SQL("SELECT m.* FROM {}.cj_metadata m limit 1")
                 .format(sql.Identifier(self.schema))
             )
             meta1 = cursor.fetchone()
