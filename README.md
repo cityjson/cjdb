@@ -60,7 +60,12 @@ cjdb export -H localhost -U postgres -d testcjdb -s cjdb -o result.jsonl
 or export only part of it, using a select query as input. The select query should return the ids of the objects to be exported:
 
 ```bash
-cjdb export -H localhost -U postgres -d testcjdb -s cjdb -o result.jsonl -q "SELECT 1 as id"
+cjdb export -H localhost -U postgres -d testcjdb -s cjdb -o result.jsonl -q "SELECT 'NL.IMBAG.Pand.1655100000500568' as object_id"
+```
+
+5. If you want to convert from CityJSONFeatures to city json you can use `cjio`:
+```bash
+cat /path/to/result.city.jsonl | cjio  stdin save /path/to/output.city.json
 ```
 
 ## Using docker

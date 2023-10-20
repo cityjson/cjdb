@@ -228,7 +228,7 @@ def test_export_all(engine_postgresql):
         connection=conn,
         schema="vienna",
         sqlquery=None,
-        output="./tests/files/ex.jsonl",
+        output="./tests/files/exported.jsonl",
     ) as exporter:
         exporter.run_export()
 
@@ -310,8 +310,8 @@ def test_export_one(engine_postgresql):
     with Exporter(
         connection=conn,
         schema="vienna",
-        sqlquery="SELECT 593 as id",
-        output="./tests/files/ex.jsonl",
+        sqlquery="SELECT 'UUID_LOD2_011978-eb576db6-7fb3-427d-afe3' as object_id",
+        output="./tests/files/exported.jsonl",
     ) as exporter:
         exporter.run_export()
 
@@ -462,3 +462,23 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
             [10, 10, 15],
             [0, 10, 15],
         ]
+
+
+def test_single_import_cj_version_2(
+    engine_postgresql, monkeypatch
+):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    engine_postgresql.update_execution_options(
+        schema_translate_map={"cjdb": "cjv2", "vienna": 'cjv2'})
+    with Importer(
+        engine=engine_postgresql,
+        filepath="./tests/files/cube_cjv2.city.jsonl",
+        db_schema="cjv2",
+        input_srid=28992,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        overwrite=False,
+        transform=False
+    ) as importer:
+        importer.run_import()
