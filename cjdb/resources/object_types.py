@@ -17,6 +17,7 @@ types = {
     ],
     "CityFurniture": None,
     "CityObjectGroup": None,
+    "GenericCityObject": None,
     "LandUse": None,
     "OtherConstruction": None,
     "PlantCover": None,
