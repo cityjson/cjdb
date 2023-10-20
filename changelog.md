@@ -18,6 +18,14 @@ for soon-to-be removed features.
 `Security` in case of vulnerabilities.
 
 
+## [2.1.0] - 2023-10-20
+
+`Changed` 
+- The exporter does not close the connection
+- Compliance with cityJSON v2.0.0
+- Exporter SQL uses the object_id instead of the id.
+
+
 ## [2.0.0] - 2023-08-01
 
 `Added`
