@@ -464,16 +464,6 @@ def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):
         ]
 
 
-# def test_db(engine_postgresql):
-#     insp = inspect(engine_postgresql)
-#     assert insp.has_schema("cjdb")
-#     assert insp.has_schema("vienna")
-#     engine_postgresql.update_execution_options(
-#         schema_translate_map={"vienna": 'tmp'})
-#     insp = inspect(engine_postgresql)
-#     assert insp.has_schema("tmp")
-
-
 def test_single_import_cj_version_2(
     engine_postgresql, monkeypatch
 ):
