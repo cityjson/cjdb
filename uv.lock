@@ -233,7 +233,6 @@ dev = [
     { name = "pytest" },
     { name = "pytest-postgresql" },
     { name = "ruff" },
-    { name = "setuptools" },
     { name = "sphinx-click" },
 ]
 
@@ -254,9 +253,8 @@ dev = [
     { name = "mypy", specifier = ">=1.1.1,<2.0.0" },
     { name = "psycopg", specifier = ">=3.1.8,<4.0.0" },
     { name = "pytest", specifier = ">=9.0.3,<10.0.0" },
-    { name = "pytest-postgresql", specifier = ">=4.1.1,<5.0.0" },
+    { name = "pytest-postgresql", specifier = ">=8.1.0,<9.0.0" },
     { name = "ruff", specifier = ">=0.16.0" },
-    { name = "setuptools", specifier = "<81" },
     { name = "sphinx-click", specifier = ">=4.4.0,<5.0.0" },
 ]
 
@@ -1078,17 +1076,18 @@ wheels = [
 
 [[package]]
 name = "pytest-postgresql"
-version = "4.1.1"
+version = "8.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mirakuru" },
+    { name = "packaging" },
     { name = "port-for" },
+    { name = "psycopg" },
     { name = "pytest" },
-    { name = "setuptools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5f/83/e31f2b6ffb4fe7c3ac02f314d23b6c1af38f321152be55a6cd5714f27ed6/pytest-postgresql-4.1.1.tar.gz", hash = "sha256:144d6af4000641decb1f0e8025d9bfdd4a0572f418c5fec7ef409b51b991295d", size = 45226, upload-time = "2022-03-11T20:57:45.206Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/54/e5/3855f2e69cab10968564d797db2c3a4a7eabad68964047984a2533cddd46/pytest_postgresql-8.1.0.tar.gz", hash = "sha256:ffd24027a28aba3d05a909fb03ee87d1d474574c3504f332d6047e8699170adc", size = 58995, upload-time = "2026-05-15T19:59:36.85Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/2d/4b30a3ead59ca70463155fed8597dee7a5ef347d935ddd0f319bc331cba1/pytest_postgresql-4.1.1-py3-none-any.whl", hash = "sha256:e4fca93189ce7e4f306ed5974cd5fdbb988f6b18ea51d12465dd301fcace933f", size = 41936, upload-time = "2022-03-11T20:57:42.984Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/5a/1a9dbe730bfeeebf0e442225285550148cc85efcbfe0ad85b02b74a12e91/pytest_postgresql-8.1.0-py3-none-any.whl", hash = "sha256:0868bb3374fa4f454efd73ac1d7b23d2da623782044371b84d39f83a0893f56f", size = 42311, upload-time = "2026-05-15T19:59:34.955Z" },
 ]
 
 [[package]]
@@ -1129,15 +1128,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/78/9b/475b927cf27a5cbbda3c7bafb69ed6ff77e1d7923d5d85f17c2749d7ae32/ruff-0.16.3-py3-none-win32.whl", hash = "sha256:388cdf2166642bd9b13d52b5932d3170f34f8abed7e8d9a855f1d84b83645a0a", size = 10931415, upload-time = "2026-08-13T15:17:05.726Z" },
     { url = "https://files.pythonhosted.org/packages/b2/99/e2a2bfc4fbf0a1e8a916bc9ebe6fe6c58cc34c28e0ffc6ce281d572d1c2e/ruff-0.16.3-py3-none-win_amd64.whl", hash = "sha256:e80a7d69ca2a6d1c4d352ec91458cdca6e56c83cdbcabd93e4abe1e53591d948", size = 11445993, upload-time = "2026-08-13T15:17:08.353Z" },
     { url = "https://files.pythonhosted.org/packages/69/3e/4132e539aed78c148854d4997a2685b0ed4dc4e87110b59ce528564e184e/ruff-0.16.3-py3-none-win_arm64.whl", hash = "sha256:b8ca152da82c1acc1fa8d5874b15951935f0eef46f10e6954c83859011b6178a", size = 11399302, upload-time = "2026-08-13T15:17:10.908Z" },
-]
-
-[[package]]
-name = "setuptools"
-version = "80.10.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/76/95/faf61eb8363f26aa7e1d762267a8d602a1b26d4f3a1e758e92cb3cb8b054/setuptools-80.10.2.tar.gz", hash = "sha256:8b0e9d10c784bf7d262c4e5ec5d4ec94127ce206e8738f29a437945fbc219b70", size = 1200343, upload-time = "2026-01-25T22:38:17.252Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/b8/f1f62a5e3c0ad2ff1d189590bfa4c46b4f3b6e49cef6f26c6ee4e575394d/setuptools-80.10.2-py3-none-any.whl", hash = "sha256:95b30ddfb717250edb492926c92b5221f7ef3fbcc2b07579bcd4a27da21d0173", size = 1064234, upload-time = "2026-01-25T22:38:15.216Z" },
 ]
 
 [[package]]

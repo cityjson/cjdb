@@ -17,11 +17,11 @@ from cjdb.modules.importer import Importer
 @pytest.fixture(scope="session")
 def engine_postgresql(postgresql_proc):
     with DatabaseJanitor(
-        postgresql_proc.user,
-        postgresql_proc.host,
-        postgresql_proc.port,
-        postgresql_proc.dbname,
-        postgresql_proc.version,
+        user=postgresql_proc.user,
+        host=postgresql_proc.host,
+        port=postgresql_proc.port,
+        dbname=postgresql_proc.dbname,
+        version=postgresql_proc.version,
         password=postgresql_proc.password,
     ):
         yield create_engine(
