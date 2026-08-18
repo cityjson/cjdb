@@ -17,7 +17,7 @@ maintainers = [
 license = "MIT"
 readme = "README.md"
 keywords = ["CityJSON", "PostgreSQL"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "shapely>=2.0.1,<3.0.0",
     "numpy>=1.24.2,<2.0.0",
