@@ -5,13 +5,11 @@ RUN apt-get update && \
 RUN mkdir /app
 WORKDIR /app
 
-ARG PIP_VERSION="pip==23.0.0"
-ARG POETRY_VERSION="poetry==1.3.2"
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-RUN python3 -m pip install ${PIP_VERSION} ${POETRY_VERSION}
+ENV UV_PROJECT_ENVIRONMENT=/usr/local
 
-COPY README.md poetry.lock pyproject.toml /app/
+COPY README.md pyproject.toml uv.lock /app/
 COPY cjdb /app/cjdb
 
-RUN poetry config virtualenvs.create false \
-  && poetry install --no-interaction --no-ansi --without dev
+RUN uv sync --frozen --no-group dev
