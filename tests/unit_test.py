@@ -17,7 +17,11 @@ from cjdb.modules.geometric import (
     get_ground_surfaces,
 )
 from cjdb.modules.importer import Importer
-from cjdb.modules.utils import get_city_object_types
+from cjdb.modules.utils import (
+    geometry_jsonb_size,
+    geometry_too_large,
+    get_city_object_types,
+)
 
 boundary_multipoint_single_point = [[121483.808, 484844.936, 0.0]]
 boundary_multipoint_many_points = [
@@ -253,3 +257,15 @@ def test_parse_cityjson_path_not_found():
     )
     with pytest.raises(PathNotFoundException):
         importer.parse_cityjson()
+
+
+def test_geometry_too_large_within_limit():
+    geometry = {"type": "Solid", "boundaries": [[[0, 1, 2, 3]]]}
+    assert not geometry_too_large(geometry)
+
+
+def test_geometry_jsonb_size_estimate():
+    geometry = {"type": "Solid", "boundaries": [[[0, 1, 2, 3]]]}
+    size = geometry_jsonb_size(geometry)
+    # a small geometry is far below the ~256 MB jsonb limit
+    assert 0 < size < 1000

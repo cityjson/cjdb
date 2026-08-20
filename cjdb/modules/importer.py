@@ -28,6 +28,8 @@ from cjdb.modules.geometric import (
 )
 from cjdb.modules.utils import (
     find_extra_properties,
+    geometry_jsonb_size,
+    geometry_too_large,
     get_city_object_types,
     is_cityjson_object,
     is_valid_file,
@@ -561,6 +563,18 @@ class Importer:
             self.current.cj_metadata.geometry_templates,
             source_target_srid,
         )
+
+        # fail early (and with a clear message) when a single object's
+        # resolved geometry would not fit in a jsonb column, instead of
+        # hitting PostgreSQL's cryptic size error later on.
+        geometry_size = geometry_jsonb_size(geometry)
+        if geometry_too_large(geometry):
+            raise exceptions.GeometryTooLargeException(
+                f"The geometry of CityJSON object '{obj_id}' is "
+                f"{geometry_size / 1024 / 1024:.1f} MB when stored as jsonb, "
+                "which exceeds the ~256 MB limit of a PostgreSQL jsonb column. "
+                "Simplify or split the geometry of this object."
+            )
 
         ground_geometry: Any = get_ground_geometry(geometry, obj_id)
 

@@ -1,4 +1,5 @@
 import io
+import uuid
 
 import pytest
 from pytest_postgresql.janitor import DatabaseJanitor
@@ -6,6 +7,7 @@ from sqlalchemy import MetaData, Table, create_engine, inspect, select
 from sqlalchemy.orm import Session
 
 from cjdb.modules.exceptions import (
+    GeometryTooLargeException,
     InconsistentCRSException,
     InvalidCityJSONObjectException,
     MissingCRSException,
@@ -29,6 +31,29 @@ def engine_postgresql(postgresql_proc):
             f"postgresql+psycopg2://{postgresql_proc.user}:"
             f"{postgresql_proc.password}@{postgresql_proc.host}:"
             f"{postgresql_proc.port}/{postgresql_proc.dbname}"
+        )
+
+
+@pytest.fixture
+def isolated_engine(postgresql_proc):
+    """A fresh database, independent of the shared ``engine_postgresql``.
+
+    Each test using this fixture gets its own database, so it is not affected
+    by schemas/data created by other tests.
+    """
+    dbname = f"isolated_{uuid.uuid4().hex}"
+    with DatabaseJanitor(
+        user=postgresql_proc.user,
+        host=postgresql_proc.host,
+        port=postgresql_proc.port,
+        dbname=dbname,
+        version=postgresql_proc.version,
+        password=postgresql_proc.password,
+    ):
+        yield create_engine(
+            f"postgresql+psycopg2://{postgresql_proc.user}:"
+            f"{postgresql_proc.password}@{postgresql_proc.host}:"
+            f"{postgresql_proc.port}/{dbname}"
         )
 
 
@@ -528,4 +553,24 @@ def test_single_import_with_clustering(engine_postgresql, monkeypatch):
         transform=False,
         clustering=True,
     ) as importer:
+        importer.run_import()
+
+
+def test_geometry_too_large_raises_clear_error(isolated_engine, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    with (
+        Importer(
+            engine=isolated_engine,
+            filepath="./tests/files/large.city.jsonl",
+            db_schema="geometry_too_large",
+            input_srid=None,
+            indexed_attributes=[],
+            partial_indexed_attributes=[],
+            ignore_repeated_file=False,
+            overwrite=False,
+            transform=False,
+            clustering=False,
+        ) as importer,
+        pytest.raises(GeometryTooLargeException),
+    ):
         importer.run_import()
