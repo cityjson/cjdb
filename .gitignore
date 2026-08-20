@@ -6,6 +6,7 @@
 mypy.ini
 todo
 venv
+.venv
 *.egg-info
 *.whl
 *.gz
