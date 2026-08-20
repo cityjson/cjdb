@@ -8,7 +8,7 @@ from sqlalchemy.orm import declarative_base, relationship
 Base = declarative_base()
 
 
-class BaseModel(Base):
+class BaseModel(Base):  # type: ignore[valid-type, misc]
     __abstract__ = True
     id = Column(Integer, primary_key=True)
 

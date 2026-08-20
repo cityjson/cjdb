@@ -1,3 +1,4 @@
+from typing import Any
 from unittest import mock
 from urllib.error import URLError
 
@@ -74,32 +75,32 @@ boundary_solid = [
     ]
 ]
 
-geometry_1 = {}
+geometry_1: dict[str, Any] = {}
 geometry_1["boundaries"] = boundary_multisurface
 geometry_1["lod"] = "1.2"
 geometry_1["type"] = "MultiSurface"
 
-geometry_2 = {}
+geometry_2: dict[str, Any] = {}
 geometry_2["boundaries"] = boundary_multisurface_not_nested
 geometry_2["lod"] = "0.0"
 geometry_2["type"] = "MultiSurface"
 
-geometry_3 = {}
+geometry_3: dict[str, Any] = {}
 geometry_3["boundaries"] = []
 geometry_3["lod"] = "2.1"
 geometry_3["type"] = "MultiSurface"
 
-geometry_4 = {}
+geometry_4: dict[str, Any] = {}
 geometry_4["boundaries"] = []
 geometry_4["lod"] = "foo"
 geometry_4["type"] = "MultiSurface"
 
-geometry_5 = {}
+geometry_5: dict[str, Any] = {}
 geometry_5["boundaries"] = boundary_multisurface
 geometry_5["lod"] = "0"
 geometry_5["type"] = "MultiSurface"
 
-geometry_6 = {}
+geometry_6: dict[str, Any] = {}
 geometry_6["boundaries"] = boundary_solid
 geometry_6["lod"] = "1.2"
 geometry_6["type"] = "MultiSurface"

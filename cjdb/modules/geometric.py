@@ -1,6 +1,6 @@
 import copy
 from statistics import mean
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from cjio.geom_help import get_normal_newell
@@ -149,8 +149,8 @@ def get_geometry_with_minimum_lod(
 
 
 def get_flattened_polygons_from_boundaries(
-    boundaries: list, polygons: list | None = None
-) -> list[Polygon | MultiPolygon]:
+    boundaries: list, polygons: list[Polygon] | None = None
+) -> list[Polygon]:
     if polygons is None:
         polygons = []
     if (
@@ -207,7 +207,7 @@ def get_ground_surfaces(polygons: list[Polygon]) -> list[Polygon]:
 
 
 def merge_into_a_multipolygon(
-    ground_surfaces: list[Polygon | MultiPolygon],
+    ground_surfaces: list[Polygon],
 ) -> MultiPolygon:
     try:
         polygon = unary_union(force_2d(ground_surfaces))
@@ -220,10 +220,12 @@ def merge_into_a_multipolygon(
     if isinstance(polygon, MultiPolygon):
         return polygon
     else:
-        return MultiPolygon([polygon])
+        return MultiPolygon([cast(Polygon, polygon)])
 
 
-def get_ground_geometry(geometries: list[dict[str, Any]], obj_id: str) -> MultiPolygon:
+def get_ground_geometry(
+    geometries: list[dict[str, Any]], obj_id: str
+) -> MultiPolygon | None:
     """Receives a list of transformed boundary coordinates
     of the city object
     and extracts only the ground surface.

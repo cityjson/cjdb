@@ -1,6 +1,7 @@
 import copy
 import json
 import sys
+from typing import Any
 
 from psycopg2 import sql
 from psycopg2.extras import DictCursor
@@ -30,7 +31,7 @@ class Exporter:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
-    def get_city_objects_and_relationships(self) -> dict:
+    def get_city_objects_and_relationships(self) -> None:
         sql_query = f"""
             WITH only_parents AS (
                 SELECT cjo.id, cjo.object_id
@@ -66,7 +67,7 @@ class Exporter:
                 self.city_objects.update(r["children"])
             self.relationships[r["id"]] = r["children"]
 
-    def get_metadata(self) -> dict:
+    def get_metadata(self) -> str:
         # first line of the CityJSONL stream with some metadata
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute(
@@ -76,7 +77,7 @@ class Exporter:
             )
             meta1 = cursor.fetchone()
         logger.info("Done")
-        metadata = {}
+        metadata: dict[str, Any] = {}
         metadata["type"] = "CityJSON"
         metadata["version"] = meta1[1]
         metadata["CityObjects"] = {}
@@ -114,8 +115,7 @@ class Exporter:
 
         # fetch in memory *all* we need, won't work for super large datasets
         metadata["transform"]["translate"] = self.bboxmin
-        metadata = json.dumps(metadata, separators=(",", ":"))
-        return metadata
+        return json.dumps(metadata, separators=(",", ":"))
 
     def get_data(self):
         self.get_city_objects_and_relationships()

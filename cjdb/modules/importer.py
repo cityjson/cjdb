@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from contextlib import ExitStack
+from typing import Any
 
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import func, text
@@ -544,7 +545,7 @@ class Importer:
 
     def get_geometries(
         self, obj_id, cityobj, vertices, source_target_srid
-    ) -> tuple[BaseGeometry | None, BaseGeometry | None]:
+    ) -> tuple[BaseGeometry | None, Any]:
         if "geometry" not in cityobj:
             return None, None
 
@@ -556,7 +557,7 @@ class Importer:
             source_target_srid,
         )
 
-        ground_geometry = get_ground_geometry(geometry, obj_id)
+        ground_geometry: Any = get_ground_geometry(geometry, obj_id)
 
         if ground_geometry is not None:
             if not self.current.target_srid:
