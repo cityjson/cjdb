@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
@@ -17,7 +19,7 @@ def NullableJSONB():
 
 class CjMetadataModel(BaseModel):
     __tablename__ = "cj_metadata"
-    __table_args__ = {"schema": "cjdb"}
+    __table_args__: ClassVar[dict] = {"schema": "cjdb"}
     source_file = Column(String)
     version = Column(String(10), nullable=False)
     meta = Column(JSONB, name="metadata")
@@ -57,7 +59,7 @@ class CjMetadataModel(BaseModel):
 
 class CjObjectModel(BaseModel):
     __tablename__ = "city_object"
-    __table_args__ = {"schema": "cjdb"}
+    __table_args__: ClassVar[dict] = {"schema": "cjdb"}
     cj_metadata_id = Column(Integer, ForeignKey(CjMetadataModel.id, ondelete="CASCADE"))
     object_id = Column(String, nullable=False)
     type = Column(String, nullable=False)
@@ -102,7 +104,7 @@ class CjObjectModel(BaseModel):
 
 class CityObjectRelationshipModel(BaseModel):
     __tablename__ = "city_object_relationships"
-    __table_args__ = {"schema": "cjdb"}
+    __table_args__: ClassVar[dict] = {"schema": "cjdb"}
     parent_id = Column(Integer, ForeignKey(CjObjectModel.id, ondelete="CASCADE"))
     child_id = Column(Integer, ForeignKey(CjObjectModel.id, ondelete="CASCADE"))
 
