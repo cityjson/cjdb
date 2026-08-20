@@ -6,7 +6,10 @@
 mypy.ini
 todo
 venv
+.venv
 *.egg-info
 *.whl
 *.gz
 done
+.coverage
+tests/files/

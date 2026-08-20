@@ -21,7 +21,7 @@ class ExtensionHandler:
             if url:
                 try:
                     resp = requests.get(url, timeout=10)
-                except Exception as e:
+                except requests.exceptions.RequestException as e:
                     logger.error(e)
                     resp = None
 
@@ -39,7 +39,7 @@ class ExtensionHandler:
                         # raise
                         # throw this exception or ignore it?
                         return
-                    if "extraRootProperties" not in ext_definition.keys():
+                    if "extraRootProperties" not in ext_definition:
                         print(ext_definition.keys())
                     else:
                         for prop_name in ext_definition["extraRootProperties"]:

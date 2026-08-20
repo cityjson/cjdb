@@ -1,0 +1,33 @@
+name: Lint
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    name: Ruff lint & format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Ruff check
+        run: uv run ruff check cjdb tests
+
+      - name: Ruff format check
+        run: uv run ruff format --check cjdb tests
+
+      - name: Mypy type check
+        run: uv run mypy cjdb tests

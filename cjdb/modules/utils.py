@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import psycopg2
 from sqlalchemy import create_engine
@@ -8,9 +8,7 @@ from cjdb.resources import object_types
 
 def is_valid_file(filepath: str) -> bool:
     # TODO: this check sounds pretty easy to fulfil
-    if filepath.endswith(".jsonl"):
-        return True
-    return False
+    return bool(filepath.endswith(".jsonl"))
 
 
 def get_db_engine(db_user, db_password, db_host, db_port, db_name, echo=False):
@@ -35,22 +33,19 @@ def get_city_object_types():
     for key, val in types.items():
         type_list.append(key)
         if val:
-            for v in val:
-                type_list.append(v)
+            type_list.extend(val)
 
     return sorted(type_list)
 
 
-def is_cityjson_object(json: Dict[str, Any]) -> bool:
+def is_cityjson_object(json: dict[str, Any]) -> bool:
     """Check if the json is a cityjson object"""
-    if (
+    return bool(
         "version" in json
         and "transform" in json
         and "type" in json
         and json["type"] == "CityJSON"
-    ):
-        return True
-    return False
+    )
 
 
 # find extended properties

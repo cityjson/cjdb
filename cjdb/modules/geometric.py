@@ -1,11 +1,12 @@
 import copy
 from statistics import mean
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, cast
 
 import numpy as np
 from cjio.geom_help import get_normal_newell
 from pyproj import CRS, Transformer
 from shapely import force_2d, is_valid, is_valid_reason
+from shapely.errors import GEOSException
 from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 
@@ -130,8 +131,8 @@ def resolve_geometry_vertices(
 
 
 def get_geometry_with_minimum_lod(
-    geometries: List[Dict[str, Any]]
-) -> Optional[Dict[str, Any]]:
+    geometries: list[dict[str, Any]],
+) -> dict[str, Any] | None:
     """Receives a list of Geometry objects and returns
     the geometry with the minimum LoD."""
     if len(geometries) == 0:
@@ -148,8 +149,8 @@ def get_geometry_with_minimum_lod(
 
 
 def get_flattened_polygons_from_boundaries(
-    boundaries: List, polygons: Optional[List] = None
-) -> List[Union[Polygon, MultiPolygon]]:
+    boundaries: list, polygons: list[Polygon] | None = None
+) -> list[Polygon]:
     if polygons is None:
         polygons = []
     if (
@@ -180,13 +181,10 @@ def is_surface_vertical(normal: np.ndarray) -> bool:
     """
     dot_prd = 0 * normal[0] + 0 * normal[1] + 1 * normal[2]
 
-    if abs(dot_prd) < 0.1:
-        return True
-    else:
-        return False
+    return abs(dot_prd) < 0.1
 
 
-def get_ground_surfaces(polygons: List[Polygon]) -> List[Polygon]:
+def get_ground_surfaces(polygons: list[Polygon]) -> list[Polygon]:
     ground_surfaces = {}
     for polygon in polygons:
         if not is_valid(polygon):
@@ -196,7 +194,7 @@ def get_ground_surfaces(polygons: List[Polygon]) -> List[Polygon]:
             logger.debug(is_valid_reason(polygon))
             continue
         xyz = np.asarray(polygon.exterior.coords)[0:-1]
-        normal, is_coplanar = get_normal_newell(xyz)
+        normal, _is_coplanar = get_normal_newell(xyz)
         if is_surface_vertical(normal):
             continue
         else:
@@ -209,23 +207,25 @@ def get_ground_surfaces(polygons: List[Polygon]) -> List[Polygon]:
 
 
 def merge_into_a_multipolygon(
-    ground_surfaces: List[Union[Polygon, MultiPolygon]]
+    ground_surfaces: list[Polygon],
 ) -> MultiPolygon:
     try:
         polygon = unary_union(force_2d(ground_surfaces))
-    except BaseException as e:
+    except GEOSException:
         logger.warning(
             "Error while merging the ground surfaces into a MultiPolygon. Possibly an"
             " invalid surface. Skipping"
         )
-        raise Exception(e)
+        raise
     if isinstance(polygon, MultiPolygon):
         return polygon
     else:
-        return MultiPolygon([polygon])
+        return MultiPolygon([cast(Polygon, polygon)])
 
 
-def get_ground_geometry(geometries: List[Dict[str, Any]], obj_id: str) -> MultiPolygon:
+def get_ground_geometry(
+    geometries: list[dict[str, Any]], obj_id: str
+) -> MultiPolygon | None:
     """Receives a list of transformed boundary coordinates
     of the city object
     and extracts only the ground surface.
