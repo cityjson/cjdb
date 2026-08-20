@@ -33,8 +33,7 @@ def get_city_object_types():
     for key, val in types.items():
         type_list.append(key)
         if val:
-            for v in val:
-                type_list.append(v)
+            type_list.extend(val)
 
     return sorted(type_list)
 

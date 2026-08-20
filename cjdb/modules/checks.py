@@ -1,3 +1,5 @@
+from urllib.error import URLError
+
 from pyproj import CRS, datadir
 from pyproj.transformer import TransformerGroup
 
@@ -56,7 +58,7 @@ def check_reprojection(source_srid, target_srid):
 
         try:
             group.download_grids(datadir.get_data_dir())
-        except ...:
+        except (URLError, OSError):
             logger.warning("Failed to download the missing grids.")
         else:
             logger.info("Download successful.")

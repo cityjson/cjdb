@@ -145,18 +145,16 @@ class Exporter:
 
     def run_export(self) -> None:
         logger.info("Exporting from schema %s", self.schema)
-        f_out = open(self.output, "w")
+        with open(self.output, "w") as f_out:
+            self.get_data()
 
-        self.get_data()
+            metadata = self.get_metadata()
+            print(metadata, file=f_out)
 
-        metadata = self.get_metadata()
-        print(metadata, file=f_out)
+            features = self.get_features()
+            for feature in features:
+                print(feature, file=f_out)
 
-        features = self.get_features()
-        for feature in features:
-            print(feature, file=f_out)
-
-        f_out.close()
         logger.info("Schema exported in %s", self.output)
 
     def set_min_bbox(self):

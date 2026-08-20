@@ -112,3 +112,17 @@ class NoSchemaSridException(Exception):
                 "If you want the file's SRID to be used as the "
                 "schema SRID remove the --transform flag."
             )
+
+
+class PathNotFoundException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"{self.msg}"
+        else:
+            return "The specified input path does not exist."

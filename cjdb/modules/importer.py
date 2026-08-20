@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from contextlib import ExitStack
 
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import func, text
@@ -151,7 +152,7 @@ class Importer:
             self.process_directory(source_path)
 
         else:
-            raise Exception(f"Path: '{source_path}' not found")
+            raise exceptions.PathNotFoundException(f"Path: '{source_path}' not found")
 
     def post_import(self) -> None:
         """Perform post import operation on the schema,
@@ -437,23 +438,24 @@ class Importer:
         self.current = SingleFileImport(filepath)
         logger.info("Running import for file: %s", filepath)
 
-        if filepath.lower() == "stdin":
-            f = sys.stdin
-        else:
-            if not is_valid_file(filepath):
-                raise exceptions.InvalidFileException()
-            f = open(filepath, "rt")
+        with ExitStack() as stack:
+            if filepath.lower() == "stdin":
+                f = sys.stdin
+            else:
+                if not is_valid_file(filepath):
+                    raise exceptions.InvalidFileException()
+                f = stack.enter_context(open(filepath, "rt"))
 
-        first_line = f.readline()
-        first_line_json = json.loads(first_line.rstrip("\n"))
-        if not is_cityjson_object(first_line_json):
-            raise exceptions.InvalidCityJSONObjectException()
-        metadata_ok = self.extract_cj_metadatadata(first_line_json)
-        if not metadata_ok:
-            return False
-        for line in f:
-            line_json = json.loads(line.rstrip("\n"))
-            self.process_line(line_json)
+            first_line = f.readline()
+            first_line_json = json.loads(first_line.rstrip("\n"))
+            if not is_cityjson_object(first_line_json):
+                raise exceptions.InvalidCityJSONObjectException()
+            metadata_ok = self.extract_cj_metadatadata(first_line_json)
+            if not metadata_ok:
+                return False
+            for line in f:
+                line_json = json.loads(line.rstrip("\n"))
+                self.process_line(line_json)
         if self.current.city_objects:
             logger.debug("Importing city objects")
             obj_insert = (
@@ -522,8 +524,7 @@ class Importer:
 
                 # prepare and run sql command
                 if is_partial:
-                    cmd = cmd_base
-                    +" WHERE attributes->>'{attr_name}' IS NOT NULL"
+                    cmd = cmd_base + " WHERE attributes->>'{attr_name}' IS NOT NULL"
                 else:
                     cmd = cmd_base
 
