@@ -211,7 +211,7 @@ def merge_into_a_multipolygon(
 ) -> MultiPolygon:
     try:
         polygon = unary_union(force_2d(ground_surfaces))
-    except GEOSException as e:
+    except GEOSException:
         logger.warning(
             "Error while merging the ground surfaces into a MultiPolygon. Possibly an"
             " invalid surface. Skipping"
