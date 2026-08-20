@@ -180,10 +180,7 @@ def is_surface_vertical(normal: np.ndarray) -> bool:
     """
     dot_prd = 0 * normal[0] + 0 * normal[1] + 1 * normal[2]
 
-    if abs(dot_prd) < 0.1:
-        return True
-    else:
-        return False
+    return abs(dot_prd) < 0.1
 
 
 def get_ground_surfaces(polygons: list[Polygon]) -> list[Polygon]:
@@ -196,7 +193,7 @@ def get_ground_surfaces(polygons: list[Polygon]) -> list[Polygon]:
             logger.debug(is_valid_reason(polygon))
             continue
         xyz = np.asarray(polygon.exterior.coords)[0:-1]
-        normal, is_coplanar = get_normal_newell(xyz)
+        normal, _is_coplanar = get_normal_newell(xyz)
         if is_surface_vertical(normal):
             continue
         else:

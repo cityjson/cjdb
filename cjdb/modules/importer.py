@@ -71,7 +71,7 @@ class Importer:
         self.ignore_repeated_file = ignore_repeated_file
         self.overwrite = overwrite
         self.max_id = 0
-        self.processed = dict()
+        self.processed = {}
         self.transform = transform
         self.clustering = clustering
 
@@ -100,7 +100,7 @@ class Importer:
             self.session.rollback()
         except Exception as e:
             logger.error("An error occurred during import: %s", e)
-            raise e
+            raise
         finally:
             logger.info("Post import operations...")
             # post import operations like indexing and clustering...

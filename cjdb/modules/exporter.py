@@ -161,7 +161,7 @@ class Exporter:
 
     def set_min_bbox(self):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
-        for object_id, members in self.data.items():
+        for members in self.data.values():
             if members["geometry"] is not None:
                 for g in members["geometry"]:
                     if g["type"] == "Solid":

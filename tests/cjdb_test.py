@@ -34,18 +34,21 @@ def engine_postgresql(postgresql_proc):
 
 
 def test_single_import_missing_srid(engine_postgresql):
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/vienna.jsonl",
-        db_schema="vienna",
-        input_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        overwrite=False,
-        transform=False,
-        clustering=False,
-    ) as importer, pytest.raises(MissingCRSException):
+    with (
+        Importer(
+            engine=engine_postgresql,
+            filepath="./tests/files/vienna.jsonl",
+            db_schema="vienna",
+            input_srid=None,
+            indexed_attributes=[],
+            partial_indexed_attributes=[],
+            ignore_repeated_file=False,
+            overwrite=False,
+            transform=False,
+            clustering=False,
+        ) as importer,
+        pytest.raises(MissingCRSException),
+    ):
         importer.run_import()
 
 
@@ -235,18 +238,21 @@ def test_export_all(engine_postgresql):
 
 def test_srid_flag_different_from_existing_schema(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/vienna.jsonl",
-        db_schema="vienna",
-        input_srid=28992,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        overwrite=False,
-        transform=False,
-        clustering=False,
-    ) as importer, pytest.raises(InconsistentCRSException):
+    with (
+        Importer(
+            engine=engine_postgresql,
+            filepath="./tests/files/vienna.jsonl",
+            db_schema="vienna",
+            input_srid=28992,
+            indexed_attributes=[],
+            partial_indexed_attributes=[],
+            ignore_repeated_file=False,
+            overwrite=False,
+            transform=False,
+            clustering=False,
+        ) as importer,
+        pytest.raises(InconsistentCRSException),
+    ):
         importer.run_import()
 
 
@@ -289,18 +295,21 @@ def test_transform_flag_to_new_schema(engine_postgresql, monkeypatch):
     engine_postgresql.update_execution_options(
         schema_translate_map={"vienna": "new_schema"}
     )
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/vienna.jsonl",
-        db_schema="new_schema",
-        input_srid=4326,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        overwrite=False,
-        transform=True,
-        clustering=False,
-    ) as importer, pytest.raises(NoSchemaSridException):
+    with (
+        Importer(
+            engine=engine_postgresql,
+            filepath="./tests/files/vienna.jsonl",
+            db_schema="new_schema",
+            input_srid=4326,
+            indexed_attributes=[],
+            partial_indexed_attributes=[],
+            ignore_repeated_file=False,
+            overwrite=False,
+            transform=True,
+            clustering=False,
+        ) as importer,
+        pytest.raises(NoSchemaSridException),
+    ):
         importer.run_import()
 
 
@@ -372,18 +381,21 @@ def test_single_import_with_extensions(engine_postgresql, monkeypatch):
 def test_single_import_without_metadata(engine_postgresql, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/no_metadata.city.jsonl",
-        db_schema="cjdb",
-        input_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        overwrite=False,
-        transform=False,
-        clustering=False,
-    ) as importer, pytest.raises(InvalidMetadataException):
+    with (
+        Importer(
+            engine=engine_postgresql,
+            filepath="./tests/files/no_metadata.city.jsonl",
+            db_schema="cjdb",
+            input_srid=None,
+            indexed_attributes=[],
+            partial_indexed_attributes=[],
+            ignore_repeated_file=False,
+            overwrite=False,
+            transform=False,
+            clustering=False,
+        ) as importer,
+        pytest.raises(InvalidMetadataException),
+    ):
         importer.run_import()
 
 
@@ -392,18 +404,21 @@ def test_single_import_without_cityjson_obj_in_first_line(
 ):
     monkeypatch.setattr("sys.stdin", io.StringIO("y"))
     engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
-    with Importer(
-        engine=engine_postgresql,
-        filepath="./tests/files/no_cityjson_obj.city.jsonl",
-        db_schema="cjdb",
-        input_srid=None,
-        indexed_attributes=[],
-        partial_indexed_attributes=[],
-        ignore_repeated_file=False,
-        overwrite=False,
-        transform=False,
-        clustering=False,
-    ) as importer, pytest.raises(InvalidCityJSONObjectException):
+    with (
+        Importer(
+            engine=engine_postgresql,
+            filepath="./tests/files/no_cityjson_obj.city.jsonl",
+            db_schema="cjdb",
+            input_srid=None,
+            indexed_attributes=[],
+            partial_indexed_attributes=[],
+            ignore_repeated_file=False,
+            overwrite=False,
+            transform=False,
+            clustering=False,
+        ) as importer,
+        pytest.raises(InvalidCityJSONObjectException),
+    ):
         importer.run_import()
 
 

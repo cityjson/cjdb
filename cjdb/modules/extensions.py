@@ -39,7 +39,7 @@ class ExtensionHandler:
                         # raise
                         # throw this exception or ignore it?
                         return
-                    if "extraRootProperties" not in ext_definition.keys():
+                    if "extraRootProperties" not in ext_definition:
                         print(ext_definition.keys())
                     else:
                         for prop_name in ext_definition["extraRootProperties"]:
