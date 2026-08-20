@@ -12,4 +12,6 @@ venv
 *.gz
 done
 .coverage
-tests/files/
+.mypy_cache
+.pytest_cache
+.ruff_cache

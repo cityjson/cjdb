@@ -17,6 +17,38 @@ for soon-to-be removed features.
 
 `Security` in case of vulnerabilities.
 
+## [2.3.0] - 2026-08-20
+
+`Added`
+- Clear error message when a CityJSON object's resolved geometry exceeds the
+  PostgreSQL jsonb size limit (~256 MB), instead of the cryptic database error
+  (issue #39)
+- GitHub Actions CI: linting (ruff + mypy) and testing (PostgreSQL/PostGIS)
+  workflows
+- Additional unit and integration tests (jsonb size estimation, metadata/CRS
+  handling, grid-download error handling, missing input path)
+- Coverage reporting with pytest-cov
+
+`Changed`
+- Switched dependency management and build tooling from Poetry to `uv`
+  (`uv.lock`, hatchling build backend)
+- Docker image now based on `python:3.11-slim-bookworm` and built with `uv`
+- Replaced Black/isort/flake8 with Ruff
+- Files without a `metadata` member no longer abort the import: it proceeds,
+  and a `MissingCRSException` is raised only when the CRS cannot be determined
+  (no metadata and no `-I/--srid` flag) (issue #47)
+- Removed `InvalidMetadataException`
+- Minimum supported Python version raised to 3.10
+
+`Fixed`
+- Partial attribute indexes: the `WHERE attributes->>'...' IS NOT NULL`
+  condition was previously never included in the index definition
+- Overly broad exception handlers narrowed (`except Exception`,
+  `except ...`, `except BaseException`)
+- The exporter now always closes its output file (context manager)
+- Re-raised exceptions preserve the original traceback
+- urllib3 updated to 2.7.0 to address vulnerabilities
+
 ## [2.2.0] - 2025-02-12
 `Added`
 Flag --clustering to make clustering optional 

@@ -1,6 +1,6 @@
 [project]
 name = "cjdb"
-version = "2.2.0"
+version = "2.3.0"
 description = "CJDB is a tool that enables CityJSON integration with a PostgreSQL database"
 authors = [
     { name = "Cynthia Cai" },
