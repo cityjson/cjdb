@@ -1,14 +1,22 @@
+from unittest import mock
+from urllib.error import URLError
+
 import pytest
+import requests
 from pytest import approx
 from shapely.geometry import MultiPolygon, Polygon
 
-from cjdb.modules.exceptions import InvalidLodException
+from cjdb.modules.checks import check_reprojection
+from cjdb.modules.exceptions import InvalidLodException, PathNotFoundException
+from cjdb.modules.extensions import ExtensionHandler
 from cjdb.modules.geometric import (
     get_flattened_polygons_from_boundaries,
     get_geometry_with_minimum_lod,
     get_ground_geometry,
     get_ground_surfaces,
 )
+from cjdb.modules.importer import Importer
+from cjdb.modules.utils import get_city_object_types
 
 boundary_multipoint_single_point = [[121483.808, 484844.936, 0.0]]
 boundary_multipoint_many_points = [
@@ -146,3 +154,101 @@ def test_get_ground_surfaces():
     surfaces = get_flattened_polygons_from_boundaries(boundary_solid)
     ground_surfaces = get_ground_surfaces(surfaces)
     assert ground_surfaces[0] == Polygon(((0, 1), (1, 1), (1, 0), (0, 0), (0, 1)))
+
+
+def test_get_city_object_types():
+    types = get_city_object_types()
+    assert "Building" in types
+    assert "BuildingPart" in types
+    assert "Bridge" in types
+    assert "BridgePart" in types
+    assert types == sorted(types)
+
+
+def _mock_transformer_group(best_available=True, download_side_effect=None):
+    group = mock.Mock()
+    group.best_available = best_available
+    group.download_grids = mock.Mock(side_effect=download_side_effect)
+    return group
+
+
+def _patch_transformer_group(group):
+    crs = mock.MagicMock()
+    crs.from_epsg.return_value.axis_info = [mock.Mock(), mock.Mock(), mock.Mock()]
+    return (
+        mock.patch("cjdb.modules.checks.TransformerGroup", return_value=group),
+        mock.patch("cjdb.modules.checks.CRS", crs),
+        mock.patch("cjdb.modules.checks.datadir"),
+    )
+
+
+def test_check_reprojection_download_grids_urlerror():
+    group = _mock_transformer_group(
+        best_available=False, download_side_effect=URLError("no network")
+    )
+    patches = _patch_transformer_group(group)
+    with patches[0], patches[1], patches[2]:
+        check_reprojection(4326, 28992)
+    assert group.download_grids.called
+
+
+def test_check_reprojection_download_grids_oserror():
+    group = _mock_transformer_group(
+        best_available=False, download_side_effect=OSError("permission denied")
+    )
+    patches = _patch_transformer_group(group)
+    with patches[0], patches[1], patches[2]:
+        check_reprojection(4326, 28992)
+    assert group.download_grids.called
+
+
+def test_check_reprojection_download_grids_success():
+    group = _mock_transformer_group(best_available=False)
+    patches = _patch_transformer_group(group)
+    with patches[0], patches[1], patches[2]:
+        check_reprojection(4326, 28992)
+    assert group.download_grids.called
+
+
+def test_check_reprojection_best_available_skips_download():
+    group = _mock_transformer_group(best_available=True)
+    patches = _patch_transformer_group(group)
+    with patches[0], patches[1], patches[2]:
+        check_reprojection(4326, 28992)
+    assert not group.download_grids.called
+
+
+def test_check_reprojection_unexpected_error_propagates():
+    group = _mock_transformer_group(
+        best_available=False, download_side_effect=ValueError("boom")
+    )
+    patches = _patch_transformer_group(group)
+    with patches[0], patches[1], patches[2], pytest.raises(ValueError):
+        check_reprojection(4326, 28992)
+
+
+def test_extension_handler_request_exception_is_handled():
+    with mock.patch(
+        "cjdb.modules.extensions.requests.get",
+        side_effect=requests.exceptions.ConnectionError("connection failed"),
+    ):
+        handler = ExtensionHandler({"ext": {"url": "http://example.com/ext.json"}})
+    assert handler.full_definitions == {}
+    assert handler.extra_root_properties == []
+
+
+def test_parse_cityjson_path_not_found():
+    importer = Importer(
+        engine=None,
+        filepath="/nonexistent/path/does/not/exist.jsonl",
+        db_schema="test",
+        input_srid=None,
+        indexed_attributes=[],
+        partial_indexed_attributes=[],
+        ignore_repeated_file=False,
+        overwrite=False,
+        transform=False,
+        clustering=False,
+    )
+    with pytest.raises(PathNotFoundException):
+        importer.parse_cityjson()
