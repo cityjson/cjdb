@@ -5,11 +5,13 @@ from pytest_postgresql.janitor import DatabaseJanitor
 from sqlalchemy import MetaData, Table, create_engine, inspect, select
 from sqlalchemy.orm import Session
 
-from cjdb.modules.exceptions import (InconsistentCRSException,
-                                     InvalidCityJSONObjectException,
-                                     InvalidMetadataException,
-                                     MissingCRSException,
-                                     NoSchemaSridException)
+from cjdb.modules.exceptions import (
+    InconsistentCRSException,
+    InvalidCityJSONObjectException,
+    InvalidMetadataException,
+    MissingCRSException,
+    NoSchemaSridException,
+)
 from cjdb.modules.exporter import Exporter
 from cjdb.modules.importer import Importer
 
@@ -43,9 +45,8 @@ def test_single_import_missing_srid(engine_postgresql):
         overwrite=False,
         transform=False,
         clustering=False,
-    ) as importer:
-        with pytest.raises(MissingCRSException):
-            importer.run_import()
+    ) as importer, pytest.raises(MissingCRSException):
+        importer.run_import()
 
 
 def test_single_import_with_srid_flag(engine_postgresql):
@@ -245,9 +246,8 @@ def test_srid_flag_different_from_existing_schema(engine_postgresql, monkeypatch
         overwrite=False,
         transform=False,
         clustering=False,
-    ) as importer:
-        with pytest.raises(InconsistentCRSException):
-            importer.run_import()
+    ) as importer, pytest.raises(InconsistentCRSException):
+        importer.run_import()
 
 
 def test_transform_flag_with_same_SRID_than_schema(engine_postgresql, monkeypatch):
@@ -300,9 +300,8 @@ def test_transform_flag_to_new_schema(engine_postgresql, monkeypatch):
         overwrite=False,
         transform=True,
         clustering=False,
-    ) as importer:
-        with pytest.raises(NoSchemaSridException):
-            importer.run_import()
+    ) as importer, pytest.raises(NoSchemaSridException):
+        importer.run_import()
 
 
 def test_export_one(engine_postgresql):
@@ -384,9 +383,8 @@ def test_single_import_without_metadata(engine_postgresql, monkeypatch):
         overwrite=False,
         transform=False,
         clustering=False,
-    ) as importer:
-        with pytest.raises(InvalidMetadataException):
-            importer.run_import()
+    ) as importer, pytest.raises(InvalidMetadataException):
+        importer.run_import()
 
 
 def test_single_import_without_cityjson_obj_in_first_line(
@@ -405,9 +403,8 @@ def test_single_import_without_cityjson_obj_in_first_line(
         overwrite=False,
         transform=False,
         clustering=False,
-    ) as importer:
-        with pytest.raises(InvalidCityJSONObjectException):
-            importer.run_import()
+    ) as importer, pytest.raises(InvalidCityJSONObjectException):
+        importer.run_import()
 
 
 def test_single_import_with_geometry_template(engine_postgresql, monkeypatch):

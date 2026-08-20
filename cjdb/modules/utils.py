@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import psycopg2
 from sqlalchemy import create_engine
@@ -41,7 +41,7 @@ def get_city_object_types():
     return sorted(type_list)
 
 
-def is_cityjson_object(json: Dict[str, Any]) -> bool:
+def is_cityjson_object(json: dict[str, Any]) -> bool:
     """Check if the json is a cityjson object"""
     if (
         "version" in json

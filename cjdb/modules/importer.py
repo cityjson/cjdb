@@ -1,27 +1,36 @@
 import json
 import os
 import sys
-from pathlib import Path
-from typing import Optional, Tuple
 
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-import cjdb.modules.exceptions as exceptions
 from cjdb.logger import logger
-from cjdb.model.sqlalchemy_models import (BaseModel,
-                                          CityObjectRelationshipModel,
-                                          CjMetadataModel, CjObjectModel)
+from cjdb.model.sqlalchemy_models import (
+    BaseModel,
+    CityObjectRelationshipModel,
+    CjMetadataModel,
+    CjObjectModel,
+)
+from cjdb.modules import exceptions
 from cjdb.modules.checks import check_object_type, check_root_properties
 from cjdb.modules.extensions import ExtensionHandler
-from cjdb.modules.geometric import (get_ground_geometry, get_srid,
-                                    reproject_vertex_list,
-                                    resolve_geometry_vertices,
-                                    transform_vertex)
-from cjdb.modules.utils import (find_extra_properties, get_city_object_types,
-                                is_cityjson_object, is_valid_file, to_dict)
+from cjdb.modules.geometric import (
+    get_ground_geometry,
+    get_srid,
+    reproject_vertex_list,
+    resolve_geometry_vertices,
+    transform_vertex,
+)
+from cjdb.modules.utils import (
+    find_extra_properties,
+    get_city_object_types,
+    is_cityjson_object,
+    is_valid_file,
+    to_dict,
+)
 
 
 # class to store variables per file import - for clarity
@@ -103,8 +112,10 @@ class Importer:
         the schema and the tables."""
         with self.engine.connect() as conn:
             conn.execute(text("""CREATE EXTENSION IF NOT EXISTS postgis"""))
-            conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
-                                  {self.db_schema}"""))
+            conn.execute(
+                text(f"""CREATE SCHEMA IF NOT EXISTS
+                                  {self.db_schema}""")
+            )
             conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
@@ -116,7 +127,8 @@ class Importer:
     def create_indexes(self) -> None:
         """Create indexes on the tables."""
         with self.engine.connect() as conn:
-            conn.execute(text(f"""
+            conn.execute(
+                text(f"""
                 CREATE INDEX IF NOT EXISTS cj_metadata_gix ON {self.db_schema}.cj_metadata USING gist(bbox);
                 CREATE INDEX IF NOT EXISTS cj_metadata_source_file_idx ON {self.db_schema}.cj_metadata USING hash(source_file);
                 CREATE INDEX IF NOT EXISTS city_object_type_idx ON {self.db_schema}.city_object USING btree("type");
@@ -124,7 +136,8 @@ class Importer:
                 CREATE INDEX IF NOT EXISTS lod ON {self.db_schema}.city_object USING gin (geometry);
                 CREATE INDEX IF NOT EXISTS city_object_relationships_parent_idx ON {self.db_schema}.city_object_relationships USING btree(parent_id);
                 CREATE INDEX IF NOT EXISTS city_object_relationships_child_idx ON {self.db_schema}.city_object_relationships USING btree(child_id);
-            """))
+            """)
+            )
             conn.commit()
 
     def parse_cityjson(self) -> None:
@@ -154,10 +167,12 @@ class Importer:
         """Cluster tables to improve query performance."""
         logger.info("Clustering tables, this will take some time...")
         with self.engine.connect() as conn:
-            conn.execute(text(f"""
+            conn.execute(
+                text(f"""
                 CLUSTER VERBOSE {self.db_schema}.cj_metadata USING cj_metadata_gix;
                 CLUSTER VERBOSE {self.db_schema}.city_object USING city_object_ground_gix;
-            """))
+            """)
+            )
 
     def set_target_srid(self) -> None:
         """
@@ -436,7 +451,7 @@ class Importer:
         metadata_ok = self.extract_cj_metadatadata(first_line_json)
         if not metadata_ok:
             return False
-        for line in f.readlines():
+        for line in f:
             line_json = json.loads(line.rstrip("\n"))
             self.process_line(line_json)
         if self.current.city_objects:
@@ -490,7 +505,7 @@ class Importer:
         )
 
         # prepare partial and non partial indexes in one list
-        attributes = [(a, True) for a in self.partial_indexed_attributes] + [  # noqa
+        attributes = [(a, True) for a in self.partial_indexed_attributes] + [
             (a, False) for a in self.indexed_attributes
         ]
 
@@ -523,12 +538,12 @@ class Importer:
 
             else:
                 logger.warning(
-                    f"Specified attribute to be indexed: '{attr_name}' does not exist"  # noqa
+                    f"Specified attribute to be indexed: '{attr_name}' does not exist"
                 )
 
     def get_geometries(
         self, obj_id, cityobj, vertices, source_target_srid
-    ) -> Tuple[Optional[BaseGeometry], Optional[BaseGeometry]]:
+    ) -> tuple[BaseGeometry | None, BaseGeometry | None]:
         if "geometry" not in cityobj:
             return None, None
 

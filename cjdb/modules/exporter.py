@@ -1,9 +1,6 @@
 import copy
-import io
 import json
-import shutil
 import sys
-from typing import Dict
 
 from psycopg2 import sql
 from psycopg2.extras import DictCursor
@@ -33,7 +30,7 @@ class Exporter:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
-    def get_city_objects_and_relationships(self) -> Dict:
+    def get_city_objects_and_relationships(self) -> dict:
         sql_query = f"""
             WITH only_parents AS (
                 SELECT cjo.id, cjo.object_id
@@ -69,7 +66,7 @@ class Exporter:
                 self.city_objects.update(r["children"])
             self.relationships[r["id"]] = r["children"]
 
-    def get_metadata(self) -> Dict:
+    def get_metadata(self) -> dict:
         # first line of the CityJSONL stream with some metadata
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute(
@@ -104,7 +101,7 @@ class Exporter:
         else:
             metadata["metadata"]["referenceSystem"] = (
                 "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])
-            )  # noqa
+            )
 
         # TODO: add geometry-template from all imported files or select only
         #       the ones relevant?
@@ -125,8 +122,11 @@ class Exporter:
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             sql = f"""SELECT * FROM {self.schema}.city_object co"""
             if self.city_objects:
-                sql = sql + f""" WHERE co.id IN
-                     ({ str(self.city_objects).strip('{').strip('}')});"""
+                sql = (
+                    sql
+                    + f""" WHERE co.id IN
+                     ({str(self.city_objects).strip("{").strip("}")});"""
+                )
 
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -170,15 +170,13 @@ class Exporter:
                                 for ring in surface:
                                     for vertex in ring:
                                         for i in range(3):
-                                            if vertex[i] < bboxmin[i]:
-                                                bboxmin[i] = vertex[i]
+                                            bboxmin[i] = min(bboxmin[i], vertex[i])
                     elif g["type"] == "MultiSurface" or g["type"] == "CompositeSurface":
                         for surface in g["boundaries"]:
                             for ring in surface:
                                 for vertex in ring:
                                     for i in range(3):
-                                        if vertex[i] < bboxmin[i]:
-                                            bboxmin[i] = vertex[i]
+                                        bboxmin[i] = min(bboxmin[i], vertex[i])
                     else:
                         # TODO: implement for MultiSolid
                         logger.warning("GEOMETRY NOT SUPPORTED YET")
@@ -196,7 +194,7 @@ class Exporter:
         newids = [-1] * len(j["vertices"])
         newvertices = []
         for i, v in enumerate(j["vertices"]):
-            s = "{x} {y} {z}".format(x=v[0], y=v[1], z=v[2])
+            s = f"{v[0]} {v[1]} {v[2]}"
             if s not in h:
                 newid = len(h)
                 newids[i] = newid
@@ -286,7 +284,7 @@ def remove_duplicate_vertices(j):
     newids = [-1] * len(j["vertices"])
     newvertices = []
     for i, v in enumerate(j["vertices"]):
-        s = "{x} {y} {z}".format(x=v[0], y=v[1], z=v[2])
+        s = f"{v[0]} {v[1]} {v[2]}"
         if s not in h:
             newid = len(h)
             newids[i] = newid

@@ -1,6 +1,6 @@
 import copy
 from statistics import mean
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 from cjio.geom_help import get_normal_newell
@@ -130,8 +130,8 @@ def resolve_geometry_vertices(
 
 
 def get_geometry_with_minimum_lod(
-    geometries: List[Dict[str, Any]]
-) -> Optional[Dict[str, Any]]:
+    geometries: list[dict[str, Any]],
+) -> dict[str, Any] | None:
     """Receives a list of Geometry objects and returns
     the geometry with the minimum LoD."""
     if len(geometries) == 0:
@@ -148,8 +148,8 @@ def get_geometry_with_minimum_lod(
 
 
 def get_flattened_polygons_from_boundaries(
-    boundaries: List, polygons: Optional[List] = None
-) -> List[Union[Polygon, MultiPolygon]]:
+    boundaries: list, polygons: list | None = None
+) -> list[Polygon | MultiPolygon]:
     if polygons is None:
         polygons = []
     if (
@@ -186,7 +186,7 @@ def is_surface_vertical(normal: np.ndarray) -> bool:
         return False
 
 
-def get_ground_surfaces(polygons: List[Polygon]) -> List[Polygon]:
+def get_ground_surfaces(polygons: list[Polygon]) -> list[Polygon]:
     ground_surfaces = {}
     for polygon in polygons:
         if not is_valid(polygon):
@@ -209,7 +209,7 @@ def get_ground_surfaces(polygons: List[Polygon]) -> List[Polygon]:
 
 
 def merge_into_a_multipolygon(
-    ground_surfaces: List[Union[Polygon, MultiPolygon]]
+    ground_surfaces: list[Polygon | MultiPolygon],
 ) -> MultiPolygon:
     try:
         polygon = unary_union(force_2d(ground_surfaces))
@@ -225,7 +225,7 @@ def merge_into_a_multipolygon(
         return MultiPolygon([polygon])
 
 
-def get_ground_geometry(geometries: List[Dict[str, Any]], obj_id: str) -> MultiPolygon:
+def get_ground_geometry(geometries: list[dict[str, Any]], obj_id: str) -> MultiPolygon:
     """Receives a list of transformed boundary coordinates
     of the city object
     and extracts only the ground surface.

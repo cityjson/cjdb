@@ -1,6 +1,5 @@
 from geoalchemy2 import Geometry
-from sqlalchemy import (Column, ForeignKey, Integer, String, UniqueConstraint,
-                        func)
+from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import declarative_base, relationship
 
