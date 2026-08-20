@@ -28,3 +28,6 @@ jobs:
 
       - name: Ruff format check
         run: uv run ruff format --check cjdb tests
+
+      - name: Mypy type check
+        run: uv run mypy cjdb tests
