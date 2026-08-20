@@ -11,3 +11,5 @@ venv
 *.whl
 *.gz
 done
+.coverage
+tests/files/
