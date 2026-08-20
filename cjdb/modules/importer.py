@@ -235,7 +235,9 @@ class Importer:
 
     def extract_cj_metadatadata(self, line_json):
         if "metadata" not in line_json:
-            logger.warning("File does not contain metadata. Skipping metadata extraction.")
+            logger.warning(
+                "File does not contain metadata. Skipping metadata extraction."
+            )
             return False
         extra_root_properties = find_extra_properties(line_json)
 
