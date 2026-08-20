@@ -6,6 +6,7 @@ import numpy as np
 from cjio.geom_help import get_normal_newell
 from pyproj import CRS, Transformer
 from shapely import force_2d, is_valid, is_valid_reason
+from shapely.errors import GEOSException
 from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 
@@ -210,12 +211,12 @@ def merge_into_a_multipolygon(
 ) -> MultiPolygon:
     try:
         polygon = unary_union(force_2d(ground_surfaces))
-    except BaseException as e:
+    except GEOSException as e:
         logger.warning(
             "Error while merging the ground surfaces into a MultiPolygon. Possibly an"
             " invalid surface. Skipping"
         )
-        raise Exception(e)
+        raise
     if isinstance(polygon, MultiPolygon):
         return polygon
     else:

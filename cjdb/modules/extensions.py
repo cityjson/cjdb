@@ -21,7 +21,7 @@ class ExtensionHandler:
             if url:
                 try:
                     resp = requests.get(url, timeout=10)
-                except Exception as e:
+                except requests.exceptions.RequestException as e:
                     logger.error(e)
                     resp = None
 
