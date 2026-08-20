@@ -235,10 +235,8 @@ class Importer:
 
     def extract_cj_metadatadata(self, line_json):
         if "metadata" not in line_json:
-            raise exceptions.InvalidMetadataException(
-                "The file should contain a member'metadata', in the first object"
-            )
-
+            logger.warning("File does not contain metadata. Skipping metadata extraction.")
+            return False
         extra_root_properties = find_extra_properties(line_json)
 
         self.set_source_srid(line_json)
@@ -451,6 +449,11 @@ class Importer:
             first_line_json = json.loads(first_line.rstrip("\n"))
             if not is_cityjson_object(first_line_json):
                 raise exceptions.InvalidCityJSONObjectException()
+
+            if "metadata" not in first_line_json and self.input_srid is None:
+                raise exceptions.MissingCRSException(
+                    "The file doesn't contain a member 'metadata', in the first object. This means that no reference system is defined."
+                )
             metadata_ok = self.extract_cj_metadatadata(first_line_json)
             if not metadata_ok:
                 return False

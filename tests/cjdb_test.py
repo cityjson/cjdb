@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from cjdb.modules.exceptions import (
     InconsistentCRSException,
     InvalidCityJSONObjectException,
-    InvalidMetadataException,
     MissingCRSException,
     NoSchemaSridException,
 )
@@ -394,8 +393,25 @@ def test_single_import_without_metadata(engine_postgresql, monkeypatch):
             transform=False,
             clustering=False,
         ) as importer,
-        pytest.raises(InvalidMetadataException),
+        pytest.raises(MissingCRSException),
     ):
+        importer.run_import()
+
+def test_single_import_without_metadata_but_with_input_srid(engine_postgresql, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y"))
+    engine_postgresql.update_execution_options(schema_translate_map={"vienna": "cjdb"})
+    with Importer(
+            engine=engine_postgresql,
+            filepath="./tests/files/no_metadata.city.jsonl",
+            db_schema="cjdb",
+            input_srid=28992,
+            indexed_attributes=[],
+            partial_indexed_attributes=[],
+            ignore_repeated_file=False,
+            overwrite=False,
+            transform=False,
+            clustering=False,
+        ) as importer:
         importer.run_import()
 
 

@@ -1,17 +1,3 @@
-class InvalidMetadataException(Exception):
-    def __init__(self, *args):
-        if args:
-            self.msg = args[0]
-        else:
-            self.msg = None
-
-    def __str__(self):
-        if self.msg:
-            return f"{self.msg}"
-        else:
-            return """The CityJSON object has invalid 'metadata'."""
-
-
 class InvalidCityJSONObjectException(Exception):
     def __init__(self, *args):
         if args:
