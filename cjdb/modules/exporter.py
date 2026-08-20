@@ -1,9 +1,7 @@
 import copy
-import io
 import json
-import shutil
 import sys
-from typing import Dict
+from typing import Any
 
 from psycopg2 import sql
 from psycopg2.extras import DictCursor
@@ -33,7 +31,7 @@ class Exporter:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
-    def get_city_objects_and_relationships(self) -> Dict:
+    def get_city_objects_and_relationships(self) -> None:
         sql_query = f"""
             WITH only_parents AS (
                 SELECT cjo.id, cjo.object_id
@@ -69,7 +67,7 @@ class Exporter:
                 self.city_objects.update(r["children"])
             self.relationships[r["id"]] = r["children"]
 
-    def get_metadata(self) -> Dict:
+    def get_metadata(self) -> str:
         # first line of the CityJSONL stream with some metadata
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute(
@@ -79,7 +77,7 @@ class Exporter:
             )
             meta1 = cursor.fetchone()
         logger.info("Done")
-        metadata = {}
+        metadata: dict[str, Any] = {}
         metadata["type"] = "CityJSON"
         metadata["version"] = meta1[1]
         metadata["CityObjects"] = {}
@@ -104,7 +102,7 @@ class Exporter:
         else:
             metadata["metadata"]["referenceSystem"] = (
                 "https://www.opengis.net/def/crs/EPSG/0/" + str(meta1["srid"])
-            )  # noqa
+            )
 
         # TODO: add geometry-template from all imported files or select only
         #       the ones relevant?
@@ -117,16 +115,18 @@ class Exporter:
 
         # fetch in memory *all* we need, won't work for super large datasets
         metadata["transform"]["translate"] = self.bboxmin
-        metadata = json.dumps(metadata, separators=(",", ":"))
-        return metadata
+        return json.dumps(metadata, separators=(",", ":"))
 
     def get_data(self):
         self.get_city_objects_and_relationships()
         with self.connection.cursor(cursor_factory=DictCursor) as cursor:
             sql = f"""SELECT * FROM {self.schema}.city_object co"""
             if self.city_objects:
-                sql = sql + f""" WHERE co.id IN
-                     ({ str(self.city_objects).strip('{').strip('}')});"""
+                sql = (
+                    sql
+                    + f""" WHERE co.id IN
+                     ({str(self.city_objects).strip("{").strip("}")});"""
+                )
 
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -145,23 +145,21 @@ class Exporter:
 
     def run_export(self) -> None:
         logger.info("Exporting from schema %s", self.schema)
-        f_out = open(self.output, "w")
+        with open(self.output, "w") as f_out:
+            self.get_data()
 
-        self.get_data()
+            metadata = self.get_metadata()
+            print(metadata, file=f_out)
 
-        metadata = self.get_metadata()
-        print(metadata, file=f_out)
+            features = self.get_features()
+            for feature in features:
+                print(feature, file=f_out)
 
-        features = self.get_features()
-        for feature in features:
-            print(feature, file=f_out)
-
-        f_out.close()
         logger.info("Schema exported in %s", self.output)
 
     def set_min_bbox(self):
         bboxmin = [sys.float_info.max, sys.float_info.max, sys.float_info.max]
-        for object_id, members in self.data.items():
+        for members in self.data.values():
             if members["geometry"] is not None:
                 for g in members["geometry"]:
                     if g["type"] == "Solid":
@@ -170,15 +168,13 @@ class Exporter:
                                 for ring in surface:
                                     for vertex in ring:
                                         for i in range(3):
-                                            if vertex[i] < bboxmin[i]:
-                                                bboxmin[i] = vertex[i]
+                                            bboxmin[i] = min(bboxmin[i], vertex[i])
                     elif g["type"] == "MultiSurface" or g["type"] == "CompositeSurface":
                         for surface in g["boundaries"]:
                             for ring in surface:
                                 for vertex in ring:
                                     for i in range(3):
-                                        if vertex[i] < bboxmin[i]:
-                                            bboxmin[i] = vertex[i]
+                                        bboxmin[i] = min(bboxmin[i], vertex[i])
                     else:
                         # TODO: implement for MultiSolid
                         logger.warning("GEOMETRY NOT SUPPORTED YET")
@@ -196,7 +192,7 @@ class Exporter:
         newids = [-1] * len(j["vertices"])
         newvertices = []
         for i, v in enumerate(j["vertices"]):
-            s = "{x} {y} {z}".format(x=v[0], y=v[1], z=v[2])
+            s = f"{v[0]} {v[1]} {v[2]}"
             if s not in h:
                 newid = len(h)
                 newids[i] = newid
@@ -286,7 +282,7 @@ def remove_duplicate_vertices(j):
     newids = [-1] * len(j["vertices"])
     newvertices = []
     for i, v in enumerate(j["vertices"]):
-        s = "{x} {y} {z}".format(x=v[0], y=v[1], z=v[2])
+        s = f"{v[0]} {v[1]} {v[2]}"
         if s not in h:
             newid = len(h)
             newids[i] = newid

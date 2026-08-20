@@ -1,17 +1,3 @@
-class InvalidMetadataException(Exception):
-    def __init__(self, *args):
-        if args:
-            self.msg = args[0]
-        else:
-            self.msg = None
-
-    def __str__(self):
-        if self.msg:
-            return f"{self.msg}"
-        else:
-            return """The CityJSON object has invalid 'metadata'."""
-
-
 class InvalidCityJSONObjectException(Exception):
     def __init__(self, *args):
         if args:
@@ -111,4 +97,36 @@ class NoSchemaSridException(Exception):
                 "Therefore no transformation is possible. "
                 "If you want the file's SRID to be used as the "
                 "schema SRID remove the --transform flag."
+            )
+
+
+class PathNotFoundException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"{self.msg}"
+        else:
+            return "The specified input path does not exist."
+
+
+class GeometryTooLargeException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.msg = args[0]
+        else:
+            self.msg = None
+
+    def __str__(self):
+        if self.msg:
+            return f"{self.msg}"
+        else:
+            return (
+                "The geometry of a CityJSON object is too large to be stored "
+                "in a single PostgreSQL jsonb column (limit ~256 MB). "
+                "Simplify or split the geometry in the source file."
             )

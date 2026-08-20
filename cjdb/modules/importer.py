@@ -1,27 +1,40 @@
 import json
 import os
 import sys
-from pathlib import Path
-from typing import Optional, Tuple
+from contextlib import ExitStack
+from typing import Any
 
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-import cjdb.modules.exceptions as exceptions
 from cjdb.logger import logger
-from cjdb.model.sqlalchemy_models import (BaseModel,
-                                          CityObjectRelationshipModel,
-                                          CjMetadataModel, CjObjectModel)
+from cjdb.model.sqlalchemy_models import (
+    BaseModel,
+    CityObjectRelationshipModel,
+    CjMetadataModel,
+    CjObjectModel,
+)
+from cjdb.modules import exceptions
 from cjdb.modules.checks import check_object_type, check_root_properties
 from cjdb.modules.extensions import ExtensionHandler
-from cjdb.modules.geometric import (get_ground_geometry, get_srid,
-                                    reproject_vertex_list,
-                                    resolve_geometry_vertices,
-                                    transform_vertex)
-from cjdb.modules.utils import (find_extra_properties, get_city_object_types,
-                                is_cityjson_object, is_valid_file, to_dict)
+from cjdb.modules.geometric import (
+    get_ground_geometry,
+    get_srid,
+    reproject_vertex_list,
+    resolve_geometry_vertices,
+    transform_vertex,
+)
+from cjdb.modules.utils import (
+    find_extra_properties,
+    geometry_jsonb_size,
+    geometry_too_large,
+    get_city_object_types,
+    is_cityjson_object,
+    is_valid_file,
+    to_dict,
+)
 
 
 # class to store variables per file import - for clarity
@@ -62,7 +75,7 @@ class Importer:
         self.ignore_repeated_file = ignore_repeated_file
         self.overwrite = overwrite
         self.max_id = 0
-        self.processed = dict()
+        self.processed = {}
         self.transform = transform
         self.clustering = clustering
 
@@ -91,7 +104,7 @@ class Importer:
             self.session.rollback()
         except Exception as e:
             logger.error("An error occurred during import: %s", e)
-            raise e
+            raise
         finally:
             logger.info("Post import operations...")
             # post import operations like indexing and clustering...
@@ -103,8 +116,10 @@ class Importer:
         the schema and the tables."""
         with self.engine.connect() as conn:
             conn.execute(text("""CREATE EXTENSION IF NOT EXISTS postgis"""))
-            conn.execute(text(f"""CREATE SCHEMA IF NOT EXISTS
-                                  {self.db_schema}"""))
+            conn.execute(
+                text(f"""CREATE SCHEMA IF NOT EXISTS
+                                  {self.db_schema}""")
+            )
             conn.commit()
         # create all tables defined as SqlAlchemy models
         for table in BaseModel.metadata.tables.values():
@@ -116,7 +131,8 @@ class Importer:
     def create_indexes(self) -> None:
         """Create indexes on the tables."""
         with self.engine.connect() as conn:
-            conn.execute(text(f"""
+            conn.execute(
+                text(f"""
                 CREATE INDEX IF NOT EXISTS cj_metadata_gix ON {self.db_schema}.cj_metadata USING gist(bbox);
                 CREATE INDEX IF NOT EXISTS cj_metadata_source_file_idx ON {self.db_schema}.cj_metadata USING hash(source_file);
                 CREATE INDEX IF NOT EXISTS city_object_type_idx ON {self.db_schema}.city_object USING btree("type");
@@ -124,7 +140,8 @@ class Importer:
                 CREATE INDEX IF NOT EXISTS lod ON {self.db_schema}.city_object USING gin (geometry);
                 CREATE INDEX IF NOT EXISTS city_object_relationships_parent_idx ON {self.db_schema}.city_object_relationships USING btree(parent_id);
                 CREATE INDEX IF NOT EXISTS city_object_relationships_child_idx ON {self.db_schema}.city_object_relationships USING btree(child_id);
-            """))
+            """)
+            )
             conn.commit()
 
     def parse_cityjson(self) -> None:
@@ -138,7 +155,7 @@ class Importer:
             self.process_directory(source_path)
 
         else:
-            raise Exception(f"Path: '{source_path}' not found")
+            raise exceptions.PathNotFoundException(f"Path: '{source_path}' not found")
 
     def post_import(self) -> None:
         """Perform post import operation on the schema,
@@ -154,10 +171,12 @@ class Importer:
         """Cluster tables to improve query performance."""
         logger.info("Clustering tables, this will take some time...")
         with self.engine.connect() as conn:
-            conn.execute(text(f"""
+            conn.execute(
+                text(f"""
                 CLUSTER VERBOSE {self.db_schema}.cj_metadata USING cj_metadata_gix;
                 CLUSTER VERBOSE {self.db_schema}.city_object USING city_object_ground_gix;
-            """))
+            """)
+            )
 
     def set_target_srid(self) -> None:
         """
@@ -218,10 +237,10 @@ class Importer:
 
     def extract_cj_metadatadata(self, line_json):
         if "metadata" not in line_json:
-            raise exceptions.InvalidMetadataException(
-                "The file should contain a member'metadata', in the first object"
+            logger.warning(
+                "File does not contain metadata. Skipping metadata extraction."
             )
-
+            return False
         extra_root_properties = find_extra_properties(line_json)
 
         self.set_source_srid(line_json)
@@ -422,23 +441,29 @@ class Importer:
         self.current = SingleFileImport(filepath)
         logger.info("Running import for file: %s", filepath)
 
-        if filepath.lower() == "stdin":
-            f = sys.stdin
-        else:
-            if not is_valid_file(filepath):
-                raise exceptions.InvalidFileException()
-            f = open(filepath, "rt")
+        with ExitStack() as stack:
+            if filepath.lower() == "stdin":
+                f = sys.stdin
+            else:
+                if not is_valid_file(filepath):
+                    raise exceptions.InvalidFileException()
+                f = stack.enter_context(open(filepath, "rt"))
 
-        first_line = f.readline()
-        first_line_json = json.loads(first_line.rstrip("\n"))
-        if not is_cityjson_object(first_line_json):
-            raise exceptions.InvalidCityJSONObjectException()
-        metadata_ok = self.extract_cj_metadatadata(first_line_json)
-        if not metadata_ok:
-            return False
-        for line in f.readlines():
-            line_json = json.loads(line.rstrip("\n"))
-            self.process_line(line_json)
+            first_line = f.readline()
+            first_line_json = json.loads(first_line.rstrip("\n"))
+            if not is_cityjson_object(first_line_json):
+                raise exceptions.InvalidCityJSONObjectException()
+
+            if "metadata" not in first_line_json and self.input_srid is None:
+                raise exceptions.MissingCRSException(
+                    "The file doesn't contain a member 'metadata', in the first object. This means that no reference system is defined."
+                )
+            metadata_ok = self.extract_cj_metadatadata(first_line_json)
+            if not metadata_ok:
+                return False
+            for line in f:
+                line_json = json.loads(line.rstrip("\n"))
+                self.process_line(line_json)
         if self.current.city_objects:
             logger.debug("Importing city objects")
             obj_insert = (
@@ -490,7 +515,7 @@ class Importer:
         )
 
         # prepare partial and non partial indexes in one list
-        attributes = [(a, True) for a in self.partial_indexed_attributes] + [  # noqa
+        attributes = [(a, True) for a in self.partial_indexed_attributes] + [
             (a, False) for a in self.indexed_attributes
         ]
 
@@ -507,8 +532,7 @@ class Importer:
 
                 # prepare and run sql command
                 if is_partial:
-                    cmd = cmd_base
-                    +" WHERE attributes->>'{attr_name}' IS NOT NULL"
+                    cmd = cmd_base + " WHERE attributes->>'{attr_name}' IS NOT NULL"
                 else:
                     cmd = cmd_base
 
@@ -523,12 +547,12 @@ class Importer:
 
             else:
                 logger.warning(
-                    f"Specified attribute to be indexed: '{attr_name}' does not exist"  # noqa
+                    f"Specified attribute to be indexed: '{attr_name}' does not exist"
                 )
 
     def get_geometries(
         self, obj_id, cityobj, vertices, source_target_srid
-    ) -> Tuple[Optional[BaseGeometry], Optional[BaseGeometry]]:
+    ) -> tuple[BaseGeometry | None, Any]:
         if "geometry" not in cityobj:
             return None, None
 
@@ -540,7 +564,19 @@ class Importer:
             source_target_srid,
         )
 
-        ground_geometry = get_ground_geometry(geometry, obj_id)
+        # fail early (and with a clear message) when a single object's
+        # resolved geometry would not fit in a jsonb column, instead of
+        # hitting PostgreSQL's cryptic size error later on.
+        geometry_size = geometry_jsonb_size(geometry)
+        if geometry_too_large(geometry):
+            raise exceptions.GeometryTooLargeException(
+                f"The geometry of CityJSON object '{obj_id}' is "
+                f"{geometry_size / 1024 / 1024:.1f} MB when stored as jsonb, "
+                "which exceeds the ~256 MB limit of a PostgreSQL jsonb column. "
+                "Simplify or split the geometry of this object."
+            )
+
+        ground_geometry: Any = get_ground_geometry(geometry, obj_id)
 
         if ground_geometry is not None:
             if not self.current.target_srid:

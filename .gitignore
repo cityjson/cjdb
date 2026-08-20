@@ -6,7 +6,12 @@
 mypy.ini
 todo
 venv
+.venv
 *.egg-info
 *.whl
 *.gz
 done
+.coverage
+.mypy_cache
+.pytest_cache
+.ruff_cache

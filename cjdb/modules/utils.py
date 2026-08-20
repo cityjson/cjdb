@@ -1,16 +1,58 @@
-from typing import Any, Dict
+from typing import Any
 
 import psycopg2
 from sqlalchemy import create_engine
 
 from cjdb.resources import object_types
 
+# PostgreSQL jsonb columns have a hard size limit of ~256 MB (268435455
+# bytes). CJDB stores the fully-resolved geometry as jsonb, so a very detailed
+# geometry (many vertices resolved to inline coordinates) can exceed it.
+MAX_GEOMETRY_JSON_SIZE = 268_435_455
+
+
+def _estimate_jsonb_size(value: Any) -> int:
+    """Estimate the size of ``value`` once stored as PostgreSQL jsonb.
+
+    jsonb stores numbers as binary ``Numeric`` and prefixes every array/object
+    element with a 4/8-byte ``JEntry``, so it is typically larger than the JSON
+    text produced by ``json.dumps``. This is only an estimate, used to fail
+    early with a clear message instead of hitting PostgreSQL's cryptic error.
+    """
+    if isinstance(value, bool):
+        return 8
+    if value is None:
+        return 4
+    if isinstance(value, str):
+        return 4 + len(value.encode("utf-8")) + 1
+    if isinstance(value, (int, float)):
+        return 4 + 24
+    if isinstance(value, dict):
+        size = 8
+        for key, val in value.items():
+            size += _estimate_jsonb_size(key) + _estimate_jsonb_size(val)
+        return size
+    if isinstance(value, (list, tuple)):
+        size = 8
+        for item in value:
+            size += _estimate_jsonb_size(item)
+        return size
+    return 32
+
+
+def geometry_jsonb_size(geometry: Any) -> int:
+    """Return the estimated jsonb size in bytes for a geometry value."""
+    return _estimate_jsonb_size(geometry)
+
+
+def geometry_too_large(geometry: Any) -> bool:
+    """Return True when the geometry would exceed the jsonb size limit."""
+    return geometry_jsonb_size(geometry) > MAX_GEOMETRY_JSON_SIZE
+
 
 def is_valid_file(filepath: str) -> bool:
     # TODO: this check sounds pretty easy to fulfil
-    if filepath.endswith(".jsonl"):
-        return True
-    return False
+    return bool(filepath.endswith(".jsonl"))
 
 
 def get_db_engine(db_user, db_password, db_host, db_port, db_name, echo=False):
@@ -35,22 +77,19 @@ def get_city_object_types():
     for key, val in types.items():
         type_list.append(key)
         if val:
-            for v in val:
-                type_list.append(v)
+            type_list.extend(val)
 
     return sorted(type_list)
 
 
-def is_cityjson_object(json: Dict[str, Any]) -> bool:
+def is_cityjson_object(json: dict[str, Any]) -> bool:
     """Check if the json is a cityjson object"""
-    if (
+    return bool(
         "version" in json
         and "transform" in json
         and "type" in json
         and json["type"] == "CityJSON"
-    ):
-        return True
-    return False
+    )
 
 
 # find extended properties
