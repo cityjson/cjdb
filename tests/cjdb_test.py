@@ -1,5 +1,6 @@
 import io
 import uuid
+from pathlib import Path
 
 import pytest
 from pytest_postgresql.janitor import DatabaseJanitor
@@ -55,6 +56,13 @@ def isolated_engine(postgresql_proc):
             f"{postgresql_proc.password}@{postgresql_proc.host}:"
             f"{postgresql_proc.port}/{dbname}"
         )
+
+
+@pytest.fixture
+def exported_jsonl_path():
+    path = Path("./tests/files/exported.jsonl")
+    yield path
+    path.unlink(missing_ok=True)
 
 
 def test_single_import_missing_srid(engine_postgresql):
@@ -249,13 +257,13 @@ def test_db_model(engine_postgresql):
     assert insp.has_table("city_object_relationships", schema="vienna")
 
 
-def test_export_all(engine_postgresql):
+def test_export_all(engine_postgresql, exported_jsonl_path):
     conn = engine_postgresql.raw_connection()
     with Exporter(
         connection=conn,
         schema="vienna",
         sqlquery=None,
-        output="./tests/files/exported.jsonl",
+        output=str(exported_jsonl_path),
     ) as exporter:
         exporter.run_export()
 
@@ -337,13 +345,13 @@ def test_transform_flag_to_new_schema(engine_postgresql, monkeypatch):
         importer.run_import()
 
 
-def test_export_one(engine_postgresql):
+def test_export_one(engine_postgresql, exported_jsonl_path):
     conn = engine_postgresql.raw_connection()
     with Exporter(
         connection=conn,
         schema="vienna",
         sqlquery="SELECT 'UUID_LOD2_011978-eb576db6-7fb3-427d-afe3' as object_id",
-        output="./tests/files/exported.jsonl",
+        output=str(exported_jsonl_path),
     ) as exporter:
         exporter.run_export()
 
