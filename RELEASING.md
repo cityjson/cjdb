@@ -95,7 +95,7 @@ git push
 
 ```bash
 git tag -a v2.3.0 -m "cjdb v2.3.0"
-git push origin v2.3.0
+git push origin main --tags  
 ```
 
 ### 6. Publish to PyPI
